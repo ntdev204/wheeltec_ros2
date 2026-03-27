@@ -11,6 +11,14 @@ router = APIRouter(prefix="/api/maps", tags=["maps"])
 MAP_PATH_PGM = r'D:\wheeltec_ros2\data\map\WHEELTEC.pgm'
 MAP_PATH_YAML = r'D:\wheeltec_ros2\data\map\WHEELTEC.yaml'
 
+# Shared cache - PNG bytes from Robot bridge
+live_map_cache = {"png": None}
+
+def update_live_map_png(png_bytes: bytes):
+    """Called from ws/handler.py when a map PNG arrives from the bridge."""
+    live_map_cache["png"] = png_bytes
+    print(f"[MapCache] Updated PNG cache: {len(png_bytes)} bytes")
+
 @router.get("/")
 async def list_maps():
     maps = await get_all_maps()
@@ -20,6 +28,12 @@ async def list_maps():
 async def active_map():
     map_data = await get_active_map()
     return {"map": map_data}
+
+@router.get("/live/image")
+async def get_live_map_image():
+    if live_map_cache["png"] is None:
+        return Response(status_code=404, content="Live map not yet available")
+    return Response(content=live_map_cache["png"], media_type="image/png")
 
 @router.get("/static/image")
 async def get_static_map_image():
