@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist, PoseStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import Twist, PoseStamped
 from nav_msgs.msg import Odometry, OccupancyGrid
 from sensor_msgs.msg import Imu, Image
 from std_msgs.msg import Float32, Bool
@@ -8,6 +8,8 @@ import cv2
 import numpy as np
 import zmq
 from threading import Thread
+import tf2_ros
+import math
 
 class WheeltecControlNode(Node):
     def __init__(self, zmq_ports):
@@ -22,7 +24,10 @@ class WheeltecControlNode(Node):
         self.create_subscription(Imu, 'imu/data_raw', self.imu_cb, 10)
         self.create_subscription(Float32, '/PowerVoltage', self.voltage_cb, 10)
         self.create_subscription(Bool, '/robot_charging_flag', self.charging_cb, 10)
-        self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.amcl_cb, 10)
+        
+        # TF2 for robot localization in map frame
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
         
         from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy, QoSDurabilityPolicy
         
@@ -79,6 +84,8 @@ class WheeltecControlNode(Node):
         self.create_timer(0.1, self.publish_telemetry)
         # Timer to send map at 0.5Hz (only when changed)
         self.create_timer(2.0, self.publish_map)
+        # Timer to update robot pose from TF at 10Hz
+        self.create_timer(0.1, self.update_map_pose)
 
     def odom_cb(self, msg):
         self.telemetry_data["odom"] = {
@@ -127,11 +134,23 @@ class WheeltecControlNode(Node):
         self.map_dirty = True
 
     def amcl_cb(self, msg):
-        self.telemetry_data["map_pose"] = {
-            "x": msg.pose.pose.position.x,
-            "y": msg.pose.pose.position.y,
-            "yaw": self.get_yaw_from_quat(msg.pose.pose.orientation)
-        }
+        pass  # Kept for compatibility, TF lookup is used instead
+
+    def update_map_pose(self):
+        try:
+            t = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
+            q = t.transform.rotation
+            siny_cosp = 2 * (q.w * q.z + q.x * q.y)
+            cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
+            yaw = math.atan2(siny_cosp, cosy_cosp)
+            
+            self.telemetry_data["map_pose"] = {
+                "x": t.transform.translation.x,
+                "y": t.transform.translation.y,
+                "yaw": yaw
+            }
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            pass  # TF not yet available
 
     def camera_cb(self, msg):
         # Compress raw image to JPEG on ROS2 side, optimized for RPi 4
