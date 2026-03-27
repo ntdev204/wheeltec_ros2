@@ -54,29 +54,28 @@ export function MapViewer() {
 
     ctx.putImageData(imgData, 0, 0);
 
-    // Draw Robot Position
-    if (telemetry.odom) {
-      const robotX = (telemetry.odom.x - origin.x) / resolution;
-      const robotY = height - (telemetry.odom.y - origin.y) / resolution;
-      
-      ctx.beginPath();
-      ctx.arc(robotX, robotY, 4, 0, 2 * Math.PI);
-      ctx.fillStyle = '#ef4444'; // Red for robot
-      ctx.fill();
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+    // Draw Robot Position (Scanning indicator only)
+    const pose = telemetry.map_pose || { x: 0, y: 0, yaw: 0 };
+    const robotX = (pose.x - origin.x) / resolution;
+    const robotY = height - (pose.y - origin.y) / resolution;
+    
+    ctx.beginPath();
+    ctx.arc(robotX, robotY, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = '#ef4444'; // Red for robot
+    ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
-      // Heading indicator
-      const angle = telemetry.odom.v_z || 0;
-      ctx.beginPath();
-      ctx.moveTo(robotX, robotY);
-      ctx.lineTo(robotX + Math.cos(angle) * 8, robotY - Math.sin(angle) * 8);
-      ctx.strokeStyle = '#ef4444';
-      ctx.stroke();
-    }
+    // Heading indicator
+    const angle = pose.yaw || 0;
+    ctx.beginPath();
+    ctx.moveTo(robotX, robotY);
+    ctx.lineTo(robotX + Math.cos(angle) * 8, robotY - Math.sin(angle) * 8);
+    ctx.strokeStyle = '#ef4444';
+    ctx.stroke();
 
-  }, [telemetry?.map, telemetry?.odom]);
+  }, [telemetry?.map, telemetry?.map_pose]);
 
   const fetchMaps = async () => {
     try {

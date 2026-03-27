@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useRobotState } from '@/hooks/use-robot-state';
+import { rosClient } from '@/lib/ros-client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 interface MapYaml {
@@ -47,12 +48,13 @@ export function RobotMap() {
     ctx.drawImage(mapImage, x, y, mapImage.width * scale, mapImage.height * scale);
 
     // Draw Robot if telemetry exists
-    if (telemetry?.odom) {
-      const { x: rx, y: ry, z: rz } = telemetry.odom;
+    // Fallback order: map_pose (AMCL) -> odom (Raw)
+    const pose = telemetry?.map_pose || (telemetry?.odom ? { x: telemetry.odom.x, y: telemetry.odom.y, yaw: telemetry.odom.yaw || 0, isFallback: true } : null);
+    
+    if (pose && mapYaml) {
+      const { x: rx, y: ry, yaw: rz } = pose;
       
       // Convert ROS (meters) to Pixels
-      // x_px = (x_ros - origin_x) / resolution
-      // y_px = height_image_px - (y_ros - origin_y) / resolution
       const rx_px = (rx - mapYaml.origin[0]) / mapYaml.resolution;
       const ry_px = mapImage.height - (ry - mapYaml.origin[1]) / mapYaml.resolution;
 
@@ -63,25 +65,57 @@ export function RobotMap() {
       // Draw Robot Marker
       ctx.beginPath();
       ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-      ctx.fillStyle = 'var(--primary)';
+      ctx.fillStyle = '#ef4444'; // Use consistent red for locator
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = 'rgba(239, 68, 68, 0.4)';
       ctx.fill();
       ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
+      ctx.shadowBlur = 0;
 
       // Draw Heading Arrow
       ctx.beginPath();
       ctx.moveTo(cx, cy);
-      const arrowLen = 15;
+      const arrowLen = 12;
       ctx.lineTo(
         cx + Math.cos(rz) * arrowLen,
-        cy - Math.sin(rz) * arrowLen // Canvas Y is inverted relative to ROS
+        cy - Math.sin(rz) * arrowLen 
       );
-      ctx.strokeStyle = 'var(--primary)';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
       ctx.stroke();
     }
   }, [mapImage, mapYaml, telemetry]);
+
+  const handleMapClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current || !mapImage || !mapYaml) return;
+
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    
+    // Calculate click relative to map image area (accounting for object-contain scale)
+    const scale = Math.min(canvas.width / mapImage.width, canvas.height / mapImage.height);
+    const offsetX = (canvas.width - mapImage.width * scale) / 2;
+    const offsetY = (canvas.height - mapImage.height * scale) / 2;
+
+    const clickX_canvas = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const clickY_canvas = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    // Convert canvas click to map image pixels
+    const px = (clickX_canvas - offsetX) / scale;
+    const py = (clickY_canvas - offsetY) / scale;
+
+    if (px < 0 || px > mapImage.width || py < 0 || py > mapImage.height) return;
+
+    // Convert map pixels to ROS meters
+    const mx = (px * mapYaml.resolution) + mapYaml.origin[0];
+    const my = ((mapImage.height - py) * mapYaml.resolution) + mapYaml.origin[1];
+
+    // Send Nav Goal
+    rosClient.send('nav_goal', { x: mx, y: my });
+    console.log(`Sending Omni goal: x=${mx}, y=${my}`);
+  };
 
   return (
     <Card className="w-full flex flex-col shadow-sm border-border h-full overflow-hidden">
@@ -104,7 +138,8 @@ export function RobotMap() {
           ref={canvasRef} 
           width={1000} 
           height={750} 
-          className="w-full h-full object-contain"
+          onClick={handleMapClick}
+          className="w-full h-full object-contain cursor-crosshair hover:opacity-90 active:scale-[0.99] transition-all"
         />
         {!telemetry && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-md transition-all duration-500">

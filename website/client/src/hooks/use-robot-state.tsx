@@ -2,7 +2,8 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 
 export interface TelemetryData {
-  odom: { x: number; y: number; z: number; v_x: number; v_y: number; v_z: number };
+  odom: { x: number; y: number; z: number; v_x: number; v_y: number; v_z: number; yaw: number };
+  map_pose: { x: number; y: number; yaw: number };
   imu: { ax: number; ay: number; az: number };
   voltage: number;
   charging: boolean;
