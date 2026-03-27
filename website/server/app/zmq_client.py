@@ -6,7 +6,7 @@ class ZMQClient:
     def __init__(self):
         self.context = zmq.asyncio.Context()
         self.cmd_socket = self.context.socket(zmq.REQ)
-        self.cmd_socket.connect(f"tcp://127.0.0.1:{settings.zmq_cmd_port}")
+        self.cmd_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_cmd_port}")
         
     async def send_command(self, action: str, payload: dict = None):
         if payload is None:

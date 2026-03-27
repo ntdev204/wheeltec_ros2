@@ -37,15 +37,15 @@ class WheeltecControlNode(Node):
         
         # Telemetry PUB socket (bind)
         self.telemetry_pub = self.zmq_context.socket(zmq.PUB)
-        self.telemetry_pub.bind(f"tcp://127.0.0.1:{zmq_ports['telemetry']}")
+        self.telemetry_pub.bind(f"tcp://0.0.0.0:{zmq_ports['telemetry']}")
         
         # Camera PUB socket (bind)
         self.camera_pub = self.zmq_context.socket(zmq.PUB)
-        self.camera_pub.bind(f"tcp://127.0.0.1:{zmq_ports['camera']}")
+        self.camera_pub.bind(f"tcp://0.0.0.0:{zmq_ports['camera']}")
         
         # Command REP socket (run in separate thread since rclpy spins in main thread)
         self.cmd_rep = self.zmq_context.socket(zmq.REP)
-        self.cmd_rep.bind(f"tcp://127.0.0.1:{zmq_ports['cmd']}")
+        self.cmd_rep.bind(f"tcp://0.0.0.0:{zmq_ports['cmd']}")
         
         self.telemetry_data = {
             "odom": {"x": 0.0, "y": 0.0, "z": 0.0, "v_x": 0.0, "v_y": 0.0, "v_z": 0.0},

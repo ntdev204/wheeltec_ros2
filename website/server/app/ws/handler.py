@@ -11,14 +11,16 @@ context = zmq.asyncio.Context()
 @router.websocket("/ws")
 async def scada_websocket(websocket: WebSocket):
     await websocket.accept()
+    print(f"L2: UI Client Connected. Attempting ZMQ link to Robot @ {settings.robot_ip}")
     
     # Setup ZMQ SUB sockets for telemetry and camera data from ROS2 layer
     sub_socket = context.socket(zmq.SUB)
-    sub_socket.connect(f"tcp://127.0.0.1:{settings.zmq_telemetry_port}")
+    print(f"L2: Connecting Telemetry SUB to tcp://{settings.robot_ip}:{settings.zmq_telemetry_port}")
+    sub_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_telemetry_port}")
     sub_socket.setsockopt_string(zmq.SUBSCRIBE, "") # Subscribe to all telemetry
     
     camera_socket = context.socket(zmq.SUB)
-    camera_socket.connect(f"tcp://127.0.0.1:{settings.zmq_camera_port}")
+    camera_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_camera_port}")
     camera_socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
     async def receive_ws():
