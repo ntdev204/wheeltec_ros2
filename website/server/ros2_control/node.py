@@ -119,19 +119,44 @@ class WheeltecControlNode(Node):
 
     def map_cb(self, msg):
         self.get_logger().info(f'Received /map: {msg.info.width}x{msg.info.height}, res={msg.info.resolution}')
-        self.map_data = {
-            "info": {
-                "resolution": msg.info.resolution,
-                "width": msg.info.width,
-                "height": msg.info.height,
-                "origin": {
-                    "x": msg.info.origin.position.x,
-                    "y": msg.info.origin.position.y
-                }
-            },
-            "data": list(msg.data)
+        
+        w = msg.info.width
+        h = msg.info.height
+        
+        # Store map info in telemetry (small, always sent)
+        self.telemetry_data["map_info"] = {
+            "resolution": msg.info.resolution,
+            "width": w,
+            "height": h,
+            "origin": {
+                "x": msg.info.origin.position.x,
+                "y": msg.info.origin.position.y
+            }
         }
-        self.map_dirty = True
+        
+        # Convert OccupancyGrid to PNG on Robot (compact ~20KB vs 300KB+ JSON)
+        try:
+            img_array = np.zeros((h, w), dtype=np.uint8)
+            data = msg.data
+            for i in range(len(data)):
+                val = data[i]
+                if val == -1:
+                    img_array[i // w, i % w] = 205
+                elif val == 0:
+                    img_array[i // w, i % w] = 255
+                else:
+                    img_array[i // w, i % w] = max(0, 255 - int(val * 2.55))
+            
+            _, png_bytes = cv2.imencode('.png', img_array)
+            # Send PNG via camera channel with 'MAP:' prefix to distinguish
+            self.camera_pub.send(b'MAP:' + png_bytes.tobytes())
+            self.get_logger().info(f'Sent map PNG: {len(png_bytes)} bytes')
+        except Exception as e:
+            self.get_logger().error(f'Map PNG encode error: {e}')
+        
+        # Remove old map_data/publish_map approach
+        self.map_data = None
+        self.map_dirty = False
 
     def amcl_cb(self, msg):
         pass  # Kept for compatibility, TF lookup is used instead

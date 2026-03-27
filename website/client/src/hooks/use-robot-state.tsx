@@ -7,6 +7,12 @@ export interface TelemetryData {
   imu: { ax: number; ay: number; az: number };
   voltage: number;
   charging: boolean;
+  map_info?: {
+    resolution: number;
+    width: number;
+    height: number;
+    origin: { x: number; y: number };
+  };
   map?: {
     info: {
       resolution: number;

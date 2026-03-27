@@ -1,88 +1,84 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRobotState } from '@/hooks/use-robot-state';
 import { rosClient } from '@/lib/ros-client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
+interface MapInfo {
+  resolution: number;
+  width: number;
+  height: number;
+  origin: { x: number; y: number };
+}
+
 export function RobotMap() {
   const { telemetry } = useRobotState();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [navGoal, setNavGoal] = useState<{ x: number, y: number } | null>(null);
+  const [navGoal, setNavGoal] = useState<{ x: number; y: number } | null>(null);
+  const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-  // Use the LIVE map from Nav2 (OccupancyGrid from /map topic)
-  // This ensures coordinates are 100% consistent with the running costmap
-  const mapInfo = telemetry?.map?.info;
-  const mapData = telemetry?.map?.data;
+  // Get map_info from telemetry (sent in regular telemetry stream, always up to date)
+  const mapInfo: MapInfo | null = telemetry?.map_info || null;
 
-  // === COORDINATE HELPERS (using live Nav2 map info) ===
-  // Forward: ROS meters -> OccupancyGrid image pixels
-  //   px = (ros_x - origin_x) / resolution
-  //   py = (height - 1) - (ros_y - origin_y) / resolution
-  // Reverse: OccupancyGrid image pixels -> ROS meters
-  //   ros_x = px * resolution + origin_x
-  //   ros_y = ((height - 1) - py) * resolution + origin_y
+  // Poll live map PNG from HTTP API every 3 seconds
+  useEffect(() => {
+    let cancelled = false;
 
-  const rosToPixel = (rosX: number, rosY: number) => {
+    const fetchMapImage = async () => {
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = `${API_URL}/api/maps/live/image?t=${Date.now()}`;
+        img.onload = () => {
+          if (!cancelled) setMapImage(img);
+        };
+      } catch (e) {
+        // Map not yet available
+      }
+    };
+
+    fetchMapImage();
+    const interval = setInterval(fetchMapImage, 3000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [API_URL]);
+
+  // COORDINATE HELPERS
+  const rosToPixel = useCallback((rosX: number, rosY: number) => {
     if (!mapInfo) return { px: 0, py: 0 };
     const px = (rosX - mapInfo.origin.x) / mapInfo.resolution;
     const py = (mapInfo.height - 1) - (rosY - mapInfo.origin.y) / mapInfo.resolution;
     return { px, py };
-  };
+  }, [mapInfo]);
 
-  const pixelToRos = (px: number, py: number) => {
+  const pixelToRos = useCallback((px: number, py: number) => {
     if (!mapInfo) return { rosX: 0, rosY: 0 };
     const rosX = px * mapInfo.resolution + mapInfo.origin.x;
     const rosY = ((mapInfo.height - 1) - py) * mapInfo.resolution + mapInfo.origin.y;
     return { rosX, rosY };
-  };
+  }, [mapInfo]);
 
+  // Render
   useEffect(() => {
-    if (!canvasRef.current || !mapInfo || !mapData) return;
+    if (!canvasRef.current || !mapImage || !mapInfo) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const { width, height } = mapInfo;
-
-    // Set canvas internal resolution to map size
-    if (canvas.width !== width || canvas.height !== height) {
-      canvas.width = width;
-      canvas.height = height;
+    if (canvas.width !== mapInfo.width || canvas.height !== mapInfo.height) {
+      canvas.width = mapInfo.width;
+      canvas.height = mapInfo.height;
     }
 
-    // Draw OccupancyGrid using ImageData (high-performance)
-    const imgData = ctx.createImageData(width, height);
-    for (let i = 0; i < mapData.length; i++) {
-      const val = mapData[i];
-      const idx = i * 4;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(mapImage, 0, 0, mapInfo.width, mapInfo.height);
 
-      if (val === -1) { // Unknown
-        imgData.data[idx] = 205;
-        imgData.data[idx + 1] = 205;
-        imgData.data[idx + 2] = 205;
-        imgData.data[idx + 3] = 255;
-      } else if (val === 0) { // Free
-        imgData.data[idx] = 255;
-        imgData.data[idx + 1] = 255;
-        imgData.data[idx + 2] = 255;
-        imgData.data[idx + 3] = 255;
-      } else { // Occupied (1-100)
-        const gray = Math.max(0, 255 - Math.round(val * 2.55));
-        imgData.data[idx] = gray;
-        imgData.data[idx + 1] = gray;
-        imgData.data[idx + 2] = gray;
-        imgData.data[idx + 3] = 255;
-      }
-    }
-    ctx.putImageData(imgData, 0, 0);
-
-    // Draw Robot (from map_pose or odom fallback)
+    // Draw Robot
     const pose = telemetry?.map_pose || (telemetry?.odom ? { x: telemetry.odom.x, y: telemetry.odom.y, yaw: telemetry.odom.yaw || 0 } : null);
 
     if (pose) {
       const { px, py } = rosToPixel(pose.x, pose.y);
-
       ctx.beginPath();
       ctx.arc(px, py, 4, 0, Math.PI * 2);
       ctx.fillStyle = '#ef4444';
@@ -91,14 +87,9 @@ export function RobotMap() {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // Heading arrow
-      const arrowLen = 8;
       ctx.beginPath();
       ctx.moveTo(px, py);
-      ctx.lineTo(
-        px + Math.cos(pose.yaw) * arrowLen,
-        py - Math.sin(pose.yaw) * arrowLen
-      );
+      ctx.lineTo(px + Math.cos(pose.yaw) * 8, py - Math.sin(pose.yaw) * 8);
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 1.5;
       ctx.stroke();
@@ -107,7 +98,6 @@ export function RobotMap() {
     // Draw Nav Goal
     if (navGoal) {
       const { px, py } = rosToPixel(navGoal.x, navGoal.y);
-
       const cs = 5;
       ctx.beginPath();
       ctx.moveTo(px - cs, py - cs);
@@ -124,28 +114,18 @@ export function RobotMap() {
       ctx.lineWidth = 1;
       ctx.stroke();
     }
-
-  }, [mapInfo, mapData, telemetry, navGoal]);
+  }, [mapImage, mapInfo, telemetry, navGoal, rosToPixel]);
 
   const handleMapClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !mapInfo) return;
-
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-
-    // CSS pixel -> map pixel (canvas internal size = map size)
     const imgPx = (e.clientX - rect.left) * (canvas.width / rect.width);
     const imgPy = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-    // Bounds check
     if (imgPx < 0 || imgPx >= mapInfo.width || imgPy < 0 || imgPy >= mapInfo.height) return;
 
-    // Map pixel -> ROS meters
     const { rosX, rosY } = pixelToRos(imgPx, imgPy);
-
-    console.log(`[NAV] Click pixel=(${imgPx.toFixed(1)}, ${imgPy.toFixed(1)}) -> ROS=(${rosX.toFixed(3)}, ${rosY.toFixed(3)})`);
-    console.log(`[NAV] Map info: ${mapInfo.width}x${mapInfo.height}, res=${mapInfo.resolution}, origin=(${mapInfo.origin.x}, ${mapInfo.origin.y})`);
-
+    console.log(`[NAV] pixel=(${imgPx.toFixed(1)}, ${imgPy.toFixed(1)}) -> ROS=(${rosX.toFixed(3)}, ${rosY.toFixed(3)})`);
     rosClient.send('nav_goal', { x: rosX, y: rosY });
     setNavGoal({ x: rosX, y: rosY });
   };
@@ -163,26 +143,22 @@ export function RobotMap() {
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[9px] font-mono font-bold uppercase tracking-widest text-muted-foreground/80">
             <div className="flex justify-between gap-2"><span>Size:</span> <span className="text-foreground">{mapInfo.width}×{mapInfo.height}</span></div>
             <div className="flex justify-between gap-2"><span>Res:</span> <span className="text-foreground">{mapInfo.resolution}m</span></div>
-            <div className="flex justify-between gap-2"><span>Origin:</span> <span className="text-foreground">{mapInfo.origin.x.toFixed(2)},{mapInfo.origin.y.toFixed(2)}</span></div>
-            {navGoal && (
-              <div className="flex justify-between gap-2"><span>Goal:</span> <span className="text-green-600">{navGoal.x.toFixed(2)},{navGoal.y.toFixed(2)}</span></div>
-            )}
           </div>
         )}
       </CardHeader>
       <CardContent className="flex-1 bg-muted/10 relative flex items-center justify-center p-0 overflow-hidden">
-        <canvas 
-          ref={canvasRef} 
+        <canvas
+          ref={canvasRef}
           onClick={handleMapClick}
           className="w-full h-full object-contain cursor-crosshair"
           style={{ imageRendering: 'pixelated' }}
         />
-        {!mapData && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-md transition-all duration-500">
-             <div className="flex flex-col items-center gap-3">
-               <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-               <span className="text-[10px] font-black tracking-widest uppercase text-muted-foreground">Waiting for /map…</span>
-             </div>
+        {!mapImage && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-md">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              <span className="text-[10px] font-black tracking-widest uppercase text-muted-foreground">Waiting for /map…</span>
+            </div>
           </div>
         )}
       </CardContent>

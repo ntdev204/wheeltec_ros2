@@ -4,6 +4,7 @@ import zmq.asyncio
 import asyncio
 from app.config import settings
 from app.zmq_client import zmq_client
+from app.routes.maps import update_live_map_png
 
 router = APIRouter()
 context = zmq.asyncio.Context()
@@ -44,13 +45,8 @@ async def scada_websocket(websocket: WebSocket):
         try:
             while True:
                 msg = await sub_socket.recv_json()
-                # Check if it's a typed message (e.g. map) or regular telemetry
-                if isinstance(msg, dict) and "type" in msg:
-                    # Typed message: forward as-is (e.g. {type: "map", payload: ...})
-                    await websocket.send_json(msg)
-                else:
-                    # Regular telemetry dict
-                    await websocket.send_json({"type": "telemetry", "payload": msg})
+                # Forward telemetry (map_info is now included in regular telemetry)
+                await websocket.send_json({"type": "telemetry", "payload": msg})
         except asyncio.CancelledError:
             pass
             
@@ -58,8 +54,14 @@ async def scada_websocket(websocket: WebSocket):
         try:
             while True:
                 frame = await camera_socket.recv()
-                # Send binary JPEG frame to UI
-                await websocket.send_bytes(frame)
+                # Check for MAP: prefix (map PNG from bridge)
+                if frame[:4] == b'MAP:':
+                    png_data = frame[4:]
+                    update_live_map_png(png_data)
+                    print(f"[Handler] Cached map PNG: {len(png_data)} bytes")
+                else:
+                    # Regular JPEG camera frame
+                    await websocket.send_bytes(frame)
         except asyncio.CancelledError:
             pass
 

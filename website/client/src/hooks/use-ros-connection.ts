@@ -11,7 +11,8 @@ export function useROSConnection() {
     rosClient.connect();
 
     const telemetryHandler = (data: any) => {
-      setTelemetry(data);
+      // Merge: preserve map field from separate map channel
+      setTelemetry((prev) => prev ? { ...prev, ...data } : data);
     };
 
     const mapHandler = (data: any) => {
