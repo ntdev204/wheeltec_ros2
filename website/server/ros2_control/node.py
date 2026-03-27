@@ -22,10 +22,19 @@ class WheeltecControlNode(Node):
         self.create_subscription(Imu, 'imu/data_raw', self.imu_cb, 10)
         self.create_subscription(Float32, '/PowerVoltage', self.voltage_cb, 10)
         self.create_subscription(Bool, '/robot_charging_flag', self.charging_cb, 10)
-        self.create_subscription(OccupancyGrid, '/map', self.map_cb, 10)
         self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.amcl_cb, 10)
         
-        from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
+        from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy, QoSDurabilityPolicy
+        
+        # /map topic uses TRANSIENT_LOCAL + RELIABLE (latched in Nav2)
+        map_qos = QoSProfile(
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=1
+        )
+        self.create_subscription(OccupancyGrid, '/map', self.map_cb, map_qos)
+        
         qos_profile = QoSProfile(
             reliability=QoSReliabilityPolicy.BEST_EFFORT,
             history=QoSHistoryPolicy.KEEP_LAST,
@@ -55,16 +64,21 @@ class WheeltecControlNode(Node):
             "map_pose": {"x": 0.0, "y": 0.0, "yaw": 0.0},
             "imu": {"ax": 0.0, "ay": 0.0, "az": 0.0},
             "voltage": 0.0,
-            "charging": False,
-            "map": None
+            "charging": False
         }
+        
+        # Map data stored separately (too large to send at 10Hz)
+        self.map_data = None
+        self.map_dirty = False
         
         # Start command listener thread
         self.cmd_thread = Thread(target=self.cmd_loop, daemon=True)
         self.cmd_thread.start()
         
-        # Timer to send telemetry at 10Hz
+        # Timer to send telemetry at 10Hz (without map)
         self.create_timer(0.1, self.publish_telemetry)
+        # Timer to send map at 0.5Hz (only when changed)
+        self.create_timer(2.0, self.publish_map)
 
     def odom_cb(self, msg):
         self.telemetry_data["odom"] = {
@@ -97,7 +111,8 @@ class WheeltecControlNode(Node):
         self.telemetry_data["charging"] = msg.data
 
     def map_cb(self, msg):
-        self.telemetry_data["map"] = {
+        self.get_logger().info(f'Received /map: {msg.info.width}x{msg.info.height}, res={msg.info.resolution}')
+        self.map_data = {
             "info": {
                 "resolution": msg.info.resolution,
                 "width": msg.info.width,
@@ -109,6 +124,7 @@ class WheeltecControlNode(Node):
             },
             "data": list(msg.data)
         }
+        self.map_dirty = True
 
     def amcl_cb(self, msg):
         self.telemetry_data["map_pose"] = {
@@ -139,6 +155,11 @@ class WheeltecControlNode(Node):
 
     def publish_telemetry(self):
         self.telemetry_pub.send_json(self.telemetry_data)
+
+    def publish_map(self):
+        if self.map_data and self.map_dirty:
+            self.telemetry_pub.send_json({"type": "map", "payload": self.map_data})
+            self.map_dirty = False
 
     def cmd_loop(self):
         while rclpy.ok():

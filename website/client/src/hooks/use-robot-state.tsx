@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, SetStateAction } from 'react';
 
 export interface TelemetryData {
   odom: { x: number; y: number; z: number; v_x: number; v_y: number; v_z: number; yaw: number };
@@ -22,7 +22,7 @@ interface RobotStateContextType {
   isConnected: boolean;
   setIsConnected: (connected: boolean) => void;
   telemetry: TelemetryData | null;
-  setTelemetry: (data: TelemetryData | null) => void;
+  setTelemetry: (data: SetStateAction<TelemetryData | null>) => void;
   speed: number;
   setSpeed: (speed: number) => void;
 }

@@ -14,10 +14,16 @@ export function useROSConnection() {
       setTelemetry(data);
     };
 
+    const mapHandler = (data: any) => {
+      setTelemetry((prev) => prev ? { ...prev, map: data } : null);
+    };
+
     rosClient.on('telemetry', telemetryHandler);
+    rosClient.on('map', mapHandler);
 
     return () => {
       rosClient.off('telemetry', telemetryHandler);
+      rosClient.off('map', mapHandler);
     };
   }, [setIsConnected, setTelemetry]);
 }

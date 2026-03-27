@@ -44,8 +44,13 @@ async def scada_websocket(websocket: WebSocket):
         try:
             while True:
                 msg = await sub_socket.recv_json()
-                # Forward to Browser
-                await websocket.send_json({"type": "telemetry", "payload": msg})
+                # Check if it's a typed message (e.g. map) or regular telemetry
+                if isinstance(msg, dict) and "type" in msg:
+                    # Typed message: forward as-is (e.g. {type: "map", payload: ...})
+                    await websocket.send_json(msg)
+                else:
+                    # Regular telemetry dict
+                    await websocket.send_json({"type": "telemetry", "payload": msg})
         except asyncio.CancelledError:
             pass
             
