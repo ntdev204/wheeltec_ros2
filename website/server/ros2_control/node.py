@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
-from nav_msgs.msg import Odometry
+from nav_msgs.msg import Odometry, OccupancyGrid
 from sensor_msgs.msg import Imu, Image
 from std_msgs.msg import Float32, Bool
 import cv2
@@ -21,6 +21,7 @@ class WheeltecControlNode(Node):
         self.create_subscription(Imu, 'imu/data_raw', self.imu_cb, 10)
         self.create_subscription(Float32, 'PowerVoltage', self.voltage_cb, 10)
         self.create_subscription(Bool, 'robot_charging_flag', self.charging_cb, 10)
+        self.create_subscription(OccupancyGrid, 'map', self.map_cb, 10)
         
         from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
         qos_profile = QoSProfile(
@@ -51,7 +52,8 @@ class WheeltecControlNode(Node):
             "odom": {"x": 0.0, "y": 0.0, "z": 0.0, "v_x": 0.0, "v_y": 0.0, "v_z": 0.0},
             "imu": {"ax": 0.0, "ay": 0.0, "az": 0.0},
             "voltage": 0.0,
-            "charging": False
+            "charging": False,
+            "map": None
         }
         
         # Start command listener thread
@@ -83,6 +85,22 @@ class WheeltecControlNode(Node):
         
     def charging_cb(self, msg):
         self.telemetry_data["charging"] = msg.data
+
+    def map_cb(self, msg):
+        # Update map data for visualization
+        # msg.data is int8[], values -1 (unknown), 0-100 (occupancy)
+        self.telemetry_data["map"] = {
+            "info": {
+                "resolution": msg.info.resolution,
+                "width": msg.info.width,
+                "height": msg.info.height,
+                "origin": {
+                    "x": msg.info.origin.position.x,
+                    "y": msg.info.origin.position.y
+                }
+            },
+            "data": list(msg.data)
+        }
 
     def camera_cb(self, msg):
         # Compress raw image to JPEG on ROS2 side, optimized for RPi 4

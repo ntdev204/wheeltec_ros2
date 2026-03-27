@@ -6,6 +6,15 @@ export interface TelemetryData {
   imu: { ax: number; ay: number; az: number };
   voltage: number;
   charging: boolean;
+  map?: {
+    info: {
+      resolution: number;
+      width: number;
+      height: number;
+      origin: { x: number; y: number };
+    };
+    data: number[];
+  };
 }
 
 interface RobotStateContextType {
