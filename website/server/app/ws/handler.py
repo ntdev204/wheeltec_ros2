@@ -4,7 +4,6 @@ import zmq.asyncio
 import asyncio
 from app.config import settings
 from app.zmq_client import zmq_client
-from app.routes.maps import update_live_map_png
 
 router = APIRouter()
 context = zmq.asyncio.Context()
@@ -14,11 +13,9 @@ async def scada_websocket(websocket: WebSocket):
     await websocket.accept()
     print(f"L2: UI Client Connected. Attempting ZMQ link to Robot @ {settings.robot_ip}")
     
-    # Setup ZMQ SUB sockets for telemetry and camera data from ROS2 layer
     sub_socket = context.socket(zmq.SUB)
-    print(f"L2: Connecting Telemetry SUB to tcp://{settings.robot_ip}:{settings.zmq_telemetry_port}")
     sub_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_telemetry_port}")
-    sub_socket.setsockopt_string(zmq.SUBSCRIBE, "") # Subscribe to all telemetry
+    sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
     
     camera_socket = context.socket(zmq.SUB)
     camera_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_camera_port}")
@@ -28,9 +25,7 @@ async def scada_websocket(websocket: WebSocket):
         try:
             while True:
                 data = await websocket.receive_json()
-                # Handle incoming commands from UI
                 if data.get("type") == "cmd_vel":
-                    # Send to ROS2 layer via REQ
                     await zmq_client.send_command("cmd_vel", data.get("payload"))
                 elif data.get("type") == "nav_goal":
                     await zmq_client.send_command("nav_goal", data.get("payload"))
@@ -45,7 +40,6 @@ async def scada_websocket(websocket: WebSocket):
         try:
             while True:
                 msg = await sub_socket.recv_json()
-                # Forward telemetry (map_info is now included in regular telemetry)
                 await websocket.send_json({"type": "telemetry", "payload": msg})
         except asyncio.CancelledError:
             pass
@@ -54,14 +48,7 @@ async def scada_websocket(websocket: WebSocket):
         try:
             while True:
                 frame = await camera_socket.recv()
-                # Check for MAP: prefix (map PNG from bridge)
-                if frame[:4] == b'MAP:':
-                    png_data = frame[4:]
-                    update_live_map_png(png_data)
-                    print(f"[Handler] Cached map PNG: {len(png_data)} bytes")
-                else:
-                    # Regular JPEG camera frame
-                    await websocket.send_bytes(frame)
+                await websocket.send_bytes(frame)
         except asyncio.CancelledError:
             pass
 
