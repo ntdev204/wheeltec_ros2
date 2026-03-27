@@ -31,6 +31,8 @@ async def scada_websocket(websocket: WebSocket):
                 if data.get("type") == "cmd_vel":
                     # Send to ROS2 layer via REQ
                     await zmq_client.send_command("cmd_vel", data.get("payload"))
+                elif data.get("type") == "nav_goal":
+                    await zmq_client.send_command("nav_goal", data.get("payload"))
                 elif data.get("type") == "slam_control":
                     await zmq_client.send_command("slam_control", data.get("payload"))
         except WebSocketDisconnect:

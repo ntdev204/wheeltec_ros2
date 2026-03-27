@@ -15,6 +15,7 @@ export function RobotMap() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mapYaml, setMapYaml] = useState<MapYaml | null>(null);
   const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
+  const [navGoal, setNavGoal] = useState<{ x: number, y: number } | null>(null);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
@@ -86,7 +87,34 @@ export function RobotMap() {
       ctx.lineWidth = 2;
       ctx.stroke();
     }
-  }, [mapImage, mapYaml, telemetry]);
+
+    // Draw Nav Goal (Flag/Marker) if exists
+    if (navGoal && mapYaml) {
+      const gx_px = (navGoal.x - mapYaml.origin[0]) / mapYaml.resolution;
+      const gy_px = mapImage.height - (navGoal.y - mapYaml.origin[1]) / mapYaml.resolution;
+      const gcx = x + gx_px * scale;
+      const gcy = y + gy_px * scale;
+
+      // Draw Goal Cross
+      ctx.beginPath();
+      const crossSize = 8;
+      ctx.moveTo(gcx - crossSize, gcy - crossSize);
+      ctx.lineTo(gcx + crossSize, gcy + crossSize);
+      ctx.moveTo(gcx + crossSize, gcy - crossSize);
+      ctx.lineTo(gcx - crossSize, gcy + crossSize);
+      ctx.strokeStyle = '#22c55e'; // Green for goal
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Halo effect
+      ctx.beginPath();
+      ctx.arc(gcx, gcy, 12, 0, Math.PI * 2);
+      ctx.strokeStyle = '#22c55e55';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+  }, [mapImage, mapYaml, telemetry, navGoal]);
 
   const handleMapClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !mapImage || !mapYaml) return;
@@ -114,6 +142,7 @@ export function RobotMap() {
 
     // Send Nav Goal
     rosClient.send('nav_goal', { x: mx, y: my });
+    setNavGoal({ x: mx, y: my });
     console.log(`Sending Omni goal: x=${mx}, y=${my}`);
   };
 

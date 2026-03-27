@@ -13,17 +13,17 @@ class WheeltecControlNode(Node):
     def __init__(self, zmq_ports):
         super().__init__('scada_control_node')
         
-        # Publishers
-        self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
-        self.goal_pub = self.create_publisher(PoseStamped, 'goal_pose', 10)
+        # Publishers (Global namespaces for Nav2/Base Driver compatibility)
+        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
         
         # Subscribers
         self.create_subscription(Odometry, 'odom', self.odom_cb, 10)
         self.create_subscription(Imu, 'imu/data_raw', self.imu_cb, 10)
-        self.create_subscription(Float32, 'PowerVoltage', self.voltage_cb, 10)
-        self.create_subscription(Bool, 'robot_charging_flag', self.charging_cb, 10)
-        self.create_subscription(OccupancyGrid, 'map', self.map_cb, 10)
-        self.create_subscription(PoseWithCovarianceStamped, 'amcl_pose', self.amcl_cb, 10)
+        self.create_subscription(Float32, '/PowerVoltage', self.voltage_cb, 10)
+        self.create_subscription(Bool, '/robot_charging_flag', self.charging_cb, 10)
+        self.create_subscription(OccupancyGrid, '/map', self.map_cb, 10)
+        self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.amcl_cb, 10)
         
         from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
         qos_profile = QoSProfile(
