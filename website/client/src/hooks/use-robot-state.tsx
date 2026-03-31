@@ -22,6 +22,8 @@ export interface TelemetryData {
     };
     data: number[];
   };
+  plan?: { x: number; y: number }[];        // Global planned path from Nav2
+  local_plan?: { x: number; y: number }[];  // Local planned path from Nav2
 }
 
 interface RobotStateContextType {

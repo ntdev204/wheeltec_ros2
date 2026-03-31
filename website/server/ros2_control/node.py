@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, PoseStamped
-from nav_msgs.msg import Odometry, OccupancyGrid
+from nav_msgs.msg import Odometry, OccupancyGrid, Path
 from sensor_msgs.msg import Imu, Image
 from std_msgs.msg import Float32, Bool
 import cv2
@@ -40,6 +40,10 @@ class WheeltecControlNode(Node):
         )
         self.create_subscription(OccupancyGrid, '/map', self.map_cb, map_qos)
         
+        # Subscribe to Nav2 planned path and local path
+        self.create_subscription(Path, '/plan', self.plan_cb, 10)
+        self.create_subscription(Path, '/local_plan', self.local_plan_cb, 10)
+        
         qos_profile = QoSProfile(
             reliability=QoSReliabilityPolicy.BEST_EFFORT,
             history=QoSHistoryPolicy.KEEP_LAST,
@@ -69,7 +73,9 @@ class WheeltecControlNode(Node):
             "map_pose": {"x": 0.0, "y": 0.0, "yaw": 0.0},
             "imu": {"ax": 0.0, "ay": 0.0, "az": 0.0},
             "voltage": 0.0,
-            "charging": False
+            "charging": False,
+            "plan": [],        # Global planned path from Nav2 /plan
+            "local_plan": []   # Local planned path from Nav2 /local_plan
         }
         
         # Map data stored separately (too large to send at 10Hz)
@@ -116,6 +122,22 @@ class WheeltecControlNode(Node):
         
     def charging_cb(self, msg):
         self.telemetry_data["charging"] = msg.data
+
+    def plan_cb(self, msg):
+        # Downsample global plan: take every Nth pose to reduce payload size
+        poses = msg.poses
+        step = max(1, len(poses) // 100)  # Max 100 points
+        self.telemetry_data["plan"] = [
+            {"x": p.pose.position.x, "y": p.pose.position.y}
+            for p in poses[::step]
+        ]
+
+    def local_plan_cb(self, msg):
+        # Local plan is smaller, send all points
+        self.telemetry_data["local_plan"] = [
+            {"x": p.pose.position.x, "y": p.pose.position.y}
+            for p in msg.poses
+        ]
 
     def map_cb(self, msg):
         self._last_map_msg = msg  # Lưu lại để resend khi cần
