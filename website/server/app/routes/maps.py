@@ -8,16 +8,21 @@ import io
 
 router = APIRouter(prefix="/api/maps", tags=["maps"])
 
-MAP_PATH_PGM = r'D:\wheeltec_ros2\data\map\WHEELTEC.pgm'
-MAP_PATH_YAML = r'D:\wheeltec_ros2\data\map\WHEELTEC.yaml'
+MAP_PATH_PGM = r'E:\tailieu\UTC\NCKH\wheeltec_ros2\data\map\WHEELTEC.pgm'
+MAP_PATH_YAML = r'E:\tailieu\UTC\NCKH\wheeltec_ros2\data\map\WHEELTEC.yaml'
+LIVE_MAP_PATH = r'E:\tailieu\UTC\NCKH\wheeltec_ros2\data\map\live_map.png'
 
-# Shared cache - PNG bytes from Robot bridge
+# Shared cache - PNG bytes from ZMQ background listener
 live_map_cache = {"png": None}
 
 def update_live_map_png(png_bytes: bytes):
-    """Called from ws/handler.py when a map PNG arrives from the bridge."""
+    """Called from main.py background task when a map PNG arrives from ZMQ."""
     live_map_cache["png"] = png_bytes
-    print(f"[MapCache] Updated PNG cache: {len(png_bytes)} bytes")
+    try:
+        with open(LIVE_MAP_PATH, 'wb') as f:
+            f.write(png_bytes)
+    except Exception as e:
+        print(f"[MapCache] Error saving live map to disk: {e}")
 
 @router.get("/")
 async def list_maps():
@@ -31,9 +36,27 @@ async def active_map():
 
 @router.get("/live/image")
 async def get_live_map_image():
-    if live_map_cache["png"] is None:
-        return Response(status_code=404, content="Live map not yet available")
-    return Response(content=live_map_cache["png"], media_type="image/png")
+    if live_map_cache["png"]:
+        return Response(content=live_map_cache["png"], media_type="image/png")
+    
+    if os.path.exists(LIVE_MAP_PATH):
+        try:
+            with open(LIVE_MAP_PATH, 'rb') as f:
+                return Response(content=f.read(), media_type="image/png")
+        except Exception as e:
+            print(f"[MapCache] Error reading live map: {e}")
+            
+    return Response(status_code=404, content="Live map not available")
+
+@router.post("/live/trigger")
+async def trigger_map_resend():
+    """Gửi lệnh cho ROS2 node gửi lại map PNG qua ZMQ."""
+    from app.zmq_client import zmq_client
+    try:
+        result = await zmq_client.send_command("resend_map", {})
+        return {"status": "ok", "robot_response": result}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
 
 @router.get("/static/image")
 async def get_static_map_image():

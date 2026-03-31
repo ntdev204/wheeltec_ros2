@@ -27,14 +27,19 @@ export function RobotMap() {
 
     const fetchMapImage = async () => {
       try {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.src = `${API_URL}/api/maps/live/image?t=${Date.now()}`;
-        img.onload = () => {
-          if (!cancelled) setMapImage(img);
-        };
+        const res = await fetch(`${API_URL}/api/maps/live/image?t=${Date.now()}`);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const img = new Image();
+          img.onload = () => { if (!cancelled) setMapImage(img); };
+          img.src = url;
+        } else if (res.status === 404) {
+          // Map chưa có trong cache, yêu cầu robot gửi lại
+          fetch(`${API_URL}/api/maps/live/trigger`, { method: 'POST' }).catch(() => {});
+        }
       } catch (e) {
-        // Map not yet available
+        // Network error
       }
     };
 
@@ -44,6 +49,10 @@ export function RobotMap() {
   }, [API_URL]);
 
   // COORDINATE HELPERS
+  // PNG is already flipped (np.flipud on server), so:
+  //   canvas row 0 = map top = highest Y in ROS frame
+  //   px = (rosX - origin.x) / resolution
+  //   py = (height - 1) - (rosY - origin.y) / resolution  → same formula, matches flipped PNG
   const rosToPixel = useCallback((rosX: number, rosY: number) => {
     if (!mapInfo) return { px: 0, py: 0 };
     const px = (rosX - mapInfo.origin.x) / mapInfo.resolution;
@@ -146,13 +155,23 @@ export function RobotMap() {
           </div>
         )}
       </CardHeader>
-      <CardContent className="flex-1 bg-muted/10 relative flex items-center justify-center p-0 overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          onClick={handleMapClick}
-          className="w-full h-full object-contain cursor-crosshair"
-          style={{ imageRendering: 'pixelated' }}
-        />
+      <CardContent className="flex-1 bg-muted/10 relative p-0 overflow-hidden">
+        {/* Wrapper fills the card; canvas is scaled via CSS to fit while keeping aspect ratio */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <canvas
+            ref={canvasRef}
+            onClick={handleMapClick}
+            className="cursor-crosshair"
+            style={{
+              imageRendering: 'pixelated',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              width: 'auto',
+              height: 'auto',
+              display: 'block',
+            }}
+          />
+        </div>
         {!mapImage && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-md">
             <div className="flex flex-col items-center gap-3">
