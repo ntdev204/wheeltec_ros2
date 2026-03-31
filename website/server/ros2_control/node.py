@@ -118,6 +118,7 @@ class WheeltecControlNode(Node):
         self.telemetry_data["charging"] = msg.data
 
     def map_cb(self, msg):
+        self._last_map_msg = msg  # Lưu lại để resend khi cần
         self.get_logger().info(f'Received /map: {msg.info.width}x{msg.info.height}, res={msg.info.resolution}')
         
         w = msg.info.width
@@ -146,6 +147,12 @@ class WheeltecControlNode(Node):
                     img_array[i // w, i % w] = 255
                 else:
                     img_array[i // w, i % w] = max(0, 255 - int(val * 2.55))
+            
+            # ROS OccupancyGrid row-0 = bottom of map (Y_min origin).
+            # Flip vertically so PNG row-0 = top (screen convention).
+            # rosToPixel in frontend uses: py = (height-1) - (rosY - origin.y) / res
+            # which matches this flipped image correctly.
+            img_array = np.flipud(img_array)
             
             _, png_bytes = cv2.imencode('.png', img_array)
             # Send PNG via camera channel with 'MAP:' prefix to distinguish
@@ -233,6 +240,14 @@ class WheeltecControlNode(Node):
                     self.get_logger().info(f"Published nav goal to x={goal.pose.position.x}, y={goal.pose.position.y}")
                     self.cmd_rep.send_json({"status": "goal_sent"})
                     
+                elif action == "resend_map":
+                    # Re-encode và gửi lại map PNG qua ZMQ nếu đã có map
+                    if hasattr(self, '_last_map_msg') and self._last_map_msg is not None:
+                        self.map_cb(self._last_map_msg)
+                        self.cmd_rep.send_json({"status": "map_resent"})
+                    else:
+                        self.cmd_rep.send_json({"status": "no_map_available"})
+
                 elif action == "slam_control":
                     # Pending lifecycle manager implementation
                     self.cmd_rep.send_json({"status": "pending_implementation"})
