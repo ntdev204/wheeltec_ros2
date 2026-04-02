@@ -329,23 +329,10 @@ planner_server:
     use_sim_time: False
     planner_plugins: ["GridBased"]
     GridBased:
-      # SmacPlanner2D: A* trên grid 2D, tốt hơn NavFn vì có cost_travel_multiplier
-      # đẩy path ra giữa hành lang. Phù hợp Omni (không enforce turning radius như Hybrid/Dubin)
-      plugin: "nav2_smac_planner/SmacPlanner2D"
+      plugin: "nav2_navfn_planner/NavfnPlanner"
       tolerance: 0.5
+      use_astar: true           # A* nhanh hơn Dijkstra, đủ tốt cho indoor
       allow_unknown: true
-      use_final_approach_orientation: False
-      max_iterations: 1000000
-      max_on_approach_iterations: 1000
-      max_planning_time: 5.0
-      # cost_travel_multiplier: càng cao → path càng bị đẩy ra xa tường
-      # 3.0 đủ mạnh để path đi giữa hành lang mà không làm planner quá chậm
-      cost_travel_multiplier: 3.0
-      smoother:
-        max_iterations: 1000
-        w_smooth: 0.3
-        w_data: 0.2
-        tolerance: 1.0e-10
 
 planner_server_rclcpp_node:
   ros__parameters:
