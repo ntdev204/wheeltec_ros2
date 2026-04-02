@@ -1,55 +1,67 @@
-# PID Controller Parameters for Wheeltec Mini Mecanum
+# PID Controller V2 — Anti-Oscillation Parameters
 # Tunable at runtime: ros2 param set /pid_controller <param> <value>
+#
+# CHANGES v2:
+# - Added setpoint_alpha: low-pass filter on MPPI output BEFORE PID
+# - Added vy_suppress_threshold: kills small lateral noise
+# - Reduced vy PID gains drastically
+# - Reduced max_vy from 0.35 to 0.15
+# - Reduced max_ay from 0.5 to 0.3
 
 pid_controller:
   ros__parameters:
     # ─── Control Loop ───
-    control_frequency: 50.0  # Hz — 2.5x Nav2 controller_frequency (20Hz) for smooth output
-    cmd_timeout: 0.5         # seconds — stop if no cmd_vel_raw received
+    control_frequency: 50.0  # Hz
+    cmd_timeout: 0.5         # seconds
+
+    # ─── Setpoint Low-Pass Filter (CRITICAL for anti-oscillation) ───
+    # Filters MPPI cmd_vel_raw BEFORE feeding to PID
+    # Lower = more filtering = slower response but less oscillation
+    # 0.2~0.4 recommended for Mecanum with MPPI
+    setpoint_alpha: 0.25
+
+    # ─── Lateral Velocity Suppression ───
+    # MPPI Omni model samples small vy as noise → causes zig-zag
+    # Commands below threshold are zeroed (vy) or dampened (wz)
+    vy_suppress_threshold: 0.04   # m/s — vy below this → forced to 0
+    wz_suppress_threshold: 0.05   # rad/s — wz below this → reduced 70%
 
     # ─── PID Gains: Linear X (forward/backward) ───
-    # Start conservative. Increase kp if robot responds sluggishly.
-    # Increase ki if there's steady-state error. Increase kd if oscillating.
-    vx_kp: 0.8
-    vx_ki: 0.05
+    vx_kp: 0.6
+    vx_ki: 0.03
     vx_kd: 0.02
-    vx_max_integral: 0.3    # Anti-windup clamp
-    vx_deadband: 0.01       # Ignore error < 0.01 m/s
+    vx_max_integral: 0.2
+    vx_deadband: 0.01
 
-    # ─── PID Gains: Linear Y (strafe, Mecanum) ───
-    # Lower gains than X — strafe is secondary movement
-    vy_kp: 0.8
-    vy_ki: 0.05
-    vy_kd: 0.02
-    vy_max_integral: 0.2
-    vy_deadband: 0.01
+    # ─── PID Gains: Linear Y (strafe) — VERY LOW ───
+    # Lateral PID should barely correct — let suppression handle noise
+    # Only nonzero kp to track intentional strafe commands
+    vy_kp: 0.2
+    vy_ki: 0.0        # No integral — prevents lateral drift accumulation
+    vy_kd: 0.01
+    vy_max_integral: 0.05
+    vy_deadband: 0.03  # Large deadband — ignore small lateral errors
 
     # ─── PID Gains: Angular Z (rotation) ───
-    # Rotation needs tighter control to avoid oscillation
-    wz_kp: 0.6
-    wz_ki: 0.05
+    wz_kp: 0.4
+    wz_ki: 0.02
     wz_kd: 0.03
-    wz_max_integral: 0.5
-    wz_deadband: 0.02       # Ignore error < 0.02 rad/s
+    wz_max_integral: 0.2
+    wz_deadband: 0.03
 
-    # ─── Velocity Limits (safety clamp) ───
-    # Must match or be lower than Nav2 MPPI limits
-    max_vx: 0.5             # m/s
-    max_vy: 0.35            # m/s
-    max_wz: 1.8             # rad/s
+    # ─── Velocity Limits ───
+    max_vx: 0.5       # m/s
+    max_vy: 0.12       # m/s — HARD LIMIT lateral speed (was 0.35)
+    max_wz: 1.5        # rad/s
 
-    # ─── Acceleration Limits (rate limiter) ───
-    # Prevents sudden jumps in cmd_vel → smooth motor response
-    max_ax: 1.5             # m/s^2
-    max_ay: 0.5             # m/s^2
-    max_awz: 1.5            # rad/s^2
+    # ─── Acceleration Limits ───
+    max_ax: 1.0        # m/s^2
+    max_ay: 0.25       # m/s^2 — very slow lateral accel
+    max_awz: 1.0       # rad/s^2
 
-    # ─── EMA Smoothing ───
-    # alpha = 1.0: no smoothing (raw PID output)
-    # alpha = 0.3: heavy smoothing (slow but stable)
-    # Recommended: 0.4~0.6 for Mecanum
-    alpha: 0.5
+    # ─── Output EMA Smoothing ───
+    # Applied AFTER PID output. Lower = smoother but more latency.
+    alpha: 0.35
 
     # ─── Enable/Disable ───
-    # Set to false for passthrough mode (A/B testing)
     enabled: true
