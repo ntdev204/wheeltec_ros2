@@ -10,6 +10,8 @@ from app.ws.handler import router as ws_router
 from app.routes.maps import router as maps_router
 from app.routes.robot import router as robot_router
 from app.routes.analytics import router as analytics_router
+from app.routes.logs import router as logs_router
+from app.services.session_service import SessionService
 
 async def zmq_background_listener():
     """
@@ -37,11 +39,19 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize the SQLite database schema
     await init_db()
     
+    # Start a new session automatically
+    session_id = await SessionService.start_session()
+    print(f"[Main] Started new SCADA session: {session_id}")
+    
     # Start ZMQ background listener for Live Map
     listener_task = asyncio.create_task(zmq_background_listener())
     
     yield
-    # Shutdown logic can go here
+    # Shutdown logic
+    if session_id:
+        await SessionService.end_session(session_id)
+        print(f"[Main] Ended SCADA session: {session_id}")
+        
     listener_task.cancel()
     try:
         await listener_task
@@ -62,6 +72,7 @@ app.include_router(ws_router)
 app.include_router(maps_router)
 app.include_router(robot_router)
 app.include_router(analytics_router)
+app.include_router(logs_router)
 
 @app.get("/api/health")
 async def health_check():
