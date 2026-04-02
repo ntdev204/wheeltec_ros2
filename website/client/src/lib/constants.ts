@@ -7,16 +7,18 @@ export const ROBOT_CONFIG = {
 };
 
 export const KEY_MAPPINGS = {
-  FORWARD: 'w',
-  BACKWARD: 's',
-  LEFT: 'a',  // Strafe Left
-  RIGHT: 'd', // Strafe Right
-  DIAG_FL: 'q',
-  DIAG_FR: 'e',
-  DIAG_BL: 'z',
-  DIAG_BR: 'c',
-  STOP: ' ',
-  SPEED_UP: 'u',
-  SPEED_DOWN: 'i',
-  HOME: 'x',
+  FORWARD: "w",
+  BACKWARD: "s",
+  LEFT: "a",
+  RIGHT: "d",
+  DIAG_FL: "q",
+  DIAG_FR: "e",
+  DIAG_BL: "z",
+  DIAG_BR: "c",
+  ROTATE_LEFT: "r",
+  ROTATE_RIGHT: "t",
+  STOP: " ",
+  SPEED_UP: "u",
+  SPEED_DOWN: "i",
+  HOME: "x",
 };
