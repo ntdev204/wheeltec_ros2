@@ -61,9 +61,16 @@ def generate_launch_description():
     remappings_controller = remappings + [('cmd_vel', 'cmd_vel_raw')]
 
     # Create our own temporary YAML files that include substitutions
+    # Resolve stable BT XML path: only replan when path becomes invalid
+    bt_navigator_dir = get_package_share_directory('nav2_bt_navigator')
+    stable_bt_xml = os.path.join(
+        bt_navigator_dir, 'behavior_trees',
+        'navigate_w_recovery_and_replanning_only_if_path_becomes_invalid.xml')
+
     param_substitutions = {
         'use_sim_time': use_sim_time,
-        'autostart': autostart}
+        'autostart': autostart,
+        'default_nav_to_pose_bt_xml': stable_bt_xml}
 
     configured_params = RewrittenYaml(
             source_file=params_file,

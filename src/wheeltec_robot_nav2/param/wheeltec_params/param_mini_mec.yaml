@@ -62,10 +62,9 @@ bt_navigator:
     odom_topic: /odom_combined
     bt_loop_duration: 10
     default_server_timeout: 20
-    # ─── CRITICAL: Dùng BT chỉ replan khi path bị chặn ───
-    # BT mặc định replan 1Hz liên tục → path thay đổi → robot đổi hướng liên tục
-    # BT này giữ global path CỐ ĐỊNH, chỉ tính lại khi path bị vật cản mới chặn
-    default_nav_to_pose_bt_xml: navigate_w_recovery_and_replanning_only_if_path_becomes_invalid.xml
+    # Giá trị này sẽ được override bởi navigation_launch.py (param_substitutions)
+    # → resolve full path tự động trên mọi máy (RPi4/laptop)
+    default_nav_to_pose_bt_xml: "REPLACED_BY_LAUNCH"
     error_code_names:
     - compute_path_error_code
     - follow_path_error_code
