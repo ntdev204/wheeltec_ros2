@@ -95,124 +95,50 @@ controller_server:
       yaw_goal_tolerance: 0.25
 
     FollowPath:
-      # RotationShimController: xử lý xoay về hướng path trước khi bàn giao MPPI
-      # Chỉ kích hoạt khi lệch góc > 45° (0.785 rad) — tránh xoay liên tục khi đi thẳng
+      # RotationShimController: xoay heading trước khi di chuyển
       plugin: "nav2_rotation_shim_controller::RotationShimController"
-      primary_controller: "nav2_mppi_controller::MPPIController"
+      primary_controller: "nav2_regulated_pure_pursuit_controller/RegulatedPurePursuitController"
       angular_dist_threshold: 0.785   # 45° — chỉ xoay khi lệch lớn
       forward_sampling_distance: 0.5
-      rotate_to_heading_angular_vel: 1.5
-      max_angular_accel: 2.5
+      rotate_to_heading_angular_vel: 1.0
+      max_angular_accel: 2.0
       simulate_ahead_time: 1.0
-      rotate_to_goal_heading: True
+      rotate_to_goal_heading: true
 
-      # --- MPPI core ---
-      time_steps: 56          # horizon = 56 * 0.05s = 2.8s nhìn trước
-      model_dt: 0.05
-      batch_size: 2000
-      iteration_count: 1
+      # ─── Regulated Pure Pursuit Controller ───
+      # Geometric path follower: chọn 1 lookahead point trên path → lái về phía đó
+      # Rất nhẹ CPU, cực kỳ ổn định, không dao động
 
-      # Noise sampling: vy thấp để ưu tiên đi thẳng
-      # Velocity smoother bên ngoài sẽ lọc thêm jitter
-      vx_std: 0.2
-      vy_std: 0.05            # Thấp → ít lateral noise, smoother sẽ lọc phần còn lại
-      wz_std: 0.35
+      # Lookahead: khoảng cách nhìn trước trên path
+      # Xa hơn = mượt hơn nhưng cắt cua | Gần hơn = bám path chặt nhưng giật
+      desired_linear_vel: 0.4         # m/s — tốc độ mong muốn
+      lookahead_dist: 0.6             # m — lookahead cố định
+      min_lookahead_dist: 0.3         # m — lookahead tối thiểu (khi chậm)
+      max_lookahead_dist: 0.9         # m — lookahead tối đa (khi nhanh)
+      lookahead_time: 1.5             # s — lookahead = speed × time (nếu > min/max thì clamp)
+
+      # Approach velocity scaling: giảm tốc khi gần goal
+      use_velocity_scaled_lookahead_dist: true   # Lookahead tỉ lệ tốc độ
+      min_approach_linear_velocity: 0.05          # m/s — tốc độ tối thiểu gần goal
+      approach_velocity_scaling_dist: 0.6         # m — bắt đầu giảm tốc cách goal
+
+      # Regulated: giảm tốc gần vật cản và khi cua gấp
+      use_regulated_linear_velocity_scaling: true  # Giảm tốc gần obstacle
+      use_cost_regulated_linear_velocity_scaling: false
+      regulated_linear_scaling_min_radius: 0.9    # m — bán kính cua nhỏ nhất trước khi giảm tốc
+      regulated_linear_scaling_min_speed: 0.1     # m/s — tốc độ tối thiểu khi cua gấp
 
       # Velocity limits
-      vx_max: 0.5
-      vx_min: -0.35
-      vy_max: 0.25            # Cho phép lateral vừa đủ để tránh vật cản
-      wz_max: 1.8
+      max_angular_accel: 2.0          # rad/s^2
+      min_turning_radius: 0.0         # 0 = cho phép xoay tại chỗ (differential)
 
-      # Acceleration limits — giữ đủ mạnh để MPPI có thể phản ứng nhanh
-      ax_max: 1.5
-      ax_min: -1.5
-      ay_max: 0.4
-      az_max: 1.5
-
-      prune_distance: 1.5
-      enforce_path_inversion: false
+      # Path following
       transform_tolerance: 0.1
-      temperature: 0.25       # Vừa phải — không quá random, không quá deterministic
-      gamma: 0.015
-      motion_model: "Omni"
-      visualize: false
-
-      TrajectoryVisualizer:
-        trajectory_step: 5
-        time_step: 3
-
-      # --- MPPI Critics ---
-      # Không dùng TwirlingCritic: robot Omni cần tự do xoay để thoát góc hẹp
-      critics: ["ConstraintCritic", "ObstaclesCritic", "GoalCritic", "GoalAngleCritic",
-                "PathAlignCritic", "PathFollowCritic", "PathAngleCritic", "PreferForwardCritic"]
-
-      ConstraintCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 4.0
-
-      # ObstaclesCritic: tránh va chạm — KHÔNG bật consider_footprint
-      # Lý do: consider_footprint=true + hành lang hẹp → gần như mọi trajectory bị reject
-      # → robot vùng vẫy loạn. Thay vào đó dùng inflation_radius đủ lớn phủ diagonal
-      ObstaclesCritic:
-        enabled: true
-        cost_power: 1
-        repulsion_weight: 3.0         # Đẩy robot xa tường chủ động
-        critical_weight: 35.0         # Phạt nặng khi sắp va chạm
-        consider_footprint: false      # Giữ false — dùng inflation_radius bù
-        collision_cost: 10000.0
-        collision_margin_distance: 0.10  # 10cm margin từ inflation boundary — đủ an toàn
-        near_goal_distance: 0.4
-        cost_scaling_factor: 5.0
-        inflation_radius: 0.20        # Phủ diagonal footprint: sqrt(0.135²+0.111²)=0.175m + buffer
-
-      GoalCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 15.0
-        threshold_to_consider: 1.4
-
-      GoalAngleCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 3.0
-        threshold_to_consider: 0.5
-
-      # PathAlignCritic: bám path global — tăng nhẹ từ 18 → 20
-      PathAlignCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 20.0
-        max_path_occupancy_ratio: 0.07
-        trajectory_point_step: 4
-        threshold_to_consider: 0.5
-        offset_from_furthest: 20
-        use_path_orientations: false
-
-      PathFollowCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 15.0
-        offset_from_furthest: 5
-        threshold_to_consider: 1.4
-
-      # PathAngleCritic mode=1: phạt trajectory lệch hướng
-      PathAngleCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 6.0              # Tăng nhẹ từ 5
-        offset_from_furthest: 4
-        threshold_to_consider: 0.5
-        max_angle_to_furthest: 1.0
-        mode: 1
-
-      # PreferForwardCritic
-      PreferForwardCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 3.0              # Tăng nhẹ từ 2.5
-        threshold_to_consider: 0.5
+      use_rotate_to_heading: true     # Xoay tại chỗ nếu heading lệch quá nhiều
+      rotate_to_heading_min_angle: 0.785          # 45° — threshold xoay tại chỗ
+      rotate_to_heading_angular_vel: 1.0          # rad/s
+      max_robot_pose_search_dist: 10.0            # m — tìm vị trí gần nhất trên path
+      use_interpolation: true
 
 controller_server_rclcpp_node:
   ros__parameters:

@@ -15,10 +15,6 @@ def generate_launch_description():
     wheeltec_nav_dir = get_package_share_directory('wheeltec_nav2')
     wheeltec_nav_launchr = os.path.join(wheeltec_nav_dir, 'launch')
 
-    # PID Controller package
-    pid_dir = get_package_share_directory('wheeltec_pid_controller')
-    pid_params = os.path.join(pid_dir, 'config', 'pid_params.yaml')
-
     map_dir = os.path.join(wheeltec_nav_dir, 'map')
     map_file = LaunchConfiguration('map', default=os.path.join(
         map_dir, 'WHEELTEC.yaml'))
@@ -65,22 +61,6 @@ def generate_launch_description():
                 'map': map_file,
                 'use_sim_time': use_sim_time,
                 'params_file': param_file}.items(),
-        ),
-
-        # ─── Velocity Smoother ───
-        # Sits between Nav2 controller_server (cmd_vel_raw) and STM32 base driver (cmd_vel)
-        # Pure signal processing: low-pass filter + rate limiter. NO odom feedback.
-        # Data flow: Nav2 MPPI → /cmd_vel_raw → Smoother → /cmd_vel → STM32
-        Node(
-            package='wheeltec_pid_controller',
-            executable='pid_controller_node',
-            name='pid_controller',
-            parameters=[pid_params],
-            remappings=[
-                ('cmd_vel_raw', '/cmd_vel_raw'),
-                ('cmd_vel', '/cmd_vel'),
-            ],
-            output='screen',
         ),
 
     ])
