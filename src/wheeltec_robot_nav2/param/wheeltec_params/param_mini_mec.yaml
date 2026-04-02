@@ -97,8 +97,8 @@ controller_server:
     FollowPath:
       # RotationShimController: xoay heading trước khi di chuyển
       plugin: "nav2_rotation_shim_controller::RotationShimController"
-      primary_controller: "nav2_regulated_pure_pursuit_controller/RegulatedPurePursuitController"
-      angular_dist_threshold: 0.785   # 45° — chỉ xoay khi lệch lớn
+      primary_controller: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
+      angular_dist_threshold: 0.785
       forward_sampling_distance: 0.5
       rotate_to_heading_angular_vel: 1.0
       max_angular_accel: 2.0
@@ -106,38 +106,30 @@ controller_server:
       rotate_to_goal_heading: true
 
       # ─── Regulated Pure Pursuit Controller ───
-      # Geometric path follower: chọn 1 lookahead point trên path → lái về phía đó
-      # Rất nhẹ CPU, cực kỳ ổn định, không dao động
+      desired_linear_vel: 0.4
+      lookahead_dist: 0.6
+      min_lookahead_dist: 0.3
+      max_lookahead_dist: 0.9
+      lookahead_time: 1.5
 
-      # Lookahead: khoảng cách nhìn trước trên path
-      # Xa hơn = mượt hơn nhưng cắt cua | Gần hơn = bám path chặt nhưng giật
-      desired_linear_vel: 0.4         # m/s — tốc độ mong muốn
-      lookahead_dist: 0.6             # m — lookahead cố định
-      min_lookahead_dist: 0.3         # m — lookahead tối thiểu (khi chậm)
-      max_lookahead_dist: 0.9         # m — lookahead tối đa (khi nhanh)
-      lookahead_time: 1.5             # s — lookahead = speed × time (nếu > min/max thì clamp)
+      # Approach: giảm tốc khi gần goal
+      use_velocity_scaled_lookahead_dist: true
+      min_approach_linear_velocity: 0.05
+      approach_velocity_scaling_dist: 0.6
 
-      # Approach velocity scaling: giảm tốc khi gần goal
-      use_velocity_scaled_lookahead_dist: true   # Lookahead tỉ lệ tốc độ
-      min_approach_linear_velocity: 0.05          # m/s — tốc độ tối thiểu gần goal
-      approach_velocity_scaling_dist: 0.6         # m — bắt đầu giảm tốc cách goal
-
-      # Regulated: giảm tốc gần vật cản và khi cua gấp
-      use_regulated_linear_velocity_scaling: true  # Giảm tốc gần obstacle
+      # Regulated: giảm tốc gần obstacle / cua gấp
+      use_regulated_linear_velocity_scaling: true
       use_cost_regulated_linear_velocity_scaling: false
-      regulated_linear_scaling_min_radius: 0.9    # m — bán kính cua nhỏ nhất trước khi giảm tốc
-      regulated_linear_scaling_min_speed: 0.1     # m/s — tốc độ tối thiểu khi cua gấp
+      regulated_linear_scaling_min_radius: 0.9
+      regulated_linear_scaling_min_speed: 0.1
 
-      # Velocity limits
-      max_angular_accel: 2.0          # rad/s^2
-      min_turning_radius: 0.0         # 0 = cho phép xoay tại chỗ (differential)
+      # Turning
+      min_turning_radius: 0.0
 
       # Path following
       transform_tolerance: 0.1
-      use_rotate_to_heading: true     # Xoay tại chỗ nếu heading lệch quá nhiều
-      rotate_to_heading_min_angle: 0.785          # 45° — threshold xoay tại chỗ
-      rotate_to_heading_angular_vel: 1.0          # rad/s
-      max_robot_pose_search_dist: 10.0            # m — tìm vị trí gần nhất trên path
+      use_rotate_to_heading: false    # false — RotationShimController đang xử lý việc xoay
+      max_robot_pose_search_dist: 10.0
       use_interpolation: true
 
 controller_server_rclcpp_node:
