@@ -4,6 +4,7 @@ import zmq.asyncio
 import asyncio
 from app.config import settings
 from app.zmq_client import zmq_client
+from app.routes.maps import update_live_map_png
 
 router = APIRouter()
 context = zmq.asyncio.Context()
@@ -53,8 +54,11 @@ async def scada_websocket(websocket: WebSocket):
         try:
             while True:
                 frame = await camera_socket.recv()
-                # Chỉ forward JPEG camera frame (MAP: prefix không còn dùng)
-                if frame[:4] != b'MAP:':
+                if frame[:4] == b'MAP:':
+                    # Map PNG update — store for the REST endpoint
+                    update_live_map_png(frame[4:])
+                else:
+                    # JPEG camera frame — forward as binary to UI
                     await websocket.send_bytes(frame)
         except asyncio.CancelledError:
             pass

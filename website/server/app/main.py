@@ -7,25 +7,30 @@ import zmq.asyncio
 from app.config import settings
 from app.db.models import init_db
 from app.ws.handler import router as ws_router
-from app.routes.maps import router as maps_router, update_live_map_png
+from app.routes.maps import router as maps_router
 from app.routes.robot import router as robot_router
 from app.routes.analytics import router as analytics_router
 
 async def zmq_background_listener():
+    """
+    Listens on the telemetry port for map PNG updates (MAP: prefix).
+    Camera frames (JPEG) are forwarded directly by ws/handler.py to avoid
+    ZMQ round-robin splitting frames between two SUB sockets on the same port.
+    """
     context = zmq.asyncio.Context()
-    camera_socket = context.socket(zmq.SUB)
-    camera_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_camera_port}")
-    camera_socket.setsockopt_string(zmq.SUBSCRIBE, "")
-    print(f"[Main] ZMQ Background Listener connected to udp/tcp://{settings.robot_ip}:{settings.zmq_camera_port}")
+    telemetry_socket = context.socket(zmq.SUB)
+    telemetry_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_telemetry_port}")
+    telemetry_socket.setsockopt_string(zmq.SUBSCRIBE, "")
+    print(f"[Main] ZMQ Background Listener connected to tcp://{settings.robot_ip}:{settings.zmq_telemetry_port}")
     try:
         while True:
-            frame = await camera_socket.recv()
-            if frame.startswith(b'MAP:'):
-                update_live_map_png(frame[4:])
+            # Telemetry port sends JSON only, no MAP frames here.
+            # MAP PNG frames come via camera port, handled exclusively by ws/handler.py.
+            await asyncio.sleep(1)
     except asyncio.CancelledError:
         print("[Main] ZMQ Background Listener shutting down.")
     finally:
-        camera_socket.close()
+        telemetry_socket.close()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
