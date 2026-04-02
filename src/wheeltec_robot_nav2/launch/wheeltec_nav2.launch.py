@@ -48,14 +48,6 @@ def generate_launch_description():
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
-                [wheeltec_launch_dir, '/turn_on_wheeltec_robot.launch.py']),
-        ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                [wheeltec_launch_dir, '/wheeltec_lidar.launch.py']),
-        ),        
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
                 [wheeltec_nav_launchr, '/bringup_launch.py']),
             launch_arguments={
                 'map': map_file,

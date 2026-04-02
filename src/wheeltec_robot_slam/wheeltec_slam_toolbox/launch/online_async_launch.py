@@ -13,14 +13,7 @@ def generate_launch_description():
     bringup_dir = get_package_share_directory('turn_on_wheeltec_robot')
     launch_dir = os.path.join(bringup_dir, 'launch')
 
-    wheeltec_robot = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'turn_on_wheeltec_robot.launch.py')),
-    )
-    wheeltec_lidar = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'wheeltec_lidar.launch.py')),
-    )
     return LaunchDescription([
-        wheeltec_robot,wheeltec_lidar,
         launch_ros.actions.Node(
         	parameters=[
         		get_package_share_directory("wheeltec_slam_toolbox") + '/config/mapper_params_online_async.yaml'
