@@ -1,0 +1,55 @@
+# PID Controller Parameters for Wheeltec Mini Mecanum
+# Tunable at runtime: ros2 param set /pid_controller <param> <value>
+
+pid_controller:
+  ros__parameters:
+    # ─── Control Loop ───
+    control_frequency: 50.0  # Hz — 2.5x Nav2 controller_frequency (20Hz) for smooth output
+    cmd_timeout: 0.5         # seconds — stop if no cmd_vel_raw received
+
+    # ─── PID Gains: Linear X (forward/backward) ───
+    # Start conservative. Increase kp if robot responds sluggishly.
+    # Increase ki if there's steady-state error. Increase kd if oscillating.
+    vx_kp: 0.8
+    vx_ki: 0.05
+    vx_kd: 0.02
+    vx_max_integral: 0.3    # Anti-windup clamp
+    vx_deadband: 0.01       # Ignore error < 0.01 m/s
+
+    # ─── PID Gains: Linear Y (strafe, Mecanum) ───
+    # Lower gains than X — strafe is secondary movement
+    vy_kp: 0.8
+    vy_ki: 0.05
+    vy_kd: 0.02
+    vy_max_integral: 0.2
+    vy_deadband: 0.01
+
+    # ─── PID Gains: Angular Z (rotation) ───
+    # Rotation needs tighter control to avoid oscillation
+    wz_kp: 0.6
+    wz_ki: 0.05
+    wz_kd: 0.03
+    wz_max_integral: 0.5
+    wz_deadband: 0.02       # Ignore error < 0.02 rad/s
+
+    # ─── Velocity Limits (safety clamp) ───
+    # Must match or be lower than Nav2 MPPI limits
+    max_vx: 0.5             # m/s
+    max_vy: 0.35            # m/s
+    max_wz: 1.8             # rad/s
+
+    # ─── Acceleration Limits (rate limiter) ───
+    # Prevents sudden jumps in cmd_vel → smooth motor response
+    max_ax: 1.5             # m/s^2
+    max_ay: 0.5             # m/s^2
+    max_awz: 1.5            # rad/s^2
+
+    # ─── EMA Smoothing ───
+    # alpha = 1.0: no smoothing (raw PID output)
+    # alpha = 0.3: heavy smoothing (slow but stable)
+    # Recommended: 0.4~0.6 for Mecanum
+    alpha: 0.5
+
+    # ─── Enable/Disable ───
+    # Set to false for passthrough mode (A/B testing)
+    enabled: true

@@ -56,6 +56,10 @@ def generate_launch_description():
     remappings = [('/tf', 'tf'),
                   ('/tf_static', 'tf_static')]
 
+    # PID controller integration: Nav2 controller_server publishes to cmd_vel_raw
+    # PID node subscribes cmd_vel_raw, outputs cmd_vel to base driver
+    remappings_controller = remappings + [('cmd_vel', 'cmd_vel_raw')]
+
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {
         'use_sim_time': use_sim_time,
@@ -116,7 +120,7 @@ def generate_launch_description():
                 respawn_delay=2.0,
                 parameters=[configured_params],
                 arguments=['--ros-args', '--log-level', log_level],
-                remappings=remappings),
+                remappings=remappings_controller),
             Node(
                 package='nav2_smoother',
                 executable='smoother_server',
@@ -189,7 +193,7 @@ def generate_launch_description():
                 plugin='nav2_controller::ControllerServer',
                 name='controller_server',
                 parameters=[configured_params],
-                remappings=remappings),
+                remappings=remappings_controller),
             ComposableNode(
                 package='nav2_smoother',
                 plugin='nav2_smoother::SmootherServer',
