@@ -129,17 +129,18 @@ controller_server:
       model_dt: 0.05    #每个时间步长的时间步长的长度dt（以秒为单位）是预测范围
       batch_size: 2000  #在给定迭代中从当前最佳控制序列中随机采样的候选轨迹的数量
       vx_std: 0.2       #Vx 的抽样标准差
-      # vy_std: 0.2       #Vy 的抽样标准差 (cũ)
-      vy_std: 0.1       # Giảm variance sampling vy, ít sinh ra quỹ đạo chéo hơn
+      # vy_std: 0.1 (cũ)
+      vy_std: 0.05      # Giảm thêm mẫu ngang — 0.1 vẫn còn sinh nhiều quỹ đạo chéo
       wz_std: 0.4       #Wz（角速度）的抽样标准差
       vx_max: 0.5       #目标最大前进速度（米/秒）
       vx_min: -0.5      #目标最大反向速度（米/秒）
-      vy_max: 0.5       #如果使用Omni运动模型，目标最大横向速度（m/s）
+      # vy_max: 0.5 (cũ)
+      vy_max: 0.3       # Giới hạn tốc độ ngang tối đa, robot không thể cắt góc nhanh
       wz_max: 2.0       #最大旋转速度（弧度/秒）
       ax_max: 1.5
       ax_min: -1.5
-      # ay_max: 0.5 (cũ)
-      ay_max: 0.2       # Giảm gia tốc ngang, hạn chế robot tăng tốc sang ngang đột ngột
+      # ay_max: 0.2 (cũ)
+      ay_max: 0.1       # Gia tốc ngang chậm, drift đột ngột
       az_max: 1.5
       iteration_count: 1 #迭代次数
       prune_distance: 1.5 #路径上距离机器人最近点的距离（米）
@@ -159,8 +160,8 @@ controller_server:
       
       TwirlingCritic:
         enabled: true
-        # twirling_cost_weight: 10.0 (cũ)
-        twirling_cost_weight: 25.0
+        # twirling_cost_weight: 25.0 (cũ)
+        twirling_cost_weight: 35.0 # 25.0 vẫn chưa đủ, cần tăng lên 35.0 để phạt mạnh drift xoay
         
       ConstraintCritic: #修复超出设定的动态或运动学约束的轨迹
         enabled: true
@@ -185,14 +186,15 @@ controller_server:
         # repulsion_weight: 1.5 (cũ)
         repulsion_weight: 3.0 # Tăng lực đẩy khỏi vật cản
         critical_weight: 30.0 #应用于临界碰撞的权重，用于collision_margin_distance防止近距离碰撞
-        consider_footprint: false #是否使用点成本（如果机器人是圆形的或者计算能力低）或计算 SE2 足迹成本
+        # consider_footprint: false (cũ)
+        consider_footprint: true # tính collision theo hình dạng thực, phát hiện góc robot quét vào tường khi đi chéo
         collision_cost: 10000.0 #应用于轨迹中真实碰撞的成本。
-        # collision_margin_distance: 0.3 (cũ)
-        collision_margin_distance: 0.4 # MPPI bắt đầu phạt sớm hơn
+        # collision_margin_distance: 0.4 (cũ)
+        collision_margin_distance: 0.2 # 0.4 m quá lớn cho hành lang hẹp — MPPI reject quỹ đạo hợp lệ, robot bị stuck
         near_goal_distance: 0.4 #靠近目标的距离（米）停止应用优先障碍物项，以允许机器人平稳地收敛到靠近障碍物的目标姿势，0.5 --> 0.6 -->0.3(Tues) 
         cost_scaling_factor: 5.0
-        # inflation_radius: 0.3 (cũ)
-        inflation_radius: 0.45  # Đồng bộ với costmap inflation
+        # inflation_radius: 0.45 (cũ)
+        inflation_radius: 0.20  # Sau khi bật consider_footprint, không cần buffer bù nữa — giảm để hành lang hẹp khả thi
 
       PreferForwardCritic: #激励机器人前进，而不是后退
         enabled: true
@@ -210,8 +212,8 @@ controller_server:
         trajectory_point_step: 4
         threshold_to_consider: 0.5 #机器人与目标之间的距离阈值，阈值符合则停止考虑路径对齐并允许目标批评家接管。
         offset_from_furthest: 20 #最远偏移量
-        # use_path_orientations: false #是否在路径对齐中考虑路径的方向 (cũ)
-        use_path_orientations: true   # MPPI xét hướng robot khi bám path
+        # use_path_orientations: true (cũ)
+        use_path_orientations: false  # true đang gây xung đột với Omni model — cần tắt lại
 
       PathAngleCritic: #路径角度评论，机器人在因累积角度误差较大而需要时进行急转弯。
         enabled: true
@@ -254,10 +256,10 @@ local_costmap:
       plugins: ["voxel_layer","inflation_layer"] #插件包括:{“体素层”，“膨胀层”}
       inflation_layer:                             #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件。
-        # cost_scaling_factor: 3.0 (cũ)
-        cost_scaling_factor: 3.5                   # Tăng nhẹ để vùng ảnh hưởng đều hơn
-        # inflation_radius: 0.3 (cũ)
-        inflation_radius: 0.45                    # Vùng phình rộng hơn → planner tránh xa hơn
+        # cost_scaling_factor: 3.5 (cũ)
+        cost_scaling_factor: 5.0                   # Decay nhanh hơn, vùng cost cao hẹp lại — MPPI tìm được đường trong hành lang
+        # inflation_radius: 0.45 (cũ)
+        inflation_radius: 0.22                    # 0.45 m × 2 bên = 0.9 m — blocked hành lang 0.8 m; giảm xuống 0.22 m để vừa đủ
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"      #体素层插件。
         enabled: True
@@ -319,10 +321,10 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer: #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件
-        # cost_scaling_factor: 10.0 (cũ)
-        cost_scaling_factor: 5.0                   # Giảm tốc độ decay → vùng cost cao kéo dài xa hơn, robot đi vòng sớm hơn
-        # inflation_radius: 0.3 (cũ)
-        inflation_radius: 0.45                    # Path global cũng né xa hơn
+        # cost_scaling_factor: 5.0 (cũ)
+        cost_scaling_factor: 7.0                   # Tăng decay cho global để path bám giữa hành lang chứ không sát tường
+        # inflation_radius: 0.45 (cũ)
+        inflation_radius: 0.25                    # Path global không bị blocked trong hành lang, nhưng vẫn né xa tường 25 cm
       always_send_full_costmap: True               #是否每次更新时都发送完整的成本图，而不是更新
   global_costmap_client:
     ros__parameters:
@@ -351,11 +353,18 @@ planner_server: #规划器服务器参数
     use_sim_time: False
     planner_plugins: ["GridBased"] #规划器插件类型，需要与BT Tree文件匹配
     GridBased:
-      plugin: "nav2_navfn_planner/NavfnPlanner"
+      plugin: "nav2_smac_planner/SmacPlanner2D" # NavfnPlanner sinh path 8-hướng → có đoạn 45°. SmacPlanner2D + smoother tích hợp tạo path mượt hơn
       tolerance: 0.5
-      use_astar: false
       allow_unknown: true
       use_final_approach_orientation: False
+      max_iterations: 1000000
+      max_planning_time: 5.0
+      cost_travel_multiplier: 2.0
+      smoother:
+        max_iterations: 1000
+        w_smooth: 0.3
+        w_data: 0.2
+        tolerance: 1.0e-10
 
 
 planner_server_rclcpp_node:
