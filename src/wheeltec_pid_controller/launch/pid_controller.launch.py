@@ -16,7 +16,6 @@ def generate_launch_description():
             parameters=[pid_params],
             remappings=[
                 ('cmd_vel_raw', '/cmd_vel_raw'),
-                ('odom_combined', '/odom_combined'),
                 ('cmd_vel', '/cmd_vel'),
             ],
             output='screen',

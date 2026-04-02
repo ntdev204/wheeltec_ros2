@@ -1,67 +1,41 @@
-# PID Controller V2 — Anti-Oscillation Parameters
+# Velocity Smoother — NO PID, NO odom feedback
+# Pure signal processing: low-pass → lateral suppress → rate limit
 # Tunable at runtime: ros2 param set /pid_controller <param> <value>
-#
-# CHANGES v2:
-# - Added setpoint_alpha: low-pass filter on MPPI output BEFORE PID
-# - Added vy_suppress_threshold: kills small lateral noise
-# - Reduced vy PID gains drastically
-# - Reduced max_vy from 0.35 to 0.15
-# - Reduced max_ay from 0.5 to 0.3
 
 pid_controller:
   ros__parameters:
     # ─── Control Loop ───
-    control_frequency: 50.0  # Hz
-    cmd_timeout: 0.5         # seconds
+    control_frequency: 50.0  # Hz — output smoothing rate
+    cmd_timeout: 0.5         # seconds — stop if no cmd_vel_raw
 
-    # ─── Setpoint Low-Pass Filter (CRITICAL for anti-oscillation) ───
-    # Filters MPPI cmd_vel_raw BEFORE feeding to PID
-    # Lower = more filtering = slower response but less oscillation
-    # 0.2~0.4 recommended for Mecanum with MPPI
-    setpoint_alpha: 0.25
+    # ─── Low-Pass Filter ───
+    # Filters MPPI cmd_vel_raw to remove jitter
+    # 0.2 = very smooth (slow response)
+    # 0.5 = moderate
+    # 1.0 = no filtering (raw passthrough)
+    lowpass_alpha: 0.35
 
-    # ─── Lateral Velocity Suppression ───
-    # MPPI Omni model samples small vy as noise → causes zig-zag
-    # Commands below threshold are zeroed (vy) or dampened (wz)
-    vy_suppress_threshold: 0.04   # m/s — vy below this → forced to 0
-    wz_suppress_threshold: 0.05   # rad/s — wz below this → reduced 70%
-
-    # ─── PID Gains: Linear X (forward/backward) ───
-    vx_kp: 0.6
-    vx_ki: 0.03
-    vx_kd: 0.02
-    vx_max_integral: 0.2
-    vx_deadband: 0.01
-
-    # ─── PID Gains: Linear Y (strafe) — VERY LOW ───
-    # Lateral PID should barely correct — let suppression handle noise
-    # Only nonzero kp to track intentional strafe commands
-    vy_kp: 0.2
-    vy_ki: 0.0        # No integral — prevents lateral drift accumulation
-    vy_kd: 0.01
-    vy_max_integral: 0.05
-    vy_deadband: 0.03  # Large deadband — ignore small lateral errors
-
-    # ─── PID Gains: Angular Z (rotation) ───
-    wz_kp: 0.4
-    wz_ki: 0.02
-    wz_kd: 0.03
-    wz_max_integral: 0.2
-    wz_deadband: 0.03
+    # ─── Lateral Suppression ───
+    # MPPI Omni samples small vy as noise → kill below threshold
+    vy_suppress_threshold: 0.03   # m/s
 
     # ─── Velocity Limits ───
     max_vx: 0.5       # m/s
-    max_vy: 0.12       # m/s — HARD LIMIT lateral speed (was 0.35)
-    max_wz: 1.5        # rad/s
+    max_vy: 0.20      # m/s — limit lateral speed
+    max_wz: 1.5       # rad/s
 
-    # ─── Acceleration Limits ───
-    max_ax: 1.0        # m/s^2
-    max_ay: 0.25       # m/s^2 — very slow lateral accel
-    max_awz: 1.0       # rad/s^2
+    # ─── Acceleration Limits (rate limiter) ───
+    # Primary smoothing mechanism — limits velocity change rate
+    # Lower = smoother but slower response
+    max_ax: 0.8        # m/s^2 — forward/backward
+    max_ay: 0.3        # m/s^2 — lateral (very slow)
+    max_awz: 0.8       # rad/s^2 — rotational
 
-    # ─── Output EMA Smoothing ───
-    # Applied AFTER PID output. Lower = smoother but more latency.
-    alpha: 0.35
+    # ─── Deadband per axis ───
+    vx_deadband: 0.005  # m/s — ignore tiny vx
+    vy_deadband: 0.02   # m/s — ignore tiny vy
+    wz_deadband: 0.02   # rad/s — ignore tiny wz
 
     # ─── Enable/Disable ───
+    # false = passthrough (for A/B testing)
     enabled: true

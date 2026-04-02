@@ -8,7 +8,6 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(nav_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 
@@ -21,7 +20,6 @@ add_executable(pid_controller_node
 ament_target_dependencies(pid_controller_node
   rclcpp
   geometry_msgs
-  nav_msgs
   std_msgs
   rcl_interfaces
 )

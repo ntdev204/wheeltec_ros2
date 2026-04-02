@@ -67,9 +67,10 @@ def generate_launch_description():
                 'params_file': param_file}.items(),
         ),
 
-        # ─── PID Controller ───
+        # ─── Velocity Smoother ───
         # Sits between Nav2 controller_server (cmd_vel_raw) and STM32 base driver (cmd_vel)
-        # Data flow: Nav2 MPPI → /cmd_vel_raw → PID Node → /cmd_vel → STM32
+        # Pure signal processing: low-pass filter + rate limiter. NO odom feedback.
+        # Data flow: Nav2 MPPI → /cmd_vel_raw → Smoother → /cmd_vel → STM32
         Node(
             package='wheeltec_pid_controller',
             executable='pid_controller_node',
@@ -77,7 +78,6 @@ def generate_launch_description():
             parameters=[pid_params],
             remappings=[
                 ('cmd_vel_raw', '/cmd_vel_raw'),
-                ('odom_combined', '/odom_combined'),
                 ('cmd_vel', '/cmd_vel'),
             ],
             output='screen',

@@ -1,87 +1,71 @@
-#ifndef WHEELTEC_PID_CONTROLLER__PID_CONTROLLER_HPP_
-#define WHEELTEC_PID_CONTROLLER__PID_CONTROLLER_HPP_
+#ifndef WHEELTEC_PID_CONTROLLER__VELOCITY_SMOOTHER_HPP_
+#define WHEELTEC_PID_CONTROLLER__VELOCITY_SMOOTHER_HPP_
 
 #include <algorithm>
 #include <cmath>
 
-namespace wheeltec_pid
+namespace wheeltec_smoother
 {
 
-struct PidGains
-{
-  double kp = 1.0;
-  double ki = 0.1;
-  double kd = 0.05;
-  double max_integral = 0.3;
-  double deadband = 0.01;
-};
-
-class PidAxis
+/**
+ * Single-axis velocity smoother: low-pass filter + rate limiter.
+ * NO feedback loop — does not fight with MPPI.
+ */
+class AxisSmoother
 {
 public:
-  PidAxis() = default;
+  AxisSmoother() = default;
 
-  void set_gains(const PidGains & g)
+  void configure(double max_vel, double max_accel, double deadband)
   {
-    gains_ = g;
-    reset();
+    max_vel_ = max_vel;
+    max_accel_ = max_accel;
+    deadband_ = deadband;
+    current_ = 0.0;
   }
 
-  void reset()
-  {
-    integral_ = 0.0;
-    prev_error_ = 0.0;
-    first_update_ = true;
-  }
+  void reset() { current_ = 0.0; }
 
   /**
-   * @brief Compute PID output
-   * @param setpoint  desired velocity (from Nav2 cmd_vel_raw)
-   * @param feedback  actual velocity (from odom)
-   * @param dt        time step in seconds
-   * @return corrected velocity command
+   * @brief Smooth a velocity command
+   * @param target  raw velocity from MPPI
+   * @param dt      time step in seconds
+   * @return smoothed velocity
    */
-  double compute(double setpoint, double feedback, double dt)
+  double smooth(double target, double dt)
   {
-    if (dt <= 0.0) {
-      return setpoint;
+    if (dt <= 0.0) return current_;
+
+    // Deadband: zero small commands
+    if (std::fabs(target) < deadband_) {
+      target = 0.0;
     }
 
-    double error = setpoint - feedback;
+    // Velocity clamp
+    target = std::clamp(target, -max_vel_, max_vel_);
 
-    // Deadband: ignore tiny errors
-    if (std::fabs(error) < gains_.deadband) {
-      error = 0.0;
+    // Rate limiting (acceleration/deceleration)
+    double max_change = max_accel_ * dt;
+    double diff = target - current_;
+
+    if (std::fabs(diff) > max_change) {
+      current_ += std::copysign(max_change, diff);
+    } else {
+      current_ = target;
     }
 
-    // Proportional
-    double p_term = gains_.kp * error;
-
-    // Integral with anti-windup clamping
-    integral_ += error * dt;
-    integral_ = std::clamp(integral_, -gains_.max_integral, gains_.max_integral);
-    double i_term = gains_.ki * integral_;
-
-    // Derivative (skip first update to avoid spike)
-    double d_term = 0.0;
-    if (!first_update_) {
-      double derivative = (error - prev_error_) / dt;
-      d_term = gains_.kd * derivative;
-    }
-    first_update_ = false;
-    prev_error_ = error;
-
-    // PID output = setpoint (feedforward) + correction
-    return setpoint + p_term + i_term + d_term;
+    return current_;
   }
 
+  double get_current() const { return current_; }
+
 private:
-  PidGains gains_;
-  double integral_ = 0.0;
-  double prev_error_ = 0.0;
-  bool first_update_ = true;
+  double max_vel_ = 1.0;
+  double max_accel_ = 1.0;
+  double deadband_ = 0.01;
+  double current_ = 0.0;
 };
 
-}  // namespace wheeltec_pid
+}  // namespace wheeltec_smoother
 
-#endif  // WHEELTEC_PID_CONTROLLER__PID_CONTROLLER_HPP_
+#endif  // WHEELTEC_PID_CONTROLLER__VELOCITY_SMOOTHER_HPP_

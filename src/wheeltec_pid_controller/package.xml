@@ -2,8 +2,8 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>wheeltec_pid_controller</name>
-  <version>1.0.0</version>
-  <description>High-level PID velocity controller for Wheeltec Mecanum robot. Smooths Nav2 cmd_vel output using closed-loop PID with odometry feedback.</description>
+  <version>2.0.0</version>
+  <description>Velocity smoother for Wheeltec Mecanum robot. Smooths Nav2 MPPI cmd_vel output using low-pass filter and rate limiting. No PID, no odometry feedback — does not interfere with MPPI control loop.</description>
   <maintainer email="thientn204@gmail.com">thientn204</maintainer>
   <license>MIT</license>
 
@@ -11,7 +11,6 @@
 
   <depend>rclcpp</depend>
   <depend>geometry_msgs</depend>
-  <depend>nav_msgs</depend>
   <depend>std_msgs</depend>
   <depend>rcl_interfaces</depend>
 
