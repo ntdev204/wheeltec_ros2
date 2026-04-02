@@ -116,11 +116,13 @@ controller_server:
     FollowPath: 
       plugin: "nav2_rotation_shim_controller::RotationShimController" #旋转控制器
       primary_controller: "nav2_mppi_controller::MPPIController" #MPPI控制器
-      angular_dist_threshold: 0.785
+      # angular_dist_threshold: 0.785 (cũ)
+      angular_dist_threshold: 0.3        # ~17°, bàn giao MPPI muộn hơn nhiều
       forward_sampling_distance: 0.5
       rotate_to_heading_angular_vel: 1.8
       max_angular_accel: 3.2
-      simulate_ahead_time: 1.0
+      # simulate_ahead_time: 1.0 (cũ)
+      simulate_ahead_time: 1.5           # nhìn xa hơn, tránh bàn giao sớm
       rotate_to_goal_heading: True
     
       time_steps: 56    #候选轨迹中的时间步长（点）数
@@ -135,7 +137,8 @@ controller_server:
       wz_max: 2.0       #最大旋转速度（弧度/秒）
       ax_max: 1.5
       ax_min: -1.5
-      ay_max: 0.0
+      # ay_max: 0.0 (cũ)
+      ay_max: 0.5       # cho phép gia tốc ngang, khớp với vy_max: 0.5
       az_max: 1.5
       iteration_count: 1 #迭代次数
       prune_distance: 1.5 #路径上距离机器人最近点的距离（米）
@@ -150,7 +153,13 @@ controller_server:
         time_step: 3 #轨迹上点之间的步骤可视化以降低轨迹密度的采样
       AckermannConstraints:
         min_turning_r: 0.25 #最小转弯半径（阿克曼运动模型）
-      critics: ["ConstraintCritic", "ObstaclesCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic", "PathAngleCritic", "PreferForwardCritic"] #评论插件
+      # critics: ["ConstraintCritic", "ObstaclesCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic", "PathAngleCritic", "PreferForwardCritic"] #评论插件 (cũ)
+      critics: ["ConstraintCritic", "ObstaclesCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic", "PathAngleCritic", "PreferForwardCritic", "TwirlingCritic"]   # ← thêm
+      
+      TwirlingCritic:
+        enabled: true
+        twirling_cost_weight: 10.0
+        
       ConstraintCritic: #修复超出设定的动态或运动学约束的轨迹
         enabled: true
         cost_power: 1 
@@ -175,10 +184,12 @@ controller_server:
         critical_weight: 30.0 #应用于临界碰撞的权重，用于collision_margin_distance防止近距离碰撞
         consider_footprint: false #是否使用点成本（如果机器人是圆形的或者计算能力低）或计算 SE2 足迹成本
         collision_cost: 10000.0 #应用于轨迹中真实碰撞的成本。
-        collision_margin_distance: 0.1 #碰撞边缘距离，应该设置在0.05-0.2之间，请确保将此参数设置为预计机器人需要穿越的最窄空间
+        # collision_margin_distance: 0.1 (cũ)
+        collision_margin_distance: 0.3 #碰撞边缘距离，应该设置在0.05-0.2之间，请确保将此参数设置为预计机器人需要穿越的最窄空间
         near_goal_distance: 0.4 #靠近目标的距离（米）停止应用优先障碍物项，以允许机器人平稳地收敛到靠近障碍物的目标姿势，0.5 --> 0.6 -->0.3(Tues) 
         cost_scaling_factor: 5.0
-        inflation_radius: 0.15  #膨胀半径，仅限Humble
+        # inflation_radius: 0.15 (cũ)
+        inflation_radius: 0.3  #膨胀半径，仅限Humble
 
       PreferForwardCritic: #激励机器人前进，而不是后退
         enabled: true
@@ -190,12 +201,14 @@ controller_server:
       PathAlignCritic:  #PathAlignCritic会激励机器人与全局路径保持一致。它不实现路径跟随行为。
         enabled: true
         cost_power: 1
-        cost_weight: 25.0 #权重参数
+        # cost_weight: 25.0 #权重参数 (cũ)
+        cost_weight: 35.0 #权重参数
         max_path_occupancy_ratio: 0.07 #最大路径占用率
         trajectory_point_step: 4
         threshold_to_consider: 0.5 #机器人与目标之间的距离阈值，阈值符合则停止考虑路径对齐并允许目标批评家接管。
         offset_from_furthest: 20 #最远偏移量
-        use_path_orientations: false #是否在路径对齐中考虑路径的方向
+        # use_path_orientations: false #是否在路径对齐中考虑路径的方向 (cũ)
+        use_path_orientations: true   # MPPI xét hướng robot khi bám path
 
       PathAngleCritic: #路径角度评论，机器人在因累积角度误差较大而需要时进行急转弯。
         enabled: true
@@ -237,7 +250,8 @@ local_costmap:
       inflation_layer:                             #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件。
         cost_scaling_factor: 3.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
-        inflation_radius: 0.15                     #膨胀半径
+        # inflation_radius: 0.15 (cũ)
+        inflation_radius: 0.3                     #膨胀半径
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"      #体素层插件。
         enabled: True
@@ -300,7 +314,8 @@ global_costmap:
       inflation_layer: #膨胀层参数
         plugin: "nav2_costmap_2d::InflationLayer"  #膨胀层插件
         cost_scaling_factor: 10.0                   #成本缩放因子，决定障碍物成本随距离的递减速度。
-        inflation_radius: 0.2                     #膨胀半径
+        # inflation_radius: 0.2 (cũ)
+        inflation_radius: 0.3                     #膨胀半径
       always_send_full_costmap: True               #是否每次更新时都发送完整的成本图，而不是更新
   global_costmap_client:
     ros__parameters:
