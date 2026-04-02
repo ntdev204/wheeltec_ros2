@@ -33,6 +33,10 @@ export function useKeyboardControl() {
     if (activeKeys.has(KEY_MAPPINGS.DIAG_BL)) { linear_x -= currentSpeed; linear_y += currentSpeed; }
     if (activeKeys.has(KEY_MAPPINGS.DIAG_BR)) { linear_x -= currentSpeed; linear_y -= currentSpeed; }
 
+    // Rotation
+    if (activeKeys.has(KEY_MAPPINGS.ROTATE_LEFT)) { angular_z += ROBOT_CONFIG.defaultTurn; }
+    if (activeKeys.has(KEY_MAPPINGS.ROTATE_RIGHT)) { angular_z -= ROBOT_CONFIG.defaultTurn; }
+
     return { linear_x, linear_y, angular_z };
   }, []);
 
