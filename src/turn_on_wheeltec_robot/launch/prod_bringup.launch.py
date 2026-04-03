@@ -19,7 +19,7 @@ def generate_launch_description():
         # 2. Application Layer (Nav2, AMCL, Costmaps)
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
-                os.path.join(get_package_share_directory('wheeltec_robot_nav2'), 'launch', 'wheeltec_nav2.launch.py')
+                os.path.join(get_package_share_directory('wheeltec_nav2'), 'launch', 'wheeltec_nav2.launch.py')
             )
         ),
 
