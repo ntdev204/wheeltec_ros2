@@ -8,8 +8,8 @@ export function Sidebar() {
 
   const links = [
     { href: '/', label: 'Omni Control' },
-    { href: '/dashboard', label: 'Analytics' },
-    { href: '/dashboard/slam', label: 'Slam Engine' },
+    { href: '/dashboard', label: 'SCADA Monitor' },
+    { href: '/navigation', label: 'Autonomous Nav' },
   ];
 
   return (

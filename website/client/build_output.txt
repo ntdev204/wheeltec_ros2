@@ -1,0 +1,23 @@
+
+> client@0.1.0 build
+> next build
+
+▲ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 4.4s
+  Running TypeScript ...
+Failed to type check.
+
+./src/components/ui/sidebar.tsx:25:8
+Type error: Cannot find module '@/components/ui/tooltip' or its corresponding type declarations.
+
+  23 |   TooltipContent,
+  24 |   TooltipTrigger,
+> 25 | } from "@/components/ui/tooltip"
+     |        ^
+  26 | import { PanelLeftIcon } from "lucide-react"
+  27 |
+  28 | const SIDEBAR_COOKIE_NAME = "sidebar_state"
+Next.js build worker exited with code: 1 and signal: null

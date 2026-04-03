@@ -21,6 +21,7 @@ export const metadata: Metadata = {
 };
 
 import { AppProviders } from '@/components/providers/robot-provider';
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 export default function RootLayout({
   children,
@@ -33,9 +34,11 @@ export default function RootLayout({
       className={`${firaSans.variable} ${firaCode.variable} font-sans h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AppProviders>
-          {children}
-        </AppProviders>
+        <TooltipProvider>
+          <AppProviders>
+            {children}
+          </AppProviders>
+        </TooltipProvider>
       </body>
     </html>
   );

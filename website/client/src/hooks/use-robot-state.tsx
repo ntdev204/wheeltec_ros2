@@ -32,7 +32,7 @@ interface RobotStateContextType {
   telemetry: TelemetryData | null;
   setTelemetry: (data: SetStateAction<TelemetryData | null>) => void;
   speed: number;
-  setSpeed: (speed: number) => void;
+  setSpeed: (speed: SetStateAction<number>) => void;
 }
 
 const RobotStateContext = createContext<RobotStateContextType | undefined>(undefined);

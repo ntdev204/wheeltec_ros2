@@ -86,6 +86,10 @@ class ROSClient {
   sendCmdVel(linear_x: number, linear_y: number, angular_z: number) {
     this.send('cmd_vel', { linear_x, linear_y, angular_z });
   }
+
+  sendNavGoal(x: number, y: number, theta: number) {
+    this.send('nav_goal', { x, y, theta });
+  }
 }
 
 export const rosClient = new ROSClient();
