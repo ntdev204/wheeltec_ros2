@@ -2,7 +2,6 @@ import { JoystickPad } from '@/components/control/joystick-pad';
 import { SpeedControl } from '@/components/control/speed-control';
 import { EmergencyStop } from '@/components/control/emergency-stop';
 import { CameraFeed } from '@/components/camera/camera-feed';
-import { RobotMap } from '@/components/map/robot-map';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -26,10 +25,6 @@ export default function HomePage() {
         {/* Left Column: Visuals */}
         <div className="lg:col-span-8 flex flex-col gap-10">
           <CameraFeed />
-          
-          <div className="h-[400px]">
-            <RobotMap />
-          </div>
 
           {/* Driver Control hint */}
           <Card>

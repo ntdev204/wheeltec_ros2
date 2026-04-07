@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRobotState } from '@/hooks/use-robot-state';
 import { rosClient } from '@/lib/ros-client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Home } from 'lucide-react';
 
 interface MapInfo {
   resolution: number;
@@ -11,11 +12,11 @@ interface MapInfo {
   origin: { x: number; y: number };
 }
 
-const MAX_ACTUAL_PATH = 2000; // max waypoints lưu lịch sử
-const MIN_DIST = 0.05;        // mỗi 5cm mới ghi thêm 1 điểm
+const MAX_ACTUAL_PATH = 2000;
+const MIN_DIST = 0.05;
 
 export function RobotMap() {
-  const { telemetry } = useRobotState();
+  const { telemetry, isSetHomeMode, setIsSetHomeMode } = useRobotState();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [navGoal, setNavGoal] = useState<{ x: number; y: number } | null>(null);
   const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
@@ -24,10 +25,10 @@ export function RobotMap() {
   const lastRecordedRef = useRef<{ x: number; y: number } | null>(null);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-  // Ưu tiên map_info từ telemetry (live), fallback về YAML từ disk
   const mapInfo: MapInfo | null = telemetry?.map_info || localMapInfo;
+  const homePosition = telemetry?.home_position || null;
 
-  // Fetch map_info từ YAML một lần khi mount
+  // Fetch map_info from YAML once on mount
   useEffect(() => {
     fetch(`${API_URL}/api/maps/live/info`)
       .then(r => r.json())
@@ -35,10 +36,9 @@ export function RobotMap() {
       .catch(() => {});
   }, [API_URL]);
 
-  // Poll live map PNG from HTTP API every 3 seconds
+  // Poll live map PNG every 3 seconds
   useEffect(() => {
     let cancelled = false;
-
     const fetchMapImage = async () => {
       try {
         const res = await fetch(`${API_URL}/api/maps/live/image?t=${Date.now()}`);
@@ -49,20 +49,16 @@ export function RobotMap() {
           img.onload = () => { if (!cancelled) setMapImage(img); };
           img.src = url;
         } else if (res.status === 404) {
-          // Map chưa có trong cache, yêu cầu robot gửi lại
           fetch(`${API_URL}/api/maps/live/trigger`, { method: 'POST' }).catch(() => {});
         }
-      } catch (e) {
-        // Network error
-      }
+      } catch (e) { /* Network error */ }
     };
-
     fetchMapImage();
     const interval = setInterval(fetchMapImage, 3000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [API_URL]);
 
-  // Ghi lịch sử đường đi thực tế mỗi khi map_pose thay đổi
+  // Record actual path history
   useEffect(() => {
     const pose = telemetry?.map_pose;
     if (!pose) return;
@@ -70,7 +66,7 @@ export function RobotMap() {
     if (last) {
       const dx = pose.x - last.x;
       const dy = pose.y - last.y;
-      if (Math.sqrt(dx * dx + dy * dy) < MIN_DIST) return; // chưa đi đủ xa
+      if (Math.sqrt(dx * dx + dy * dy) < MIN_DIST) return;
     }
     lastRecordedRef.current = { x: pose.x, y: pose.y };
     actualPathRef.current = [
@@ -79,11 +75,17 @@ export function RobotMap() {
     ];
   }, [telemetry?.map_pose]);
 
+  // Clear actual path when a new nav goal starts (from any source)
+  useEffect(() => {
+    const handler = () => {
+      actualPathRef.current = [];
+      lastRecordedRef.current = null;
+    };
+    rosClient.on('path_started', handler);
+    return () => { rosClient.off('path_started', handler); };
+  }, []);
+
   // COORDINATE HELPERS
-  // PNG is already flipped (np.flipud on server), so:
-  //   canvas row 0 = map top = highest Y in ROS frame
-  //   px = (rosX - origin.x) / resolution
-  //   py = (height - 1) - (rosY - origin.y) / resolution  → same formula, matches flipped PNG
   const rosToPixel = useCallback((rosX: number, rosY: number) => {
     if (!mapInfo) return { px: 0, py: 0 };
     const px = (rosX - mapInfo.origin.x) / mapInfo.resolution;
@@ -98,10 +100,56 @@ export function RobotMap() {
     return { rosX, rosY };
   }, [mapInfo]);
 
+  // Draw home marker (house shape)
+  const drawHomeMarker = useCallback((ctx: CanvasRenderingContext2D, px: number, py: number, yaw: number) => {
+    const s = 8;
+
+    ctx.save();
+    ctx.translate(px, py);
+
+    // House body
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.lineTo(s, 0);
+    ctx.lineTo(s * 0.6, 0);
+    ctx.lineTo(s * 0.6, s * 0.7);
+    ctx.lineTo(-s * 0.6, s * 0.7);
+    ctx.lineTo(-s * 0.6, 0);
+    ctx.lineTo(-s, 0);
+    ctx.closePath();
+    ctx.fillStyle = '#f97316';
+    ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Door
+    ctx.fillStyle = 'white';
+    ctx.fillRect(-s * 0.15, s * 0.1, s * 0.3, s * 0.6);
+
+    // Heading arrow
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(yaw) * 14, -Math.sin(yaw) * 14);
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Outer ring
+    ctx.beginPath();
+    ctx.arc(0, 0, s + 4, 0, Math.PI * 2);
+    ctx.strokeStyle = '#f9731688';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 2]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.restore();
+  }, []);
+
   // Render
   useEffect(() => {
     if (!canvasRef.current || !mapImage || !mapInfo) return;
-
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -114,30 +162,7 @@ export function RobotMap() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(mapImage, 0, 0, mapInfo.width, mapInfo.height);
 
-    // --- 1. Vẽ GLOBAL PLANNED PATH (xanh lá nhạt, nét đứt) ---
-    const plan = telemetry?.plan;
-    if (plan && plan.length > 1) {
-      ctx.beginPath();
-      const p0 = rosToPixel(plan[0].x, plan[0].y);
-      ctx.moveTo(p0.px, p0.py);
-      for (let i = 1; i < plan.length; i++) {
-        const { px, py } = rosToPixel(plan[i].x, plan[i].y);
-        ctx.lineTo(px, py);
-      }
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 3]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      // Đầu đích (cuối plan)
-      const pEnd = rosToPixel(plan[plan.length - 1].x, plan[plan.length - 1].y);
-      ctx.beginPath();
-      ctx.arc(pEnd.px, pEnd.py, 4, 0, Math.PI * 2);
-      ctx.fillStyle = '#22c55e';
-      ctx.fill();
-    }
-
-    // --- 2. Vẽ LOCAL PLANNED PATH (vàng, nét liền mỏng) ---
+    // --- 1. LOCAL PLANNED PATH (yellow solid, bottom layer) ---
     const localPlan = telemetry?.local_plan;
     if (localPlan && localPlan.length > 1) {
       ctx.beginPath();
@@ -152,7 +177,7 @@ export function RobotMap() {
       ctx.stroke();
     }
 
-    // --- 3. Vẽ ACTUAL PATH đường đi thực tế (xanh dương) ---
+    // --- 2. ACTUAL/REAL PATH (blue solid) ---
     const actualPath = actualPathRef.current;
     if (actualPath.length > 1) {
       ctx.beginPath();
@@ -167,11 +192,39 @@ export function RobotMap() {
       ctx.stroke();
     }
 
-    // --- 4. Vẽ ROBOT ---
+    // --- 3. GLOBAL PLANNED PATH (green dashed, top layer) ---
+    const plan = telemetry?.plan;
+    if (plan && plan.length > 1) {
+      ctx.beginPath();
+      const p0 = rosToPixel(plan[0].x, plan[0].y);
+      ctx.moveTo(p0.px, p0.py);
+      for (let i = 1; i < plan.length; i++) {
+        const { px, py } = rosToPixel(plan[i].x, plan[i].y);
+        ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Goal endpoint marker
+      const pEnd = rosToPixel(plan[plan.length - 1].x, plan[plan.length - 1].y);
+      ctx.beginPath();
+      ctx.arc(pEnd.px, pEnd.py, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#22c55e';
+      ctx.fill();
+    }
+
+    // --- 4. HOME MARKER 🏠 ---
+    if (homePosition) {
+      const { px, py } = rosToPixel(homePosition.x, homePosition.y);
+      drawHomeMarker(ctx, px, py, homePosition.yaw);
+    }
+
+    // --- 5. ROBOT ---
     const pose = telemetry?.map_pose || (telemetry?.odom ? { x: telemetry.odom.x, y: telemetry.odom.y, yaw: telemetry.odom.yaw || 0 } : null);
     if (pose) {
       const { px, py } = rosToPixel(pose.x, pose.y);
-      // Vòng tròn robot
       ctx.beginPath();
       ctx.arc(px, py, 5, 0, Math.PI * 2);
       ctx.fillStyle = '#ef4444';
@@ -179,7 +232,6 @@ export function RobotMap() {
       ctx.strokeStyle = 'white';
       ctx.lineWidth = 1.5;
       ctx.stroke();
-      // Mũi tên hướng
       ctx.beginPath();
       ctx.moveTo(px, py);
       ctx.lineTo(px + Math.cos(pose.yaw) * 10, py - Math.sin(pose.yaw) * 10);
@@ -188,7 +240,7 @@ export function RobotMap() {
       ctx.stroke();
     }
 
-    // --- 5. Vẽ NAV GOAL ---
+    // --- 6. NAV GOAL ---
     if (navGoal) {
       const { px, py } = rosToPixel(navGoal.x, navGoal.y);
       const cs = 5;
@@ -204,7 +256,7 @@ export function RobotMap() {
       ctx.lineWidth = 1;
       ctx.stroke();
     }
-  }, [mapImage, mapInfo, telemetry, navGoal, rosToPixel]);
+  }, [mapImage, mapInfo, telemetry, navGoal, homePosition, rosToPixel, drawHomeMarker]);
 
   const handleMapClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !mapInfo) return;
@@ -215,9 +267,19 @@ export function RobotMap() {
     if (imgPx < 0 || imgPx >= mapInfo.width || imgPy < 0 || imgPy >= mapInfo.height) return;
 
     const { rosX, rosY } = pixelToRos(imgPx, imgPy);
-    console.log(`[NAV] pixel=(${imgPx.toFixed(1)}, ${imgPy.toFixed(1)}) -> ROS=(${rosX.toFixed(3)}, ${rosY.toFixed(3)})`);
-    rosClient.send('nav_goal', { x: rosX, y: rosY });
-    setNavGoal({ x: rosX, y: rosY });
+
+    if (isSetHomeMode) {
+      console.log(`[HOME] pixel=(${imgPx.toFixed(1)}, ${imgPy.toFixed(1)}) -> ROS=(${rosX.toFixed(3)}, ${rosY.toFixed(3)})`);
+      rosClient.sendSetHome(rosX, rosY);
+      setIsSetHomeMode(false);
+    } else {
+      console.log(`[NAV] pixel=(${imgPx.toFixed(1)}, ${imgPy.toFixed(1)}) -> ROS=(${rosX.toFixed(3)}, ${rosY.toFixed(3)})`);
+      rosClient.send('nav_goal', { x: rosX, y: rosY });
+      setNavGoal({ x: rosX, y: rosY });
+      // Clear actual path display (DB data is preserved)
+      actualPathRef.current = [];
+      lastRecordedRef.current = null;
+    }
   };
 
   return (
@@ -239,8 +301,8 @@ export function RobotMap() {
           {/* Legend */}
           <div className="flex items-center gap-3 text-[9px] font-mono font-bold uppercase tracking-widest">
             <span className="flex items-center gap-1">
-              <span className="inline-block w-4 h-0.5 bg-green-500" style={{borderTop:'2px dashed #22c55e', background:'none'}}></span>
-              <span className="text-muted-foreground">Plan</span>
+              <span className="inline-block w-4 h-0.5 bg-green-500" style={{borderTop:'2.5px dashed #22c55e', background:'none'}}></span>
+              <span className="text-muted-foreground">Global</span>
             </span>
             <span className="flex items-center gap-1">
               <span className="inline-block w-4 h-0.5" style={{borderTop:'2px solid #eab308'}}></span>
@@ -248,7 +310,11 @@ export function RobotMap() {
             </span>
             <span className="flex items-center gap-1">
               <span className="inline-block w-4 h-0.5" style={{borderTop:'2px solid #3b82f6'}}></span>
-              <span className="text-muted-foreground">Actual</span>
+              <span className="text-muted-foreground">Real</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-3 h-3 rounded-sm bg-orange-500"></span>
+              <span className="text-muted-foreground">Home</span>
             </span>
             <button
               onClick={() => { actualPathRef.current = []; lastRecordedRef.current = null; }}
@@ -258,12 +324,11 @@ export function RobotMap() {
         </div>
       </CardHeader>
       <CardContent className="flex-1 bg-muted/10 relative p-0 overflow-hidden">
-        {/* Wrapper fills the card; canvas is scaled via CSS to fit while keeping aspect ratio */}
         <div className="absolute inset-0 flex items-center justify-center">
           <canvas
             ref={canvasRef}
             onClick={handleMapClick}
-            className="cursor-crosshair"
+            className={isSetHomeMode ? 'cursor-cell' : 'cursor-crosshair'}
             style={{
               imageRendering: 'pixelated',
               maxWidth: '100%',
@@ -274,6 +339,16 @@ export function RobotMap() {
             }}
           />
         </div>
+        {isSetHomeMode && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/20 border border-orange-500/40 backdrop-blur-md">
+              <Home size={14} className="text-orange-400 animate-pulse" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-orange-300">
+                Click on map to set home position
+              </span>
+            </div>
+          </div>
+        )}
         {!mapImage && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-md">
             <div className="flex flex-col items-center gap-3">

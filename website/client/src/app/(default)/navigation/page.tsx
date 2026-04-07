@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRobotState } from '@/hooks/use-robot-state';
 import { rosClient } from '@/lib/ros-client';
 import { RobotMap } from '@/components/map/robot-map';
+import { HomePoint } from '@/components/control/home-point';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Navigation2, Crosshair, Target } from 'lucide-react';
+import { Crosshair, Navigation2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function NavigationPage() {
@@ -23,39 +24,6 @@ export default function NavigationPage() {
   const [waypointX, setWaypointX] = useState<string>('0');
   const [waypointY, setWaypointY] = useState<string>('0');
   const [waypointTheta, setWaypointTheta] = useState<string>('0');
-
-  // Home point stored in local state (in a real app, might be stored in DB or ROS parameters)
-  const [homePoint, setHomePoint] = useState<{x: number, y: number, theta: number} | null>(null);
-
-  useEffect(() => {
-    // Load home point from local storage if exists
-    const stored = localStorage.getItem('ros2_home_point');
-    if (stored) {
-      try {
-        setHomePoint(JSON.parse(stored));
-      } catch(e) {}
-    }
-  }, []);
-
-  const handleSaveHome = () => {
-    const hp = { x: currentX, y: currentY, theta: currentYaw };
-    setHomePoint(hp);
-    localStorage.setItem('ros2_home_point', JSON.stringify(hp));
-    toast("Home Point Saved", {
-      description: `Saved at X: ${hp.x.toFixed(2)}, Y: ${hp.y.toFixed(2)}`,
-    });
-  };
-
-  const handleGoHome = () => {
-    if (!homePoint) {
-      toast.error("Error", { description: "No home point set." });
-      return;
-    }
-    rosClient.sendNavGoal(homePoint.x, homePoint.y, homePoint.theta);
-    toast("Returning to Home", {
-      description: "Navigation goal sent to ROS2.",
-    });
-  };
 
   const handleSendWaypoint = () => {
     const x = parseFloat(waypointX);
@@ -109,39 +77,8 @@ export default function NavigationPage() {
         {/* Right Column: Controls */}
         <div className="lg:col-span-4 flex flex-col gap-6 h-full">
           
-          {/* Home Module */}
-          <Card className="border-status-blue/20">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center justify-between">
-                 <div className="flex items-center gap-2 text-status-blue">
-                   <MapPin size={20} />
-                   <span>Home Point</span>
-                 </div>
-              </CardTitle>
-              <CardDescription>Save or return to base.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div className="bg-muted p-3 rounded-md font-mono text-xs flex justify-between border">
-                {homePoint ? (
-                  <>
-                    <span>X: {homePoint.x.toFixed(2)}</span>
-                    <span>Y: {homePoint.y.toFixed(2)}</span>
-                    <span>H: {(homePoint.theta * 180/Math.PI).toFixed(1)}°</span>
-                  </>
-                ) : (
-                  <span className="text-muted-foreground mx-auto">No Home Point Set</span>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" size="sm" onClick={handleSaveHome} disabled={!isConnected}>
-                   <Target size={14} className="mr-2" /> Set Current
-                </Button>
-                <Button size="sm" className="bg-status-blue hover:bg-status-blue/90" onClick={handleGoHome} disabled={!isConnected || !homePoint}>
-                   <Navigation2 size={14} className="mr-2" /> Go Home
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Home Module — uses WS/DB logic via HomePoint component */}
+          <HomePoint />
 
           {/* Waypoint Module */}
           <Card>
@@ -169,6 +106,33 @@ export default function NavigationPage() {
               </div>
               <Button className="w-full mt-2" onClick={handleSendWaypoint} disabled={!isConnected}>
                 <Navigation2 size={14} className="mr-2" /> Send Goal
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* CSV Export */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Download size={20} />
+                <span>Export Paths</span>
+              </CardTitle>
+              <CardDescription>Download all navigation paths as CSV.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                  const link = document.createElement('a');
+                  link.href = `${API_URL}/api/robot/paths/csv`;
+                  link.download = 'nav_paths.csv';
+                  link.click();
+                  toast('Export Started', { description: 'Downloading nav_paths.csv' });
+                }}
+              >
+                <Download size={14} className="mr-2" /> Download CSV
               </Button>
             </CardContent>
           </Card>

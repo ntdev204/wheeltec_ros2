@@ -90,6 +90,14 @@ class ROSClient {
   sendNavGoal(x: number, y: number, theta: number) {
     this.send('nav_goal', { x, y, theta });
   }
+
+  sendSetHome(x: number, y: number, yaw?: number) {
+    this.send('set_home', { x, y, yaw: yaw ?? 0 });
+  }
+
+  sendGoHome() {
+    this.send('go_home', {});
+  }
 }
 
 export const rosClient = new ROSClient();

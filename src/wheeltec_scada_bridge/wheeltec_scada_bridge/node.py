@@ -242,10 +242,9 @@ class WheeltecControlNode(Node):
                     goal.header.stamp = self.get_clock().now().to_msg()
                     goal.pose.position.x = float(payload.get("x", 0.0))
                     goal.pose.position.y = float(payload.get("y", 0.0))
-                    goal.pose.orientation.z = float(payload.get("orien_z", 0.0))
-                    goal.pose.orientation.w = float(payload.get("orien_w", 1.0))
+                    goal.pose.orientation.w = 1.0
                     self.goal_pub.publish(goal)
-                    self.get_logger().info(f"Published nav goal to x={goal.pose.position.x}, y={goal.pose.position.y}, oz={goal.pose.orientation.z:.3f}, ow={goal.pose.orientation.w:.3f}")
+                    self.get_logger().info(f"Published nav goal to x={goal.pose.position.x}, y={goal.pose.position.y}")
                     self.cmd_rep.send_json({"status": "goal_sent"})
 
                 elif action == "resend_map":

@@ -24,6 +24,8 @@ export interface TelemetryData {
   };
   plan?: { x: number; y: number }[];        // Global planned path from Nav2
   local_plan?: { x: number; y: number }[];  // Local planned path from Nav2
+  battery_pct?: number;                      // Battery percentage (injected by server)
+  home_position?: { x: number; y: number; yaw: number }; // Home/charger coordinates
 }
 
 interface RobotStateContextType {
@@ -33,6 +35,8 @@ interface RobotStateContextType {
   setTelemetry: (data: SetStateAction<TelemetryData | null>) => void;
   speed: number;
   setSpeed: (speed: SetStateAction<number>) => void;
+  isSetHomeMode: boolean;
+  setIsSetHomeMode: (mode: SetStateAction<boolean>) => void;
 }
 
 const RobotStateContext = createContext<RobotStateContextType | undefined>(undefined);
@@ -40,10 +44,11 @@ const RobotStateContext = createContext<RobotStateContextType | undefined>(undef
 export function RobotStateProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
-  const [speed, setSpeed] = useState(0.2); // Default speed 0.2 m/s
+  const [speed, setSpeed] = useState(0.2);
+  const [isSetHomeMode, setIsSetHomeMode] = useState(false);
 
   return (
-    <RobotStateContext.Provider value={{ isConnected, setIsConnected, telemetry, setTelemetry, speed, setSpeed }}>
+    <RobotStateContext.Provider value={{ isConnected, setIsConnected, telemetry, setTelemetry, speed, setSpeed, isSetHomeMode, setIsSetHomeMode }}>
       {children}
     </RobotStateContext.Provider>
   );

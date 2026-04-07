@@ -56,5 +56,28 @@ async def init_db():
                 charging BOOLEAN DEFAULT 0
             )
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS home_position (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                x REAL NOT NULL,
+                y REAL NOT NULL,
+                yaw REAL DEFAULT 0,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS nav_paths (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id INTEGER REFERENCES sessions(id),
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                goal_x REAL,
+                goal_y REAL,
+                global_plan TEXT,
+                local_plan TEXT,
+                real_path TEXT,
+                status TEXT DEFAULT 'active'
+            )
+        """)
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_nav_paths_session ON nav_paths(session_id)")
         await db.commit()
 

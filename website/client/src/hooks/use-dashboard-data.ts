@@ -9,7 +9,8 @@ export function useDashboardData() {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const res = await fetch('/api/analytics/summary');
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${API_URL}/api/analytics/summary`);
         if (res.ok) {
           const json = await res.json();
           setData(json);
@@ -36,7 +37,8 @@ export function useVoltageHistory() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch('/api/analytics/voltage-history?hours=24');
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${API_URL}/api/analytics/voltage-history?hours=24`);
         if (res.ok) {
           const json = await res.json();
           setHistory(json.history || []);
@@ -62,9 +64,10 @@ export function useEventLogs(category?: string, severity?: string) {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        let url = '/api/logs/latest?n=50';
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        let url = `${API_URL}/api/logs/latest?n=50`;
         if (category || severity) {
-            url = `/api/logs?limit=50&category=${category || ''}&severity=${severity || ''}`;
+            url = `${API_URL}/api/logs?limit=50&category=${category || ''}&severity=${severity || ''}`;
         }
         
         const res = await fetch(url);

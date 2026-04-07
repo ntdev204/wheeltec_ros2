@@ -27,8 +27,8 @@ export function Header() {
       <div className="flex text-[12px] font-bold tracking-widest uppercase items-center bg-muted p-1 rounded-md border border-border">
         <div className="flex items-center gap-2 px-4 py-1.5 border-r border-border">
           <span className="text-muted-foreground">Bat:</span>
-          <span className={`font-mono tabular-nums ${telemetry && telemetry?.voltage < 10.5 ? 'text-destructive' : 'text-foreground'}`}>
-            {telemetry ? `${telemetry.voltage.toFixed(1)}V` : '--'}
+          <span className={`font-mono tabular-nums ${telemetry?.voltage !== undefined && telemetry.voltage <= 21.84 ? 'text-destructive' : 'text-foreground'}`}>
+            {telemetry?.voltage !== undefined ? `${telemetry.voltage.toFixed(1)}V` : '--'}
           </span>
         </div>
         <div className="flex items-center gap-2 px-4 py-1.5">
