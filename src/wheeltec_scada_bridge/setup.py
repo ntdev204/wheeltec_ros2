@@ -11,7 +11,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', ['launch/scada_bridge.launch.py']),
     ],
-    install_requires=['setuptools', 'pyzmq', 'opencv-python-headless', 'numpy'],
+    install_requires=['setuptools', 'pyzmq', 'opencv-python-headless', 'numpy', 'scipy'],
     zip_safe=True,
     maintainer='thientn204',
     maintainer_email='thientn204@gmail.com',

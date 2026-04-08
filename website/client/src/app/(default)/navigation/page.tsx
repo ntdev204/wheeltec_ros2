@@ -6,6 +6,7 @@ import { rosClient } from '@/lib/ros-client';
 import { RobotMap } from '@/components/map/robot-map';
 import { HomePoint } from '@/components/control/home-point';
 import { PatrolPanel } from '@/components/control/patrol-panel';
+import { CoverageGenerator } from '@/components/control/coverage-generator';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,6 +81,9 @@ export default function NavigationPage() {
           
           {/* Home Module — uses WS/DB logic via HomePoint component */}
           <HomePoint />
+
+          {/* Coverage Generator */}
+          <CoverageGenerator />
 
           {/* Waypoint Module */}
           <Card>

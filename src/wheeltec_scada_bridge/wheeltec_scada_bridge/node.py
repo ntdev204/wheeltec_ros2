@@ -522,6 +522,33 @@ class WheeltecControlNode(Node):
                         run_id = self._patrol_run_id
                     self.cmd_rep.send_json({"status": "stopped", "run_id": run_id})
 
+                elif action == "generate_coverage":
+                    from wheeltec_scada_bridge.coverage_planner import CoveragePlanner
+
+                    robot_width = float(payload.get("robot_width", 0.5))
+                    overlap = float(payload.get("overlap", 0.1))
+                    pattern = str(payload.get("pattern", "boustrophedon"))
+
+                    if self._last_map_msg is None:
+                        self.cmd_rep.send_json({"status": "error", "message": "No map available"})
+                    else:
+                        try:
+                            planner = CoveragePlanner(robot_width=robot_width, overlap=overlap)
+                            waypoints = planner.generate_coverage_waypoints(self._last_map_msg, pattern=pattern)
+                            is_valid, error_msg = planner.validate_waypoints(waypoints, self._last_map_msg)
+
+                            if not is_valid:
+                                self.cmd_rep.send_json({"status": "error", "message": error_msg})
+                            else:
+                                self.cmd_rep.send_json({
+                                    "status": "ok",
+                                    "waypoints": waypoints,
+                                    "count": len(waypoints)
+                                })
+                        except Exception as e:
+                            self.get_logger().error(f"Coverage generation error: {e}")
+                            self.cmd_rep.send_json({"status": "error", "message": str(e)})
+
                 elif action == "resend_map":
                     if self._last_map_msg is not None:
                         self.map_cb(self._last_map_msg)

@@ -9,6 +9,7 @@ from app.db.models import init_db
 from app.ws.handler import router as ws_router
 from app.routes.maps import router as maps_router
 from app.routes.robot import router as robot_router
+from app.routes.coverage import router as coverage_router
 from app.routes.analytics import router as analytics_router
 from app.routes.logs import router as logs_router
 from app.services.session_service import SessionService
@@ -80,6 +81,7 @@ app.add_middleware(
 app.include_router(ws_router)
 app.include_router(maps_router)
 app.include_router(robot_router)
+app.include_router(coverage_router)
 app.include_router(analytics_router)
 app.include_router(logs_router)
 
