@@ -1,0 +1,9 @@
+std_msgs/Header header
+uint32 track_id
+float32 center_x
+float32 center_y
+float32 size_x
+float32 size_y
+geometry_msgs/Vector3 velocity
+float32 confidence
+float32 distance_m
