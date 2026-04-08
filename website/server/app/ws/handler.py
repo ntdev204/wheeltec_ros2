@@ -12,6 +12,7 @@ from app.services.session_service import SessionService
 from app.services.telemetry_service import TelemetryService
 from app.services.home_service import HomeService, voltage_to_percent, WARN_THRESHOLD
 from app.services.path_service import PathService
+from app.services.patrol_service import PatrolService
 
 router = APIRouter()
 context = zmq.asyncio.Context()
@@ -51,7 +52,7 @@ async def scada_websocket(websocket: WebSocket):
             while True:
                 data = await websocket.receive_json()
                 msg_type = data.get("type")
-                payload = data.get("payload")
+                payload = data.get("payload") or {}
 
                 if msg_type == "cmd_vel":
                     await zmq_client.send_command("cmd_vel", payload)
@@ -100,6 +101,16 @@ async def scada_websocket(websocket: WebSocket):
                 elif msg_type == "slam_control":
                     await zmq_client.send_command("slam_control", payload)
                     await LogService.log_event("COMMAND", "slam_control", f"SLAM control: {payload.get('action')}", metadata=payload, session_id=session_id)
+
+                elif msg_type == "patrol_start":
+                    run = await PatrolService.start_run(session_id=session_id, source="websocket")
+                    await websocket.send_json({"type": "patrol_status", "payload": await PatrolService.get_status()})
+                    await websocket.send_json({"type": "patrol_started", "payload": run})
+
+                elif msg_type == "patrol_stop":
+                    reason = str(payload.get("reason") or "Stopped from WebSocket")
+                    status = await PatrolService.stop_run(reason=reason, session_id=session_id)
+                    await websocket.send_json({"type": "patrol_status", "payload": status})
         except WebSocketDisconnect:
             await LogService.log_event("SYSTEM", "ws_disconnected", "Client disconnected", session_id=session_id)
         except Exception as e:
@@ -186,8 +197,11 @@ async def scada_websocket(websocket: WebSocket):
                 if shared["home"]:
                     msg["home_position"] = shared["home"]
 
+                await PatrolService.process_telemetry(msg, session_id=session_id)
+                patrol_status = await PatrolService.get_status()
                 await TelemetryService.maybe_save_snapshot(msg, session_id)
                 await websocket.send_json({"type": "telemetry", "payload": msg})
+                await websocket.send_json({"type": "patrol_status", "payload": patrol_status})
         except asyncio.CancelledError:
             # Complete any active path on disconnect
             if shared.get("path_id"):

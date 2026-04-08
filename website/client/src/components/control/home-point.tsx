@@ -1,6 +1,6 @@
 'use client';
 import { useEffect } from 'react';
-import { useRobotState } from '@/hooks/use-robot-state';
+import { useRobotState, TelemetryData } from '@/hooks/use-robot-state';
 import { rosClient } from '@/lib/ros-client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { MapPin, Navigation, Crosshair } from 'lucide-react';
@@ -16,9 +16,10 @@ export function HomePoint() {
       .then(r => r.json())
       .then(data => {
         if (data?.home) {
-          setTelemetry((prev: any) => prev
-            ? { ...prev, home_position: data.home }
-            : { home_position: data.home } as any
+          const home = data.home as NonNullable<TelemetryData['home_position']>;
+          setTelemetry((prev) => prev
+            ? { ...prev, home_position: home }
+            : ({ home_position: home } as TelemetryData)
           );
         }
       })

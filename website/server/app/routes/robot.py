@@ -3,7 +3,9 @@ from fastapi.responses import StreamingResponse
 from app.services.session_service import SessionService
 from app.services.home_service import HomeService
 from app.services.path_service import PathService
+from app.services.patrol_service import PatrolService
 import io
+from fastapi import HTTPException
 
 router = APIRouter(prefix="/api/robot", tags=["robot"])
 
@@ -38,7 +40,8 @@ async def set_home(data: dict):
 
 @router.get("/paths")
 async def get_paths(session_id: int = None, limit: int = 50):
-    paths = await PathService.get_paths(session_id, limit)
+    safe_limit = max(1, min(limit, 500))
+    paths = await PathService.get_paths(session_id, safe_limit)
     return {"paths": paths}
 
 
@@ -50,4 +53,58 @@ async def export_paths_csv(session_id: int = None):
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=nav_paths.csv"}
     )
+
+
+@router.get("/patrol/status")
+async def get_patrol_status():
+    return await PatrolService.get_status()
+
+
+@router.post("/patrol/route")
+async def save_patrol_route(data: dict):
+    try:
+        route = await PatrolService.save_route(
+            name=str(data.get("name") or "Patrol Route"),
+            waypoints=data.get("waypoints") or [],
+            map_id=data.get("map_id"),
+        )
+        return {"route": route}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid patrol route payload") from exc
+
+
+@router.post("/patrol/schedule")
+async def update_patrol_schedule(data: dict):
+    try:
+        schedule = await PatrolService.update_schedule(data)
+        return {"schedule": schedule}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid patrol schedule payload") from exc
+
+
+@router.post("/patrol/start")
+async def start_patrol(data: dict | None = None):
+    try:
+        run = await PatrolService.start_run(session_id=await _get_current_session_id(), source="manual")
+        return {"run": run}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Unable to start patrol") from exc
+
+
+@router.post("/patrol/stop")
+async def stop_patrol(data: dict | None = None):
+    payload = data or {}
+    try:
+        status = await PatrolService.stop_run(
+            reason=str(payload.get("reason") or "Stopped from API"),
+            session_id=await _get_current_session_id(),
+        )
+        return status
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Unable to stop patrol") from exc
+
+
+async def _get_current_session_id() -> int | None:
+    session = await SessionService.get_current_session()
+    return session["id"] if session else None
 

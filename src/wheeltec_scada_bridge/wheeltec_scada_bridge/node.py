@@ -1,16 +1,18 @@
-import rclpy
-from rclpy.node import Node
-from geometry_msgs.msg import Twist, PoseStamped
-from nav_msgs.msg import Odometry, OccupancyGrid, Path
-from sensor_msgs.msg import Imu, Image
-from std_msgs.msg import Float32, Bool
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy, QoSDurabilityPolicy
+import math
+from datetime import datetime, timezone
+from threading import Thread
+
 import cv2
 import numpy as np
-import zmq
-from threading import Thread
+import rclpy
 import tf2_ros
-import math
+import zmq
+from geometry_msgs.msg import PoseStamped, Twist
+from nav_msgs.msg import OccupancyGrid, Odometry, Path
+from rclpy.node import Node
+from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
+from sensor_msgs.msg import Image, Imu
+from std_msgs.msg import Bool, Float32
 
 
 class WheeltecControlNode(Node):
@@ -78,18 +80,48 @@ class WheeltecControlNode(Node):
         self.cmd_rep.bind(f"tcp://0.0.0.0:{cmd_port}")
 
         self.telemetry_data = {
-            "odom": {"x": 0.0, "y": 0.0, "z": 0.0, "v_x": 0.0, "v_y": 0.0, "v_z": 0.0},
+            "odom": {"x": 0.0, "y": 0.0, "z": 0.0, "v_x": 0.0, "v_y": 0.0, "v_z": 0.0, "yaw": 0.0},
             "map_pose": {"x": 0.0, "y": 0.0, "yaw": 0.0},
             "imu": {"ax": 0.0, "ay": 0.0, "az": 0.0},
             "voltage": 0.0,
             "charging": False,
             "plan": [],
-            "local_plan": []
+            "local_plan": [],
+            "patrol": {
+                "status": "idle",
+                "run_id": None,
+                "schedule_id": None,
+                "route_id": None,
+                "current_loop": 0,
+                "total_loops": 0,
+                "current_waypoint_index": -1,
+                "total_waypoints": 0,
+                "last_goal": None,
+                "message": None,
+                "updated_at": None,
+            }
         }
 
         self.map_data = None
         self.map_dirty = False
         self._last_map_msg = None
+
+        # Patrol runtime state
+        self._patrol_status = "idle"
+        self._patrol_phase = "idle"  # idle|go_home_start|patrol|return_home_end
+        self._patrol_run_id = None
+        self._patrol_schedule_id = None
+        self._patrol_route_id = None
+        self._patrol_waypoints = []
+        self._patrol_home = None
+        self._patrol_total_loops = 0
+        self._patrol_current_loop = 0
+        self._patrol_current_waypoint_index = -1
+        self._patrol_waypoint_tolerance = 0.25
+        self._patrol_goal_sent_at = None
+        self._patrol_waypoint_timeout_sec = 180.0
+        self._patrol_last_goal = None
+        self._patrol_message = None
 
         # Start command listener thread
         self.cmd_thread = Thread(target=self.cmd_loop, daemon=True)
@@ -99,6 +131,7 @@ class WheeltecControlNode(Node):
         self.create_timer(0.1, self.publish_telemetry)
         self.create_timer(2.0, self.publish_map)
         self.create_timer(0.1, self.update_map_pose)
+        self.create_timer(0.2, self.patrol_tick)
 
     def odom_cb(self, msg):
         self.telemetry_data["odom"] = {
@@ -116,6 +149,161 @@ class WheeltecControlNode(Node):
         siny_cosp = 2 * (q.w * q.z + q.x * q.y)
         cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
         return math.atan2(siny_cosp, cosy_cosp)
+
+    @staticmethod
+    def _quat_from_yaw(yaw: float) -> tuple[float, float]:
+        return math.sin(yaw / 2.0), math.cos(yaw / 2.0)
+
+    def _now_iso(self) -> str:
+        return datetime.now(timezone.utc).isoformat()
+
+    def _set_patrol_state(self, status: str, message: str | None = None):
+        self._patrol_status = status
+        self._patrol_message = message
+        self.telemetry_data["patrol"] = {
+            "status": self._patrol_status,
+            "run_id": self._patrol_run_id,
+            "schedule_id": self._patrol_schedule_id,
+            "route_id": self._patrol_route_id,
+            "current_loop": self._patrol_current_loop,
+            "total_loops": self._patrol_total_loops,
+            "current_waypoint_index": self._patrol_current_waypoint_index,
+            "total_waypoints": len(self._patrol_waypoints),
+            "last_goal": self._patrol_last_goal,
+            "message": message,
+            "updated_at": self._now_iso(),
+        }
+
+    def _is_patrol_active(self) -> bool:
+        return self._patrol_status in {"starting", "running", "returning_home"}
+
+    def _publish_goal(self, x: float, y: float, yaw: float = 0.0):
+        goal = PoseStamped()
+        goal.header.frame_id = "map"
+        goal.header.stamp = self.get_clock().now().to_msg()
+        goal.pose.position.x = float(x)
+        goal.pose.position.y = float(y)
+        qz, qw = self._quat_from_yaw(float(yaw))
+        goal.pose.orientation.z = qz
+        goal.pose.orientation.w = qw
+        self.goal_pub.publish(goal)
+        self._patrol_last_goal = {"x": float(x), "y": float(y), "yaw": float(yaw)}
+        self._patrol_goal_sent_at = self.get_clock().now().nanoseconds / 1e9
+
+    def _start_patrol(self, payload: dict):
+        if self._is_patrol_active():
+            raise ValueError("Patrol mission already running")
+
+        waypoints = payload.get("waypoints") or []
+        loops = int(payload.get("loops") or 0)
+        home = payload.get("home")
+        if not isinstance(waypoints, list) or len(waypoints) < 2:
+            raise ValueError("Patrol requires at least 2 waypoints")
+        if loops <= 0:
+            raise ValueError("Patrol loops must be > 0")
+        if not isinstance(home, dict):
+            raise ValueError("Patrol home is required")
+
+        self._patrol_run_id = payload.get("run_id")
+        self._patrol_schedule_id = payload.get("schedule_id")
+        self._patrol_route_id = payload.get("route_id")
+        self._patrol_waypoints = [
+            {
+                "x": float(wp.get("x")),
+                "y": float(wp.get("y")),
+                "yaw": float(wp.get("yaw", 0.0)),
+            }
+            for wp in waypoints
+        ]
+        self._patrol_home = {
+            "x": float(home.get("x")),
+            "y": float(home.get("y")),
+            "yaw": float(home.get("yaw", 0.0)),
+        }
+        self._patrol_total_loops = loops
+        self._patrol_current_loop = 0
+        self._patrol_current_waypoint_index = -1
+        self._patrol_waypoint_tolerance = float(payload.get("waypoint_tolerance", 0.25))
+
+        self._patrol_phase = "go_home_start"
+        self._set_patrol_state("starting", "Navigating to home before patrol")
+        self._publish_goal(self._patrol_home["x"], self._patrol_home["y"], self._patrol_home["yaw"])
+        self.get_logger().info(
+            f"Started patrol run={self._patrol_run_id} loops={self._patrol_total_loops} waypoints={len(self._patrol_waypoints)}"
+        )
+
+    def _stop_patrol(self, status: str, message: str):
+        self._patrol_phase = "idle"
+        self._patrol_waypoints = []
+        self._patrol_total_loops = 0
+        self._patrol_current_loop = 0
+        self._patrol_current_waypoint_index = -1
+        self._patrol_goal_sent_at = None
+        self._set_patrol_state(status, message)
+        self.get_logger().info(f"Patrol status={status}: {message}")
+
+    def _distance_to_current_goal(self) -> float | None:
+        goal = self._patrol_last_goal
+        pose = self.telemetry_data.get("map_pose")
+        if not goal or not pose:
+            return None
+        dx = float(pose.get("x", 0.0)) - float(goal.get("x", 0.0))
+        dy = float(pose.get("y", 0.0)) - float(goal.get("y", 0.0))
+        return math.sqrt(dx * dx + dy * dy)
+
+    def _advance_patrol_goal(self):
+        if self._patrol_phase == "go_home_start":
+            self._patrol_phase = "patrol"
+            self._patrol_current_loop = 1
+            self._patrol_current_waypoint_index = 0
+            waypoint = self._patrol_waypoints[0]
+            self._set_patrol_state("running", f"Loop 1/{self._patrol_total_loops}, waypoint 1/{len(self._patrol_waypoints)}")
+            self._publish_goal(waypoint["x"], waypoint["y"], waypoint.get("yaw", 0.0))
+            return
+
+        if self._patrol_phase == "patrol":
+            if self._patrol_current_waypoint_index < len(self._patrol_waypoints) - 1:
+                self._patrol_current_waypoint_index += 1
+                waypoint = self._patrol_waypoints[self._patrol_current_waypoint_index]
+                self._set_patrol_state(
+                    "running",
+                    f"Loop {self._patrol_current_loop}/{self._patrol_total_loops}, waypoint {self._patrol_current_waypoint_index + 1}/{len(self._patrol_waypoints)}"
+                )
+                self._publish_goal(waypoint["x"], waypoint["y"], waypoint.get("yaw", 0.0))
+                return
+
+            if self._patrol_current_loop < self._patrol_total_loops:
+                self._patrol_current_loop += 1
+                self._patrol_current_waypoint_index = 0
+                waypoint = self._patrol_waypoints[0]
+                self._set_patrol_state(
+                    "running",
+                    f"Loop {self._patrol_current_loop}/{self._patrol_total_loops}, waypoint 1/{len(self._patrol_waypoints)}"
+                )
+                self._publish_goal(waypoint["x"], waypoint["y"], waypoint.get("yaw", 0.0))
+                return
+
+            self._patrol_phase = "return_home_end"
+            self._set_patrol_state("returning_home", "All loops complete, returning home")
+            self._publish_goal(self._patrol_home["x"], self._patrol_home["y"], self._patrol_home["yaw"])
+            return
+
+        if self._patrol_phase == "return_home_end":
+            self._stop_patrol("completed", "Patrol completed and returned home")
+
+    def patrol_tick(self):
+        if not self._is_patrol_active():
+            return
+
+        dist = self._distance_to_current_goal()
+        if dist is not None and dist <= self._patrol_waypoint_tolerance:
+            self._advance_patrol_goal()
+            return
+
+        if self._patrol_goal_sent_at is not None:
+            now_sec = self.get_clock().now().nanoseconds / 1e9
+            if now_sec - self._patrol_goal_sent_at > self._patrol_waypoint_timeout_sec:
+                self._stop_patrol("failed", "Timeout while waiting to reach patrol goal")
 
     def imu_cb(self, msg):
         self.telemetry_data["imu"] = {
@@ -237,15 +425,30 @@ class WheeltecControlNode(Node):
                     self.cmd_rep.send_json({"status": "ok"})
 
                 elif action == "nav_goal":
+                    if self._is_patrol_active():
+                        self._stop_patrol("aborted", "Interrupted by manual nav goal")
                     goal = PoseStamped()
                     goal.header.frame_id = "map"
                     goal.header.stamp = self.get_clock().now().to_msg()
                     goal.pose.position.x = float(payload.get("x", 0.0))
                     goal.pose.position.y = float(payload.get("y", 0.0))
-                    goal.pose.orientation.w = 1.0
+                    yaw = float(payload.get("theta", payload.get("yaw", 0.0)))
+                    qz, qw = self._quat_from_yaw(yaw)
+                    goal.pose.orientation.z = qz
+                    goal.pose.orientation.w = qw
                     self.goal_pub.publish(goal)
-                    self.get_logger().info(f"Published nav goal to x={goal.pose.position.x}, y={goal.pose.position.y}")
+                    self.get_logger().info(f"Published nav goal to x={goal.pose.position.x}, y={goal.pose.position.y}, yaw={yaw}")
                     self.cmd_rep.send_json({"status": "goal_sent"})
+
+                elif action == "patrol_start":
+                    self._start_patrol(payload)
+                    self.cmd_rep.send_json({"status": "started", "run_id": self._patrol_run_id})
+
+                elif action == "patrol_stop":
+                    reason = str(payload.get("reason") or "Patrol stopped by command")
+                    if self._is_patrol_active():
+                        self._stop_patrol("stopped", reason)
+                    self.cmd_rep.send_json({"status": "stopped", "run_id": self._patrol_run_id})
 
                 elif action == "resend_map":
                     if self._last_map_msg is not None:

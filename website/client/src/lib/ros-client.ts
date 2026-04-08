@@ -1,4 +1,5 @@
-type MessageHandler = (data: any) => void;
+type MessagePayload = unknown;
+type MessageHandler = (data: MessagePayload) => void;
 
 class ROSClient {
   private ws: WebSocket | null = null;
@@ -77,7 +78,7 @@ class ROSClient {
     this.binaryHandlers.delete(handler);
   }
 
-  send(type: string, payload: any) {
+  send(type: string, payload: unknown) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ type, payload }));
     }

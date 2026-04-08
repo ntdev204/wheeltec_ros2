@@ -12,6 +12,7 @@ from app.routes.robot import router as robot_router
 from app.routes.analytics import router as analytics_router
 from app.routes.logs import router as logs_router
 from app.services.session_service import SessionService
+from app.services.patrol_service import PatrolService
 
 async def zmq_background_listener():
     """
@@ -38,23 +39,31 @@ async def zmq_background_listener():
 async def lifespan(app: FastAPI):
     # Startup: Initialize the SQLite database schema
     await init_db()
-    
+
     # Start a new session automatically
     session_id = await SessionService.start_session()
     print(f"[Main] Started new SCADA session: {session_id}")
-    
+
+    await PatrolService.ensure_default_schedule()
+
     # Start ZMQ background listener for Live Map
     listener_task = asyncio.create_task(zmq_background_listener())
-    
+    patrol_scheduler_task = asyncio.create_task(PatrolService.scheduler_loop(session_id))
+
     yield
     # Shutdown logic
     if session_id:
         await SessionService.end_session(session_id)
         print(f"[Main] Ended SCADA session: {session_id}")
-        
+
     listener_task.cancel()
+    patrol_scheduler_task.cancel()
     try:
         await listener_task
+    except asyncio.CancelledError:
+        pass
+    try:
+        await patrol_scheduler_task
     except asyncio.CancelledError:
         pass
 app = FastAPI(title="Wheeltec SCADA API", lifespan=lifespan)

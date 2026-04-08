@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRobotState } from '@/hooks/use-robot-state';
 import { rosClient } from '@/lib/ros-client';
 import { RobotMap } from '@/components/map/robot-map';
 import { HomePoint } from '@/components/control/home-point';
+import { PatrolPanel } from '@/components/control/patrol-panel';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,6 +137,8 @@ export default function NavigationPage() {
               </Button>
             </CardContent>
           </Card>
+
+          <PatrolPanel />
 
         </div>
       </div>
