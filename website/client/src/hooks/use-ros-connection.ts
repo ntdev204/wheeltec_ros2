@@ -14,7 +14,9 @@ export function useROSConnection() {
     fetch(`${API_URL}/api/robot/patrol/status`)
       .then((response) => response.json())
       .then((data) => setPatrolStatus(data ?? null))
-      .catch(() => {});
+      .catch((error) => {
+        console.error('Failed to load patrol status', error);
+      });
 
     const telemetryHandler = (data: unknown) => {
       if (!data || typeof data !== 'object') {

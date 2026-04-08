@@ -13,6 +13,7 @@ from app.zmq_client import zmq_client
 
 PATROL_PENDING_STATUSES = {"pending", "starting", "running", "returning_home"}
 PATROL_TERMINAL_STATUSES = {"completed", "aborted", "failed", "stopped"}
+ACTIVE_PATROL_STATUSES = {"starting", "running", "returning_home"}
 DEFAULT_INTERVAL_MINUTES = 30
 DEFAULT_LOOPS_PER_RUN = 5
 MIN_INTERVAL_MINUTES = 1
@@ -263,6 +264,8 @@ class PatrolService:
 
     @staticmethod
     async def validate_start_conditions(route_id: int | None = None) -> dict[str, Any]:
+        runtime = await PatrolService.get_runtime_snapshot()
+
         route = await PatrolService.get_route()
         if route_id is not None:
             async with aiosqlite.connect(settings.db_path) as db:
@@ -284,8 +287,6 @@ class PatrolService:
             raise ValueError("No active map is configured")
         if route.get("map_id") and route["map_id"] != active_map["id"]:
             raise ValueError("Patrol route does not match the active map")
-
-        runtime = dict(PatrolService._runtime_state)
 
         battery_pct = runtime.get("battery_pct")
         if battery_pct is not None and battery_pct < MIN_START_BATTERY_PERCENT:
