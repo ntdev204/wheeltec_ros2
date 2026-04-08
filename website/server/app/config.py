@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     zmq_cmd_port: int = 5555
     zmq_telemetry_port: int = 5556
     zmq_camera_port: int = 5557
+    zmq_ai_detection_port: int = 5558
+    zmq_human_tracking_port: int = 5559
     camera_topic: str = "/camera/color/image_raw"
     db_path: str = "./robot.db"
     ros_domain_id: int = 0

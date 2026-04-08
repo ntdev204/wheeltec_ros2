@@ -1,0 +1,29 @@
+# Video Streaming Configuration
+streaming:
+  # ZMQ ports
+  ai_detection_port: 5558    # All objects annotated
+  human_tracking_port: 5559  # Humans only annotated
+
+  # Encoding
+  format: "jpg"
+  quality: 75                # JPEG quality (1-100)
+
+  # Frame rate
+  target_fps: 30             # Target streaming FPS
+
+  # Annotation settings
+  bbox_thickness: 2
+  font_scale: 0.5
+  font_thickness: 1
+
+  # Colors (BGR format)
+  colors:
+    person: [0, 255, 0]      # Green for humans
+    vehicle: [255, 0, 0]     # Blue for vehicles
+    default: [0, 255, 255]   # Yellow for others
+
+  # Topics
+  topics:
+    camera_input: "/camera/color/image_raw"
+    detections_input: "/detections"
+    tracked_humans_input: "/tracked_humans"

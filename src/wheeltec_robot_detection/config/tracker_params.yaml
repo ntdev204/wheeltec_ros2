@@ -1,0 +1,29 @@
+# ByteTrack Tracker Configuration
+tracker:
+  # Track initialization
+  track_thresh: 0.5          # Detection confidence threshold for track initialization
+  track_buffer: 30           # Number of frames to keep lost tracks
+  match_thresh: 0.8          # IOU threshold for matching
+
+  # Motion model
+  motion_model: "kalman"     # kalman or linear
+
+  # Track management
+  min_box_area: 100          # Minimum bounding box area (pixels)
+  aspect_ratio_thresh: 1.6   # Maximum aspect ratio for valid detections
+
+  # Multi-class tracking
+  track_all_classes: true    # Track all detected classes
+  human_class_id: 0          # COCO person class ID
+
+  # QoS settings
+  qos:
+    reliability: "reliable"
+    history: "keep_last"
+    depth: 10
+
+# Topics
+topics:
+  detections_input: "/detections"
+  tracked_objects_output: "/tracked_objects"
+  tracked_humans_output: "/tracked_humans"
