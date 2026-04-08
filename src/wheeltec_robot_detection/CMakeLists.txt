@@ -98,14 +98,11 @@ endif()
 # Python components (always available)
 ament_python_install_package(${PROJECT_NAME})
 
-install(PROGRAMS
-  wheeltec_robot_detection/detection_node.py
-  wheeltec_robot_detection/tracker_node.py
-  wheeltec_robot_detection/image_storage_node.py
-  wheeltec_robot_detection/video_stream_node.py
-  wheeltec_robot_detection/dynamic_obstacle_publisher.py
-  DESTINATION lib/${PROJECT_NAME}
-)
+install(PROGRAMS wheeltec_robot_detection/detection_node.py DESTINATION lib/${PROJECT_NAME} RENAME detection_node)
+install(PROGRAMS wheeltec_robot_detection/tracker_node.py DESTINATION lib/${PROJECT_NAME} RENAME tracker_node)
+install(PROGRAMS wheeltec_robot_detection/image_storage_node.py DESTINATION lib/${PROJECT_NAME} RENAME image_storage_node)
+install(PROGRAMS wheeltec_robot_detection/video_stream_node.py DESTINATION lib/${PROJECT_NAME} RENAME video_stream_node)
+install(PROGRAMS wheeltec_robot_detection/dynamic_obstacle_publisher.py DESTINATION lib/${PROJECT_NAME} RENAME dynamic_obstacle_publisher)
 
 # Install launch files
 install(DIRECTORY

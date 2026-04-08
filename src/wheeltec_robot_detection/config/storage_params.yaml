@@ -1,7 +1,7 @@
 # Image Storage Configuration
 storage:
   # Storage paths
-  base_path: "/home/jetson/wheeltec_data/images"
+  base_path: "/home/robot/wheeltec_data/images"
   raw_subdir: "raw"
   annotated_subdir: "annotated"
 
@@ -20,7 +20,7 @@ storage:
   quality: 85                # JPEG quality (1-100)
 
   # Metadata database
-  db_path: "/home/jetson/wheeltec_data/images/metadata.db"
+  db_path: "/home/robot/wheeltec_data/images/metadata.db"
 
   # Topics
   topics:

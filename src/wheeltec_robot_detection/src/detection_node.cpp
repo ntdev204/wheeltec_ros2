@@ -1,5 +1,3 @@
-"""C++ TensorRT Detection Node - Implementation."""
-
 #include "wheeltec_robot_detection/detection_node.hpp"
 #include <fstream>
 #include <algorithm>
@@ -71,9 +69,9 @@ DetectionNode::~DetectionNode()
   cudaStreamDestroy(stream_);
 
   // Free TensorRT resources
-  if (context_) context_->destroy();
-  if (engine_) engine_->destroy();
-  if (runtime_) runtime_->destroy();
+  if (context_) delete context_;
+  if (engine_) delete engine_;
+  if (runtime_) delete runtime_;
 }
 
 bool DetectionNode::loadEngine(const std::string & engine_path)
@@ -104,12 +102,16 @@ bool DetectionNode::loadEngine(const std::string & engine_path)
 
   context_ = engine_->createExecutionContext();
 
-  // Allocate CUDA buffers
-  int input_index = engine_->getBindingIndex("images");
-  int output_index = engine_->getBindingIndex("output0");
+  // Allocate CUDA buffers using new API
+  int32_t input_index = 0;  // Assuming first binding is input
+  int32_t output_index = 1; // Assuming second binding is output
 
-  auto input_dims = engine_->getBindingDimensions(input_index);
-  auto output_dims = engine_->getBindingDimensions(output_index);
+  // Get tensor names and store them
+  input_tensor_name_ = engine_->getIOTensorName(input_index);
+  output_tensor_name_ = engine_->getIOTensorName(output_index);
+
+  auto input_dims = engine_->getTensorShape(input_tensor_name_.c_str());
+  auto output_dims = engine_->getTensorShape(output_tensor_name_.c_str());
 
   size_t input_size = 1 * 3 * input_h_ * input_w_ * sizeof(float);
   output_size_ = 1;
@@ -283,8 +285,10 @@ void DetectionNode::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
     // Preprocess on GPU
     preprocessImage(image, static_cast<float*>(buffers_[0]));
 
-    // Run inference
-    context_->enqueueV2(buffers_, stream_, nullptr);
+    // Run inference using new API
+    context_->setTensorAddress(input_tensor_name_.c_str(), buffers_[0]);
+    context_->setTensorAddress(output_tensor_name_.c_str(), buffers_[1]);
+    context_->enqueueV3(stream_);
 
     // Postprocess
     std::vector<Detection> detections = postprocessOutput(
@@ -297,7 +301,6 @@ void DetectionNode::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 
     for (const auto & det : detections) {
       auto detection_msg = wheeltec_robot_msg::msg::Detection2D();
-      detection_msg.header = msg->header;
       detection_msg.class_name = det.class_name;
       detection_msg.class_id = det.class_id;
       detection_msg.confidence = det.confidence;

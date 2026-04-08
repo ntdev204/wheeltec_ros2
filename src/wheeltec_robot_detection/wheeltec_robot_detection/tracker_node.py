@@ -11,7 +11,7 @@ from wheeltec_robot_msg.msg import (
     Detection2DArray, TrackedObject, TrackedObjectArray,
     TrackedHuman, TrackedHumanArray
 )
-from .tracking import ByteTracker
+from wheeltec_robot_detection.tracking import ByteTracker
 
 
 class TrackerNode(Node):

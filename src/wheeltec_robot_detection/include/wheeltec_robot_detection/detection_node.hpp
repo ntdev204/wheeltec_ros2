@@ -1,5 +1,3 @@
-"""C++ TensorRT Detection Node - Header File."""
-
 #ifndef WHEELTEC_ROBOT_DETECTION__DETECTION_NODE_HPP_
 #define WHEELTEC_ROBOT_DETECTION__DETECTION_NODE_HPP_
 
@@ -66,6 +64,8 @@ private:
   // CUDA buffers
   void* buffers_[2];  // input and output
   cudaStream_t stream_;
+  std::string input_tensor_name_;
+  std::string output_tensor_name_;
 
   // Model parameters
   int input_h_;

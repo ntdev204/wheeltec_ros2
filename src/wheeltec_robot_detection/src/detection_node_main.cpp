@@ -1,5 +1,3 @@
-"""Main entry point for C++ detection node."""
-
 #include "wheeltec_robot_detection/detection_node.hpp"
 #include <rclcpp/rclcpp.hpp>
 

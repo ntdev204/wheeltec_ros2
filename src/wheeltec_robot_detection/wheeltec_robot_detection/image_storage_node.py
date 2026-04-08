@@ -100,7 +100,7 @@ class ImageStorageNode(Node):
         """Return default configuration."""
         return {
             'storage': {
-                'base_path': '/home/jetson/wheeltec_data/images',
+                'base_path': '/home/robot/wheeltec_data/images',
                 'raw_subdir': 'raw',
                 'annotated_subdir': 'annotated',
                 'max_raw_images': 1000,
@@ -109,7 +109,7 @@ class ImageStorageNode(Node):
                 'min_objects': 1,
                 'format': 'jpg',
                 'quality': 85,
-                'db_path': '/home/jetson/wheeltec_data/images/metadata.db',
+                'db_path': '/home/robot/wheeltec_data/images/metadata.db',
                 'topics': {
                     'camera_input': '/camera/color/image_raw',
                     'detections_input': '/detections'

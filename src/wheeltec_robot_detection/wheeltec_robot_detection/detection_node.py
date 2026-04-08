@@ -13,7 +13,7 @@ from pathlib import Path
 import yaml
 
 from wheeltec_robot_msg.msg import Detection2D, Detection2DArray
-from .inference.tensorrt_detector import TensorRTDetector
+from wheeltec_robot_detection.inference.tensorrt_detector import TensorRTDetector
 
 
 class DetectionNode(Node):
@@ -100,7 +100,7 @@ class DetectionNode(Node):
         """Return default configuration."""
         return {
             'detection': {
-                'model_path': '/home/jetson/wheeltec_ros2/src/wheeltec_robot_detection/models/yolov8m_int8.engine',
+                'model_path': '/home/robot/wheeltec_ros2/src/wheeltec_robot_detection/models/yolov8m.engine',
                 'input_size': [640, 640],
                 'confidence_threshold': 0.5,
                 'nms_threshold': 0.45,

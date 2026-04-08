@@ -12,7 +12,7 @@ def generate_launch_description():
     # Model path (update this to your actual engine path)
     engine_path = os.path.join(
         os.path.expanduser('~'),
-        'wheeltec_ros2/src/wheeltec_robot_detection/models/yolov8m_int8.engine'
+        'wheeltec_ros2/src/wheeltec_robot_detection/models/yolov8m.engine'
     )
 
     # COCO class names
