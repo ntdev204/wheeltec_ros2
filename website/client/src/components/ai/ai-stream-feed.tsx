@@ -22,7 +22,8 @@ export function AIStreamFeed({ port, title, description, streamType }: AIStreamF
 
   useEffect(() => {
     const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-    const ws = new WebSocket(`ws://${host}:${port}/ws/ai/${streamType}`);
+    const serverPort = 8000; // Backend API port, not ZMQ port
+    const ws = new WebSocket(`ws://${host}:${serverPort}/ws/ai/${streamType}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
