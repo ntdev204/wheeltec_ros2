@@ -102,6 +102,7 @@ install(PROGRAMS wheeltec_robot_detection/detection_node.py DESTINATION lib/${PR
 install(PROGRAMS wheeltec_robot_detection/tracker_node.py DESTINATION lib/${PROJECT_NAME} RENAME tracker_node)
 
 install(PROGRAMS wheeltec_robot_detection/video_stream_node.py DESTINATION lib/${PROJECT_NAME} RENAME video_stream_node)
+install(PROGRAMS wheeltec_robot_detection/websocket_stream_node.py DESTINATION lib/${PROJECT_NAME} RENAME websocket_stream_node)
 install(PROGRAMS wheeltec_robot_detection/dynamic_obstacle_publisher.py DESTINATION lib/${PROJECT_NAME} RENAME dynamic_obstacle_publisher)
 
 # Install launch files

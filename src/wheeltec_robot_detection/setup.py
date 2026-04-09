@@ -34,6 +34,7 @@ setup(
             'detection_node = wheeltec_robot_detection.detection_node:main',
             'tracker_node = wheeltec_robot_detection.tracker_node:main',
             'video_stream_node = wheeltec_robot_detection.video_stream_node:main',
+            'websocket_stream_node = wheeltec_robot_detection.websocket_stream_node:main',
             'dynamic_obstacle_publisher = wheeltec_robot_detection.dynamic_obstacle_publisher:main',
         ],
     },

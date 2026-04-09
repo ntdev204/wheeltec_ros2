@@ -2,6 +2,7 @@ import { JoystickPad } from '@/components/control/joystick-pad';
 import { SpeedControl } from '@/components/control/speed-control';
 import { EmergencyStop } from '@/components/control/emergency-stop';
 import { CameraFeed } from '@/components/camera/camera-feed';
+import { AIStreamFeed } from '@/components/ai/ai-stream-feed';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -24,7 +25,16 @@ export default function HomePage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Left Column: Visuals */}
         <div className="lg:col-span-8 flex flex-col gap-10">
-          <CameraFeed />
+          {/* Dual Video Streams */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <CameraFeed />
+            <AIStreamFeed
+              port={5558}
+              title="AI Detection"
+              description="YOLOv8s Real-time Detection"
+              streamType="detection"
+            />
+          </div>
 
           {/* Driver Control hint */}
           <Card>

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""YOLOv8s TensorRT detection node — decoupled inference thread for 35+ FPS.
+"""YOLOv8s TensorRT detection node — pull-based inference for 25-30 FPS.
 
-Key fixes vs previous version:
-  1. CUDA context: make_context() auto-pushes on constructor thread.
+Key architecture:
+  1. Pull-based: inference thread continuously reads latest frame (no event flags).
+  2. Single shared frame: camera overwrites, inference reads — no double-buffer swap.
+  3. No sleep(0.001): inference runs at maximum GPU throughput.
+  4. CUDA context: make_context() auto-pushes on constructor thread.
      The inference thread must POP from main thread first, then push on
      inference thread. Fixed via ctx.detach() + push() on inference thread.
-  2. MultiThreadedExecutor: guarantees callbacks are non-blocking.
-  3. frame.copy() inside lock eliminated — use double-buffer swap instead.
-  4. preview publish uses bgr8 raw (not JPEG) — cv2_to_imgmsg is near-zero cost.
+  5. MultiThreadedExecutor: guarantees callbacks are non-blocking.
 """
 
 import rclpy
@@ -49,7 +50,7 @@ class DetectionNode(Node):
         self.bridge = CvBridge()
 
         camera_qos = QoSProfile(
-            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            reliability=QoSReliabilityPolicy.RELIABLE,
             history=QoSHistoryPolicy.KEEP_LAST,
             depth=1,
         )
@@ -71,14 +72,11 @@ class DetectionNode(Node):
             Image, '/ai/preview', 1,
         )
 
-        # Double-buffer: camera writes to _write_buf; inference reads from _read_buf
-        # Lock only protects the swap, not the actual data access
-        self._swap_lock    = threading.Lock()
-        self._write_buf    = None   # latest incoming frame
-        self._write_header = None
-        self._read_buf     = None   # frame owned by inference thread
-        self._read_header  = None
-        self._has_new      = False  # flag: new frame available since last inference
+        # Pull-based: inference thread continuously reads latest frame
+        # Lock only protects atomic read/write of frame pointer
+        self._frame_lock    = threading.Lock()
+        self._latest_frame  = None   # always holds most recent frame
+        self._latest_header = None
 
         # FPS tracking
         self._inf_count        = 0
@@ -102,11 +100,10 @@ class DetectionNode(Node):
             self.get_logger().error(f'cv_bridge error: {e}')
             return
 
-        with self._swap_lock:
-            # Overwrite write buf — inference will grab it on next iter
-            self._write_buf    = frame          # no .copy() — inference owns read_buf separately
-            self._write_header = msg.header
-            self._has_new      = True
+        with self._frame_lock:
+            # Overwrite latest frame — inference continuously pulls it
+            self._latest_frame  = frame
+            self._latest_header = msg.header
 
     def _inference_loop(self):
         """Inference thread — owns CUDA context exclusively."""
@@ -128,22 +125,13 @@ class DetectionNode(Node):
         self.get_logger().info('TensorRT detector loaded — inference starting')
 
         while self._running:
-            # ── Grab new frame via swap (O(1), no copy)
-            with self._swap_lock:
-                if not self._has_new or self._write_buf is None:
-                    frame  = None
-                    header = None
-                else:
-                    # Swap: inference thread takes ownership of write_buf
-                    frame  = self._write_buf
-                    header = self._write_header
-                    # Give write_buf a fresh slot (inference now owns old write_buf)
-                    self._write_buf = None
-                    self._has_new   = False
+            # ── Pull latest frame (continuous, no event flag)
+            with self._frame_lock:
+                frame  = self._latest_frame
+                header = self._latest_header
 
             if frame is None:
-                time.sleep(0.001)   # 1ms yield when no new frame
-                continue
+                continue  # No sleep—retry immediately until first frame arrives
 
             # ── Inference
             t0 = time.monotonic()

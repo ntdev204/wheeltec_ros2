@@ -1,12 +1,11 @@
 # Video Streaming Configuration
 streaming:
-  # ZMQ ports
-  ai_detection_port: 5558    # All objects annotated
-  human_tracking_port: 5559  # Humans only annotated
+  # WebSocket server
+  port: 8000                 # HTTP/WebSocket server port
 
   # Encoding
   format: "jpg"
-  quality: 75                # JPEG quality (1-100)
+  quality: 70                # JPEG quality (1-100) - reduced for better FPS
 
   # Frame rate
   target_fps: 30             # Target streaming FPS
