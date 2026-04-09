@@ -217,3 +217,36 @@ async def scada_websocket(websocket: WebSocket):
 
     sub_socket.close()
     camera_socket.close()
+
+@router.websocket("/ws/ai/detection")
+async def ai_detection_websocket(websocket: WebSocket):
+    await websocket.accept()
+    ai_socket = context.socket(zmq.SUB)
+    ai_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_ai_detection_port}")
+    ai_socket.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    try:
+        while True:
+            frame = await ai_socket.recv()
+            await websocket.send_bytes(frame)
+    except Exception as e:
+        print(f"Detection WebSocket Error: {e}")
+    finally:
+        ai_socket.close()
+
+@router.websocket("/ws/ai/tracking")
+async def ai_tracking_websocket(websocket: WebSocket):
+    await websocket.accept()
+    ai_socket = context.socket(zmq.SUB)
+    ai_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_human_tracking_port}")
+    ai_socket.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    try:
+        while True:
+            frame = await ai_socket.recv()
+            await websocket.send_bytes(frame)
+    except Exception as e:
+        print(f"Tracking WebSocket Error: {e}")
+    finally:
+        ai_socket.close()
+

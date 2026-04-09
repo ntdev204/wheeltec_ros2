@@ -21,8 +21,8 @@ export function AIStreamFeed({ port, title, description, streamType }: AIStreamF
   const lastFpsTimeRef = useRef(Date.now());
 
   useEffect(() => {
-    // Connect to WebSocket that forwards ZMQ stream
-    const ws = new WebSocket(`ws://localhost:8000/ws/ai/${streamType}`);
+    const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const ws = new WebSocket(`ws://${host}:${port}/ws/ai/${streamType}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
