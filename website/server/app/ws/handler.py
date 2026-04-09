@@ -228,6 +228,8 @@ async def ai_detection_websocket(websocket: WebSocket):
     try:
         while True:
             frame = await ai_socket.recv()
+            if frame.startswith(b'DETECTION:'):
+                frame = frame[10:]
             await websocket.send_bytes(frame)
     except Exception as e:
         print(f"Detection WebSocket Error: {e}")
@@ -244,6 +246,8 @@ async def ai_tracking_websocket(websocket: WebSocket):
     try:
         while True:
             frame = await ai_socket.recv()
+            if frame.startswith(b'TRACKING:'):
+                frame = frame[9:]
             await websocket.send_bytes(frame)
     except Exception as e:
         print(f"Tracking WebSocket Error: {e}")
