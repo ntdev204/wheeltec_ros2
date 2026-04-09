@@ -24,6 +24,6 @@ streaming:
 
   # Topics
   topics:
-    camera_input: "/camera/color/image_raw"
+    camera_input: "/ai/preview"
     detections_input: "/detections"
     tracked_humans_input: "/tracked_humans"

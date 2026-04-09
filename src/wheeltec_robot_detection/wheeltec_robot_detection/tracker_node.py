@@ -49,7 +49,7 @@ class TrackerNode(Node):
         detection_qos = QoSProfile(
             reliability=QoSReliabilityPolicy.BEST_EFFORT,
             history=QoSHistoryPolicy.KEEP_LAST,
-            depth=5
+            depth=1
         )
 
         tracking_qos = QoSProfile(
@@ -166,7 +166,8 @@ class TrackerNode(Node):
 
             if len(tracks) > 0:
                 self.get_logger().info(
-                    f'Tracking {len(tracks)} objects ({len(tracked_humans_msg.humans)} humans)'
+                    f'Tracking {len(tracks)} objects ({len(tracked_humans_msg.humans)} humans)',
+                    throttle_duration_sec=1.0
                 )
 
         except Exception as e:

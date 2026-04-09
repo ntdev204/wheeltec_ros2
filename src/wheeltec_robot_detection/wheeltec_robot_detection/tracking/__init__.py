@@ -41,7 +41,7 @@ class KalmanFilter:
         """Update state with measurement."""
         y = measurement - self.H @ self.state
         S = self.H @ self.covariance @ self.H.T + self.R
-        K = self.covariance @ self.H.T @ np.linalg.inv(S)
+        K = np.linalg.solve(S, self.H @ self.covariance).T
 
         self.state = self.state + K @ y
         self.covariance = (np.eye(8) - K @ self.H) @ self.covariance

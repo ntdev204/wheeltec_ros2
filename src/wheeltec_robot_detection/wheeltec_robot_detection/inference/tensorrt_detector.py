@@ -34,18 +34,21 @@ class TensorRTDetector(BaseDetector):
         self.outputs = []
         self.stream = None
 
-        # CUDA context — bound to constructor thread.
-        # SingleThreadedExecutor guarantees all callbacks run on this same thread.
+        # ── CUDA context ──────────────────────────────────────────────────────
+        # IMPORTANT: This constructor MUST be called from the inference thread,
+        # NOT from the ROS main thread. make_context() creates AND pushes the
+        # context on the calling thread. The inference thread owns this context
+        # for its entire lifetime and must pop() it before exiting.
         self.cuda_device = cuda.Device(0)
         self.cuda_ctx = self.cuda_device.make_context()
+        # Context is now current on this (inference) thread.
 
         # Pre-allocate reusable letterbox canvas (pinned memory → zero-copy into TRT buffer)
         target_w, target_h = self.input_size
-        # Pinned HWC float32 staging buffer for letterbox output
         self._letterbox_buf: np.ndarray = cuda.pagelocked_empty(
             (target_h, target_w, 3), dtype=np.float32
         )
-        self._letterbox_buf[:] = 114.0 / 255.0  # default grey fill
+        self._letterbox_buf[:] = 114.0 / 255.0  # grey fill — set ONCE, never reset
 
         self.load_model()
 
@@ -60,7 +63,14 @@ class TensorRTDetector(BaseDetector):
 
         runtime = trt.Runtime(TRT_LOGGER)
         self.engine = runtime.deserialize_cuda_engine(engine_data)
+        if self.engine is None:
+            raise RuntimeError('TRT deserialize_cuda_engine failed — engine file may be corrupt or CUDA OOM.')
         self.context = self.engine.create_execution_context()
+        if self.context is None:
+            raise RuntimeError(
+                'TRT create_execution_context() returned None. '
+                'GPU out of memory — kill all GPU processes and retry.'
+            )
         self.stream = cuda.Stream()
 
         for i in range(self.engine.num_io_tensors):
@@ -119,9 +129,10 @@ class TensorRTDetector(BaseDetector):
             ddepth=cv2.CV_32F,
         )  # shape [1, 3, new_h, new_w]
 
-        # Write into pinned TRT buffer (1CHW view of the pinned array)
+        # Write ONLY the valid region into pinned TRT buffer — no full reset.
+        # Grey padding (114/255) was set once in __init__ and is never overwritten
+        # outside the letterbox region, so no memset needed here (saves ~3MB/frame).
         inp = self.inputs[0]['host'].reshape(1, 3, target_h, target_w)
-        inp[:] = 114.0 / 255.0  # reset grey fill
         inp[:, :, pad_h:pad_h + new_h, pad_w:pad_w + new_w] = blob[:, :, :new_h, :new_w]
 
     # ── Inference (async CUDA stream) ──────────────────────────────────────
@@ -187,10 +198,12 @@ class TensorRTDetector(BaseDetector):
         y2 = np.clip(y2, 0, orig_h).astype(int)
 
         # ── C++ batched NMS via cv2.dnn.NMSBoxes ─────────────────────────
-        # expects [x, y, w, h] format
-        boxes_xywh = np.stack([x1, y1, x2 - x1, y2 - y1], axis=1).tolist()
+        # expects [x, y, w, h] format — pass numpy arrays directly (no .tolist() overhead)
+        ww = (x2 - x1).astype(np.int32)
+        hh = (y2 - y1).astype(np.int32)
+        boxes_xywh = np.stack([x1, y1, ww, hh], axis=1)
         indices = cv2.dnn.NMSBoxes(
-            boxes_xywh,
+            boxes_xywh.tolist(),
             confs.tolist(),
             self.confidence_threshold,
             self.nms_threshold,
@@ -199,7 +212,7 @@ class TensorRTDetector(BaseDetector):
         if len(indices) == 0:
             return []
 
-        idx = np.array(indices).flatten()
+        idx = np.asarray(indices).flatten()
 
         # ── Build result list (only kept boxes, vectorized slice) ─────────
         return [

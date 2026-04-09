@@ -23,7 +23,8 @@ def generate_launch_description():
             executable='detection_node',
             name='detection_node',
             parameters=[{'config_file': detection_config}],
-            output='screen'
+            output='screen',
+            additional_env={'PYTHONUNBUFFERED': '1'},
         ),
 
         # Tracker node
