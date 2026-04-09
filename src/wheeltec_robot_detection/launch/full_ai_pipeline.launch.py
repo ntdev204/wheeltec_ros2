@@ -1,4 +1,4 @@
-"""Launch file for full AI pipeline: detection + tracking + storage + streaming."""
+"""Launch file for full AI pipeline: detection + tracking + streaming."""
 
 from launch import LaunchDescription
 from launch_ros.actions import Node
@@ -14,7 +14,6 @@ def generate_launch_description():
     # Configuration files
     detection_config = os.path.join(pkg_dir, 'config', 'detection_params.yaml')
     tracker_config = os.path.join(pkg_dir, 'config', 'tracker_params.yaml')
-    storage_config = os.path.join(pkg_dir, 'config', 'storage_params.yaml')
     streaming_config = os.path.join(pkg_dir, 'config', 'streaming_params.yaml')
 
     return LaunchDescription([
@@ -36,14 +35,6 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # Image storage node
-        Node(
-            package='wheeltec_robot_detection',
-            executable='image_storage_node',
-            name='image_storage_node',
-            parameters=[{'config_file': storage_config}],
-            output='screen'
-        ),
 
         # Video streaming node
         Node(

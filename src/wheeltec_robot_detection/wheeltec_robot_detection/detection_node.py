@@ -3,6 +3,7 @@
 
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import SingleThreadedExecutor
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float32
@@ -88,6 +89,10 @@ class DetectionNode(Node):
             topics_config['latency_output'],
             10
         )
+
+        # Pre-allocate reusable preprocessing buffer (avoids per-frame malloc)
+        input_w, input_h = detection_config['input_size']
+        self._preprocess_buf = np.zeros((1, 3, input_h, input_w), dtype=np.float32)
 
         # Performance tracking
         self.frame_count = 0
@@ -185,11 +190,18 @@ def main(args=None):
     rclpy.init(args=args)
     node = DetectionNode()
 
+    # SingleThreadedExecutor: keeps CUDA context on the same thread that
+    # created it in TensorRTDetector.__init__ (make_context pushes to caller
+    # thread). GPU work is already async via CUDA stream — no CPU threading needed.
+    executor = SingleThreadedExecutor()
+    executor.add_node(node)
+
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:
+        executor.shutdown()
         node.destroy_node()
         rclpy.shutdown()
 

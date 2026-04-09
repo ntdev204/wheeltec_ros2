@@ -11,7 +11,6 @@ setup(
         package_name,
         f'{package_name}.inference',
         f'{package_name}.tracking',
-        f'{package_name}.storage',
         f'{package_name}.streaming',
         f'{package_name}.utils',
     ],
@@ -34,7 +33,6 @@ setup(
         'console_scripts': [
             'detection_node = wheeltec_robot_detection.detection_node:main',
             'tracker_node = wheeltec_robot_detection.tracker_node:main',
-            'image_storage_node = wheeltec_robot_detection.image_storage_node:main',
             'video_stream_node = wheeltec_robot_detection.video_stream_node:main',
             'dynamic_obstacle_publisher = wheeltec_robot_detection.dynamic_obstacle_publisher:main',
         ],
