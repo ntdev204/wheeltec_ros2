@@ -12,7 +12,7 @@ echo "This must be run on the target Jetson device!"
     --onnx=$ONNX_FILE \
     --saveEngine=$ENGINE_FILE \
     --fp16 \
-    --workspace=$WORKSPACE \
+    --memPoolSize=workspace:$WORKSPACE \
     --verbose
 
 echo "TensorRT engine built: $ENGINE_FILE"

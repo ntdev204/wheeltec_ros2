@@ -53,20 +53,24 @@ class TensorRTDetector(BaseDetector):
         # Allocate buffers
         self.stream = cuda.Stream()
 
-        for binding in self.engine:
-            size = trt.volume(self.engine.get_binding_shape(binding))
-            dtype = trt.nptype(self.engine.get_binding_dtype(binding))
+        for i in range(self.engine.num_io_tensors):
+            name = self.engine.get_tensor_name(i)
+            size = trt.volume(self.engine.get_tensor_shape(name))
+            if size < 0:
+                size = abs(size) # Default fallback for dynamic variables if any
+            dtype = trt.nptype(self.engine.get_tensor_dtype(name))
 
             # Allocate host and device buffers
             host_mem = cuda.pagelocked_empty(size, dtype)
             device_mem = cuda.mem_alloc(host_mem.nbytes)
 
-            self.bindings.append(int(device_mem))
+            # Assign memory to execution context for this tensor
+            self.context.set_tensor_address(name, int(device_mem))
 
-            if self.engine.binding_is_input(binding):
-                self.inputs.append({'host': host_mem, 'device': device_mem})
+            if self.engine.get_tensor_mode(name) == trt.TensorIOMode.INPUT:
+                self.inputs.append({'host': host_mem, 'device': device_mem, 'name': name})
             else:
-                self.outputs.append({'host': host_mem, 'device': device_mem})
+                self.outputs.append({'host': host_mem, 'device': device_mem, 'name': name})
 
     def preprocess(self, image: np.ndarray) -> np.ndarray:
         """
@@ -148,7 +152,7 @@ class TensorRTDetector(BaseDetector):
         cuda.memcpy_htod_async(self.inputs[0]['device'], self.inputs[0]['host'], self.stream)
 
         # Run inference
-        self.context.execute_async_v2(bindings=self.bindings, stream_handle=self.stream.handle)
+        self.context.execute_async_v3(stream_handle=self.stream.handle)
 
         # Copy output to host
         cuda.memcpy_dtoh_async(self.outputs[0]['host'], self.outputs[0]['device'], self.stream)
