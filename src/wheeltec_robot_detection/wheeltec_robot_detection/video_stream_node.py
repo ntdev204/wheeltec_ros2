@@ -36,11 +36,15 @@ class VideoStreamNode(Node):
         streaming_config = self.config['streaming']
         topics_config    = streaming_config['topics']
 
-        # ZMQ sockets
+        # ZMQ sockets — HWM=2 drops stale frames when network is slow
         self.zmq_context   = zmq.Context()
         self.detection_pub = self.zmq_context.socket(zmq.PUB)
+        self.detection_pub.setsockopt(zmq.SNDHWM, 2)
+        self.detection_pub.setsockopt(zmq.LINGER, 0)
         self.detection_pub.bind(f"tcp://0.0.0.0:{streaming_config['ai_detection_port']}")
         self.tracking_pub  = self.zmq_context.socket(zmq.PUB)
+        self.tracking_pub.setsockopt(zmq.SNDHWM, 2)
+        self.tracking_pub.setsockopt(zmq.LINGER, 0)
         self.tracking_pub.bind(f"tcp://0.0.0.0:{streaming_config['human_tracking_port']}")
 
         # Encoding settings

@@ -31,10 +31,13 @@ async def scada_websocket(websocket: WebSocket):
     await LogService.log_event("SYSTEM", "ws_connected", "Client connected to SCADA WebSocket", session_id=session_id)
 
     sub_socket = context.socket(zmq.SUB)
+    sub_socket.setsockopt(zmq.RCVHWM, 5)
     sub_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_telemetry_port}")
     sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
     camera_socket = context.socket(zmq.SUB)
+    camera_socket.setsockopt(zmq.RCVHWM, 2)
+    camera_socket.setsockopt(zmq.CONFLATE, 1)  # Latest frame only
     camera_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_camera_port}")
     camera_socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
@@ -232,6 +235,9 @@ async def scada_websocket(websocket: WebSocket):
 async def ai_detection_websocket(websocket: WebSocket):
     await websocket.accept()
     ai_socket = context.socket(zmq.SUB)
+    ai_socket.setsockopt(zmq.RCVHWM, 2)
+    ai_socket.setsockopt(zmq.CONFLATE, 1)  # Always get latest frame only
+    ai_socket.setsockopt(zmq.LINGER, 0)
     ai_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_ai_detection_port}")
     ai_socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
@@ -241,6 +247,8 @@ async def ai_detection_websocket(websocket: WebSocket):
             if frame.startswith(b'DETECTION:'):
                 frame = frame[10:]
             await websocket.send_bytes(frame)
+    except (WebSocketDisconnect, asyncio.CancelledError):
+        pass
     except Exception as e:
         print(f"Detection WebSocket Error: {e}")
     finally:
@@ -250,6 +258,9 @@ async def ai_detection_websocket(websocket: WebSocket):
 async def ai_tracking_websocket(websocket: WebSocket):
     await websocket.accept()
     ai_socket = context.socket(zmq.SUB)
+    ai_socket.setsockopt(zmq.RCVHWM, 2)
+    ai_socket.setsockopt(zmq.CONFLATE, 1)  # Always get latest frame only
+    ai_socket.setsockopt(zmq.LINGER, 0)
     ai_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_human_tracking_port}")
     ai_socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
@@ -259,6 +270,8 @@ async def ai_tracking_websocket(websocket: WebSocket):
             if frame.startswith(b'TRACKING:'):
                 frame = frame[9:]
             await websocket.send_bytes(frame)
+    except (WebSocketDisconnect, asyncio.CancelledError):
+        pass
     except Exception as e:
         print(f"Tracking WebSocket Error: {e}")
     finally:

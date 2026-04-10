@@ -6,10 +6,10 @@ streaming:
 
   # Encoding
   format: "jpg"
-  quality: 70                # JPEG quality (1-100) - reduced for better FPS
+  quality: 50                # Lower quality = smaller frame = faster over Tailscale VPN
 
   # Frame rate
-  target_fps: 30             # Target streaming FPS
+  target_fps: 15             # Realistic target over VPN (Tailscale adds ~20ms RTT)
 
   # Annotation settings
   bbox_thickness: 2
