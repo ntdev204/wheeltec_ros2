@@ -33,11 +33,11 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # WebSocket streaming (replaces ZMQ video_stream_node)
+        # ZMQ video streaming → SCADA server on laptop/VPS connects to these ports
         Node(
             package='wheeltec_robot_detection',
-            executable='websocket_stream_node',
-            name='websocket_stream_node',
+            executable='video_stream_node',
+            name='video_stream_node',
             parameters=[{'config_file': streaming_config}],
             output='screen'
         ),

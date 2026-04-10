@@ -188,10 +188,15 @@ async def scada_websocket(websocket: WebSocket):
 
                 await TelemetryService.maybe_save_snapshot(msg, session_id)
                 await websocket.send_json({"type": "telemetry", "payload": msg})
-        except asyncio.CancelledError:
+        except (asyncio.CancelledError, WebSocketDisconnect):
             # Complete any active path on disconnect
             if shared.get("path_id"):
-                await PathService.complete_path(shared["path_id"])
+                try:
+                    await PathService.complete_path(shared["path_id"])
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"Telemetry forward error: {e}")
 
     async def forward_camera():
         try:
@@ -201,22 +206,27 @@ async def scada_websocket(websocket: WebSocket):
                     update_live_map_png(frame[4:])
                 else:
                     await websocket.send_bytes(frame)
-        except asyncio.CancelledError:
+        except (asyncio.CancelledError, WebSocketDisconnect):
             pass
+        except Exception as e:
+            print(f"Camera forward error: {e}")
 
     task1 = asyncio.create_task(receive_ws())
     task2 = asyncio.create_task(forward_telemetry())
     task3 = asyncio.create_task(forward_camera())
 
-    done, pending = await asyncio.wait(
-        [task1, task2, task3],
-        return_when=asyncio.FIRST_COMPLETED
-    )
-    for task in pending:
-        task.cancel()
-
-    sub_socket.close()
-    camera_socket.close()
+    try:
+        done, pending = await asyncio.wait(
+            [task1, task2, task3],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+        for task in pending:
+            task.cancel()
+    except Exception:
+        pass
+    finally:
+        sub_socket.close()
+        camera_socket.close()
 
 @router.websocket("/ws/ai/detection")
 async def ai_detection_websocket(websocket: WebSocket):

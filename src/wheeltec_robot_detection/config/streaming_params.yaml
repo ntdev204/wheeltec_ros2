@@ -1,7 +1,8 @@
 # Video Streaming Configuration
 streaming:
-  # WebSocket server
-  port: 8000                 # HTTP/WebSocket server port
+  # ZMQ publishing ports (SCADA server connects to these)
+  ai_detection_port: 5558    # Detection annotated frames
+  human_tracking_port: 5559  # Tracking annotated frames
 
   # Encoding
   format: "jpg"
