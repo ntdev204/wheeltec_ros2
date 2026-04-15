@@ -1013,9 +1013,10 @@ namespace lslidar_driver
 						scan->intensities[k] = 0;
 					}
 
-					for (int i = 0; i < count_num; i++)
+					for (int i = 0; i < count_num && i < (int)points.size(); i++)
 					{
 						int point_idx = round((360 - points[i].degree) * count_num / 360);
+						if (point_idx < 0 || point_idx >= scan_num) continue; // bounds guard
 						if (points[i].range == 0.0)
 						{
 							scan->ranges[point_idx] = std::numeric_limits<float>::infinity();
@@ -1027,27 +1028,6 @@ namespace lslidar_driver
 							scan->ranges[point_idx] = (float)dist;
 							scan->intensities[point_idx] = points[i].intensity;
 						}
-						if(truncated_mode_){
-							int len=sizeof(scan_crop_max) / sizeof(scan_crop_max[0]) ;
-							for(int j=0;j<len;++j){
-								if((point_idx>=(scan_crop_min[j]*count_num / 360)) && (point_idx<=(scan_crop_max[j]*count_num / 360))){
-									scan->ranges[point_idx] = std::numeric_limits<float>::infinity();
-									scan->intensities[point_idx] = 0;
-									}
-								}
-							}
-						/*
-						if (points[i + 3000].range == 0.0)
-						{
-							scan->ranges[point_idx + count_num] = std::numeric_limits<float>::infinity();
-							scan->intensities[point_idx + count_num] = 0;
-						}
-						else
-						{
-							double dist = points[i+3000].range;
-							scan->ranges[point_idx + count_num] = (float)dist;
-							scan->intensities[point_idx + count_num] = points[i + 3000].intensity;
-						}*/
 					}
 					scan_pub->publish(std::move(scan));
 				}
