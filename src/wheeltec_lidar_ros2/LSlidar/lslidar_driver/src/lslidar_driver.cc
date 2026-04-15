@@ -1262,8 +1262,9 @@ namespace lslidar_driver
 	{
 		if (!is_start)
 			return true;
-		// Allocate a new shared pointer for zero-copy sharing with other nodelets.
-		unsigned char *packet_bytes = new unsigned char[500];
+		// Use stack buffer to avoid heap allocation/deallocation bugs
+		unsigned char packet_bytes_buf[500] = {0};
+		unsigned char *packet_bytes = packet_bytes_buf;
 		int len = 0;
 		bool difop = false;
 		if (interface_selection == "net")
@@ -1406,7 +1407,7 @@ namespace lslidar_driver
 			else
 				LslidarDriver::data_processing(packet_bytes, len);
 		}
-		delete packet_bytes;
+		// packet_bytes is now a stack buffer — no delete needed
 		return true;
 	}
 
