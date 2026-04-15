@@ -723,8 +723,7 @@ namespace lslidar_driver
 			invalidValue--;
 		if (invalidValue <= 1)
 		{
-			delete packet_bytes;
-			return;
+			return; // polling() owns packet_bytes and will delete it
 		}
 
 		for (int num = 0; num < package_points; num++)
@@ -867,8 +866,7 @@ namespace lslidar_driver
 			invalidValue--;
 		if (invalidValue <= 1)
 		{
-			delete packet_bytes;
-			return;
+			return; // polling() owns packet_bytes and will delete it
 		}
 
 		for (int num = 0; num < package_points; num++)
