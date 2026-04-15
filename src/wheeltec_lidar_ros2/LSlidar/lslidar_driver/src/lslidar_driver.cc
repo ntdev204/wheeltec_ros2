@@ -537,7 +537,8 @@ namespace lslidar_driver
 		else
 			link_time = 0;
 
-		if (link_time > 150)
+		// Threshold: 50ms worth of empty reads at 460800 baud (much longer than one 108-byte packet = 2.35ms)
+		if (link_time > 50000)
 		{
 			serial_->close();
 			int ret = serial_->init();
@@ -608,10 +609,13 @@ namespace lslidar_driver
 		}
 		while (count < len)
 		{
-			count_2 = serial_->read(packet_bytes + count, len - count);
-			if (count_2 >= 0)
+			// Do NOT call recvThread_crc here — packet body reads need up to 2.35ms at 460800 baud.
+			// Use blocking read with 50ms timeout to wait for remaining bytes without busy-polling.
+			count_2 = serial_->read(packet_bytes + count, len - count, 50);
+			if (count_2 > 0)
 				count += count_2;
-			LslidarDriver::recvThread_crc(count_2, link_time);
+			else if (count_2 < 0)
+				return 0; // serial error, give up this packet
 		}
 		if (lidar_name == "N10" || lidar_name == "L10" || lidar_name == "N10_P")
 		{
