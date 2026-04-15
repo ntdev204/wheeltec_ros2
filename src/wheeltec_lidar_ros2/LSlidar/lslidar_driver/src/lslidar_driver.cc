@@ -861,52 +861,56 @@ namespace lslidar_driver
 			sweep_end_time_gps = get_gps_stamp(pTime);
 			sweep_end_time_hardware = sub_second % 1000000000;
 		}
-		invalidValue = package_points - invalidValue;
-		if (lidar_name == "N10_P")
-			invalidValue--;
-		if (invalidValue <= 1)
-		{
-			return; // polling() owns packet_bytes and will delete it
-		}
+		// Always use package_points for angle interpolation — never zero, never skips sync
+		double angle_step = (package_points > 1) ? (degree_interval / (package_points - 1)) : 0.0;
 
 		for (int num = 0; num < package_points; num++)
 		{
-			int s = packet_bytes[num * point_len + data_bits_start];
-			int z = packet_bytes[num * point_len + data_bits_start + 1];
-			int y = 0;
-			if (lidar_name == "N10_P")
-				y = packet_bytes[num * point_len + data_bits_start + 2];
+			// Compute angle first — regardless of point validity
+			double pt_degree = degree + angle_step * num;
+			if (pt_degree >= 360.0) pt_degree -= 360.0;
+			if (pt_degree < 0.0)    pt_degree += 360.0;
 
-			if ((s * 256 + z) != 0xFFFF)
+			// Near channel
+			int sn = packet_bytes[num * point_len + data_bits_start];
+			int zn = packet_bytes[num * point_len + data_bits_start + 1];
+			int yn = packet_bytes[num * point_len + data_bits_start + 2]; // intensity (N10_P always has it)
+
+			scan_points_[idx].degree = pt_degree;
+			if ((sn * 256 + zn) != 0xFFFF)
 			{
-				scan_points_[idx].range = double(s * 256 + (z)) / 1000.f;
-				if (lidar_name == "N10_P")
-					scan_points_[idx].intensity = int(y);
-				else
-					scan_points_[idx].intensity = 0;
-				s = packet_bytes[num * point_len + data_bits_start + point_len / 2];
-				z = packet_bytes[num * point_len + data_bits_start + point_len / 2 + 1];
-				if (lidar_name == "N10_P")
-					y = packet_bytes[num * point_len + data_bits_start + point_len / 2 + 2];
-
-				if ((idx + 3000) < (int)scan_points_.size()) {
-					scan_points_[idx + 3000].range = double(s * 256 + (z)) / 1000.f;
-					if (lidar_name == "N10_P")
-						scan_points_[idx + 3000].intensity = int(y);
-					else
-						scan_points_[idx + 3000].intensity = 0;
-				}
-
-				if ((degree + (degree_interval / invalidValue * num)) > 360)
-					scan_points_[idx].degree = degree + (degree_interval / invalidValue * num) - 360;
-				else
-					scan_points_[idx].degree = degree + (degree_interval / invalidValue * num);
+				scan_points_[idx].range     = double(sn * 256 + zn) / 1000.0;
+				scan_points_[idx].intensity = int(yn);
 			}
 			else
-				continue;
-			if (((scan_points_[idx].degree < last_degree && scan_points_[idx].degree < 5 && last_degree > 355) || idx >= points_size_) && idx > 10)
 			{
-				last_degree = scan_points_[idx].degree;
+				scan_points_[idx].range     = 0.0;
+				scan_points_[idx].intensity = 0;
+			}
+
+			// Far channel
+			if ((idx + 3000) < (int)scan_points_.size())
+			{
+				int sf = packet_bytes[num * point_len + data_bits_start + point_len / 2];
+				int zf = packet_bytes[num * point_len + data_bits_start + point_len / 2 + 1];
+				int yf = packet_bytes[num * point_len + data_bits_start + point_len / 2 + 2];
+				scan_points_[idx + 3000].degree = pt_degree;
+				if ((sf * 256 + zf) != 0xFFFF)
+				{
+					scan_points_[idx + 3000].range     = double(sf * 256 + zf) / 1000.0;
+					scan_points_[idx + 3000].intensity = int(yf);
+				}
+				else
+				{
+					scan_points_[idx + 3000].range     = 0.0;
+					scan_points_[idx + 3000].intensity = 0;
+				}
+			}
+
+			// Wrap detection — fires when a full rotation completes
+			if (((pt_degree < last_degree && pt_degree < 5.0 && last_degree > 355.0) || idx >= points_size_) && idx > 10)
+			{
+				last_degree = pt_degree;
 				count_num = idx;
 				idx = 0;
 				for (int k = 0; k < count_num; k++)
@@ -948,17 +952,12 @@ namespace lslidar_driver
 			}
 			else
 			{
-				last_degree = scan_points_[idx].degree;
+				last_degree = pt_degree;
 				idx++;
 			}
 		}
-		packet_bytes = {0x00};
-		if (packet_bytes)
-		{
-			packet_bytes = NULL;
-			delete packet_bytes;
-		}
 	}
+
 
 	void LslidarDriver::pubScanThread()
 	{
