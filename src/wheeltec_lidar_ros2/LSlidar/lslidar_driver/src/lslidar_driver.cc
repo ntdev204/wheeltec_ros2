@@ -143,7 +143,7 @@ namespace lslidar_driver
 		}
 		count_num = 0;
 
-		scan_points_.resize(6000);
+		scan_points_.resize(6001);
 
 		if (lidar_name == "M10")
 		{
@@ -891,11 +891,13 @@ namespace lslidar_driver
 				if (lidar_name == "N10_P")
 					y = packet_bytes[num * point_len + data_bits_start + point_len / 2 + 2];
 
-				scan_points_[idx + 3000].range = double(s * 256 + (z)) / 1000.f;
-				if (lidar_name == "N10_P")
-					scan_points_[idx + 3000].intensity = int(y);
-				else
-					scan_points_[idx + 3000].intensity = 0;
+				if ((idx + 3000) < (int)scan_points_.size()) {
+					scan_points_[idx + 3000].range = double(s * 256 + (z)) / 1000.f;
+					if (lidar_name == "N10_P")
+						scan_points_[idx + 3000].intensity = int(y);
+					else
+						scan_points_[idx + 3000].intensity = 0;
+				}
 
 				if ((degree + (degree_interval / invalidValue * num)) > 360)
 					scan_points_[idx].degree = degree + (degree_interval / invalidValue * num) - 360;
@@ -916,7 +918,7 @@ namespace lslidar_driver
 						if ((360 - scan_points_[k].degree) > (angle_able_max - 360) && (360 - scan_points_[k].degree) < angle_able_min)
 						{
 							scan_points_[k].range = 0;
-							scan_points_[k + 3000].range = 0;
+							if ((k + 3000) < (int)scan_points_.size()) scan_points_[k + 3000].range = 0;
 						}
 					}
 					else
@@ -924,12 +926,12 @@ namespace lslidar_driver
 						if ((360 - scan_points_[k].degree) > angle_able_max || (360 - scan_points_[k].degree) < angle_able_min)
 						{
 							scan_points_[k].range = 0;
-							scan_points_[k + 3000].range = 0;
+							if ((k + 3000) < (int)scan_points_.size()) scan_points_[k + 3000].range = 0;
 						}
 					}
 					if (scan_points_[k].range < min_range || scan_points_[k].range > max_range)
 						scan_points_[k].range = 0;
-					if (scan_points_[k + 3000].range < min_range || scan_points_[k + 3000].range > max_range)
+					if ((k + 3000) < (int)scan_points_.size() && (scan_points_[k + 3000].range < min_range || scan_points_[k + 3000].range > max_range))
 						scan_points_[k + 3000].range = 0;
 				}
 				boost::unique_lock<boost::mutex> lock(mutex_);
