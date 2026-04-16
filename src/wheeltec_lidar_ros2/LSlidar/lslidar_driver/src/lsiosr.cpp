@@ -155,11 +155,11 @@ int LSIOSR::read(unsigned char *buffer, int length, int timeout)
       }
       else if (rc < 0)
       {
-        printf("error \n");
-        retry--;
-        if (retry <= 0)
+        if (errno != EAGAIN && errno != EINTR)
         {
-          break;
+          retry--;
+          if (retry <= 0)
+            break;
         }
       }
 	  unlink++;
@@ -183,7 +183,6 @@ int LSIOSR::read(unsigned char *buffer, int length, int timeout)
     }
     else if ((rc < 0) && (errno != EINTR) && (errno != EAGAIN))
     {
-      printf("read error\n");
       return -1;
     }
   }

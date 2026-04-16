@@ -922,6 +922,16 @@ namespace lslidar_driver
 			if (pt_degree >= 360.0) pt_degree -= 360.0;
 			if (pt_degree < 0.0)    pt_degree += 360.0;
 
+			// Safety: clamp idx to prevent buffer overflow
+			if (idx >= (int)scan_points_.size())
+			{
+				// Force wrap — idx has exceeded buffer, must reset
+				last_degree = pt_degree;
+				count_num = scan_points_.size() - 1;
+				idx = 0;
+				break;
+			}
+
 			// Near channel
 			int sn = packet_bytes[num * point_len + data_bits_start];
 			int zn = packet_bytes[num * point_len + data_bits_start + 1];
@@ -959,7 +969,9 @@ namespace lslidar_driver
 			}
 
 			// Wrap detection — fires when a full rotation completes
-			if (((pt_degree < last_degree && pt_degree < 5.0 && last_degree > 355.0) || idx >= points_size_) && idx > 10)
+			// Wrap detection — fires when a full rotation completes
+			// idx > 200: prevents false wraps from corrupted degree data (CH343 adapter)
+			if (((pt_degree < last_degree && pt_degree < 5.0 && last_degree > 355.0) || idx >= points_size_) && idx > 200)
 			{
 				last_degree = pt_degree;
 				count_num = idx;
