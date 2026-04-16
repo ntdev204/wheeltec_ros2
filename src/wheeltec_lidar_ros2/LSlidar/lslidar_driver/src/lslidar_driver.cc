@@ -553,6 +553,9 @@ namespace lslidar_driver
 
 	int LslidarDriver::receive_data(unsigned char *packet_bytes)
 	{
+		static int call_count = 0;
+		call_count++;
+		if (call_count % 1000 == 1) printf("[DBG] receive_data called %d times\n", call_count);
 		int len = 0;
 		int count = 0;
 		int rc;
@@ -591,6 +594,9 @@ namespace lslidar_driver
 		}
 		count = 1;
 
+		static int sync_found = 0;
+		sync_found++;
+		if (sync_found % 500 == 1) printf("[DBG] 0xA5 found %d times\n", sync_found);
 		// --- Step 2: Read second sync byte 0x5A ---
 		attempts = 0;
 		while (true)
@@ -660,6 +666,9 @@ namespace lslidar_driver
 			}
 		}
 
+		static int body_done = 0;
+		body_done++;
+		if (body_done % 500 == 1) printf("[DBG] body read done %d times, len=%d\n", body_done, len);
 		// --- Step 6: CRC check ---
 		if (lidar_name == "N10" || lidar_name == "L10" || lidar_name == "N10_P")
 		{

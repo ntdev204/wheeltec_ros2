@@ -7,8 +7,6 @@
 @v1.0           21-2-4      yao          new
 *******************************************************/
 #include "lslidar_driver/lsiosr.h"
-#include <linux/serial.h>
-#include <sys/ioctl.h>
 
 namespace lslidar_driver {
 
