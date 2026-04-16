@@ -553,41 +553,68 @@ namespace lslidar_driver
 
 	int LslidarDriver::receive_data(unsigned char *packet_bytes)
 	{
-		int link_time = 0;
-		int len_H = 0;
-		int len_L = 0;
 		int len = 0;
-		int count_2 = 0;
 		int count = 0;
-		while (count <= 0)
-		{
-			count = serial_->read(packet_bytes, 1);
-			LslidarDriver::recvThread_crc(count, link_time);
-		}
-		if (packet_bytes[0] != 0xA5)
-			return 0;
+		int rc;
 
-		while (count_2 <= 0)
+		// --- Step 1: Find sync byte 0xA5 ---
+		// Use non-blocking reads with short usleep to avoid burning CPU.
+		// Overall timeout: 200ms (well above one full rotation period of 100ms).
+		int attempts = 0;
+		const int MAX_SYNC_ATTEMPTS = 4000; // 4000 * 50μs = 200ms
+		while (true)
 		{
-			count_2 = serial_->read(packet_bytes + count, 1);
-			if (count_2 >= 0)
-				count += count_2;
-			LslidarDriver::recvThread_crc(count_2, link_time);
+			rc = serial_->read(packet_bytes, 1);
+			if (rc > 0)
+			{
+				if (packet_bytes[0] == 0xA5)
+					break;
+				attempts = 0; // got data, reset timeout (stream is alive)
+				continue;     // not sync byte, try next
+			}
+			else if (rc < 0)
+				return 0;
+			// rc == 0: no data available
+			attempts++;
+			if (attempts > MAX_SYNC_ATTEMPTS)
+			{
+				// No data for 200ms — reinit serial
+				serial_->close();
+				if (serial_->init() < 0)
+				{
+					RCLCPP_ERROR(this->get_logger(), "serial open fail");
+					usleep(200000);
+				}
+				return 0;
+			}
+			usleep(50); // 50μs sleep — prevents CPU burn while waiting for UART
 		}
+		count = 1;
 
-		count_2 = 0;
+		// --- Step 2: Read second sync byte 0x5A ---
+		attempts = 0;
+		while (true)
+		{
+			rc = serial_->read(packet_bytes + count, 1);
+			if (rc > 0) { count++; break; }
+			else if (rc < 0) return 0;
+			attempts++;
+			if (attempts > 2000) return 0; // 100ms timeout
+			usleep(50);
+		}
 		if (packet_bytes[1] != 0x5A)
 			return 0;
-		while (count_2 <= 0)
+
+		// --- Step 3: Read 2 header bytes ---
+		while (count < 4)
 		{
-			count_2 = serial_->read(packet_bytes + count, 2);
-			if (count_2 >= 0)
-				count += count_2;
-			LslidarDriver::recvThread_crc(count_2, link_time);
+			rc = serial_->read(packet_bytes + count, 4 - count);
+			if (rc > 0) count += rc;
+			else if (rc < 0) return 0;
+			else { usleep(50); }
 		}
 
-		count_2 = 0;
-
+		// --- Step 4: Determine packet length ---
 		if (lidar_name == "M10")
 			len = 92;
 		else if (lidar_name == "M10_GPS")
@@ -598,25 +625,42 @@ namespace lslidar_driver
 			len = packet_bytes[2];
 		else
 		{
-			len_H = packet_bytes[2];
-			len_L = packet_bytes[3];
-			len = len_H * 256 + len_L;
+			len = packet_bytes[2] * 256 + packet_bytes[3];
 		}
 		if (lidar_name == "M10" || lidar_name == "M10_DOUBLE" || lidar_name == "M10_GPS" || lidar_name == "M10_P" || lidar_name == "M10_PLUS")
 		{
 			if (packet_bytes[2] == 0x55 && packet_bytes[3] == 0x00)
 				len = 188;
 		}
+
+		// Sanity check length
+		if (len < 4 || len > 500)
+			return 0;
+
+		// --- Step 5: Read body bytes (non-blocking with usleep) ---
+		// At 460800 baud, 108 bytes = ~2.35ms. Use tight loop with 50μs sleeps.
+		// Max wait: 50ms (well above packet duration).
+		int body_timeout = 0;
 		while (count < len)
 		{
-			// Do NOT call recvThread_crc here — packet body reads need up to 2.35ms at 460800 baud.
-			// Use blocking read with 50ms timeout to wait for remaining bytes without busy-polling.
-			count_2 = serial_->read(packet_bytes + count, len - count, 50);
-			if (count_2 > 0)
-				count += count_2;
-			else if (count_2 < 0)
-				return 0; // serial error, give up this packet
+			rc = serial_->read(packet_bytes + count, len - count);
+			if (rc > 0)
+			{
+				count += rc;
+				body_timeout = 0;
+			}
+			else if (rc < 0)
+				return 0;
+			else
+			{
+				body_timeout++;
+				if (body_timeout > 1000) // 1000 * 50μs = 50ms
+					return 0;
+				usleep(50);
+			}
 		}
+
+		// --- Step 6: CRC check ---
 		if (lidar_name == "N10" || lidar_name == "L10" || lidar_name == "N10_P")
 		{
 			if (packet_bytes[PACKET_SIZE - 1] != N10_CalCRC8(packet_bytes, PACKET_SIZE - 1))
