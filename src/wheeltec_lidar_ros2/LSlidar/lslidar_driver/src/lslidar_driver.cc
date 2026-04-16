@@ -216,7 +216,7 @@ namespace lslidar_driver
 			degree_bits_start = 5;
 			end_degree_bits_start = 105;
 			baud_rate_ = 460800;
-			points_size_ = 2000;
+			points_size_ = 700; // ~682 points/rotation at 10Hz (426 pkt/s × 16pts / 10Hz)
 			use_gps_ts = false;
 			compensation = false;
 		}
