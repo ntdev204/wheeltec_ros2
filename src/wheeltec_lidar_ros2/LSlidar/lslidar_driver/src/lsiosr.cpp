@@ -7,6 +7,8 @@
 @v1.0           21-2-4      yao          new
 *******************************************************/
 #include "lslidar_driver/lsiosr.h"
+#include <linux/serial.h>
+#include <sys/ioctl.h>
 
 namespace lslidar_driver {
 
@@ -369,8 +371,18 @@ int LSIOSR::init()
 	if (0 < fd_)
 	{
 		error_code = 0;
-		setOpt(DATA_BIT_8, PARITY_NONE, STOP_BIT_1);//设置串口参数
-		//printf("open_port %s  OK !\n", port_.c_str());
+		setOpt(DATA_BIT_8, PARITY_NONE, STOP_BIT_1);
+
+		// Set low-latency mode for USB-serial adapters (CH343, CP2102, FTDI, etc.)
+		// This reduces USB polling interval from default 16ms to ~1ms,
+		// preventing the adapter's small UART buffer (256 bytes) from overflowing
+		// at high baud rates like 460800.
+		struct serial_struct ser_info;
+		if (ioctl(fd_, TIOCGSERIAL, &ser_info) == 0)
+		{
+			ser_info.flags |= ASYNC_LOW_LATENCY;
+			ioctl(fd_, TIOCSSERIAL, &ser_info);
+		}
 	}
 	else
 	{

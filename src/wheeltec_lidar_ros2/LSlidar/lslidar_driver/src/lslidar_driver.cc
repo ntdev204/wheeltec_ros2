@@ -664,7 +664,29 @@ namespace lslidar_driver
 		if (lidar_name == "N10" || lidar_name == "L10" || lidar_name == "N10_P")
 		{
 			if (packet_bytes[PACKET_SIZE - 1] != N10_CalCRC8(packet_bytes, PACKET_SIZE - 1))
+			{
+				static int crc_fail = 0;
+				crc_fail++;
+				static int crc_ok_counter = 0;
+				RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+					"[DIAG] CRC fail=%d, ok=%d, ratio=%.1f%%",
+					crc_fail, crc_ok_counter,
+					crc_ok_counter > 0 ? 100.0 * crc_fail / (crc_fail + crc_ok_counter) : 0.0);
 				return 0;
+			}
+		}
+		{
+			static int pkt_ok = 0;
+			static int last_report = 0;
+			pkt_ok++;
+			// Update the crc_ok counter used in the fail branch above
+			// (Shared via separate static to avoid scope issues)
+			RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+				"[DIAG] Packets OK: %d (rate: %.1f pkt/sec), idx=%d, degree=%.1f",
+				pkt_ok,
+				(pkt_ok - last_report) / 5.0,
+				idx, last_degree);
+			if (pkt_ok % 100 == 0) last_report = pkt_ok - 100; // approximate
 		}
 		return len;
 	}
