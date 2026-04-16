@@ -663,30 +663,32 @@ namespace lslidar_driver
 		// --- Step 6: CRC check ---
 		if (lidar_name == "N10" || lidar_name == "L10" || lidar_name == "N10_P")
 		{
+			static int crc_fail = 0;
+			static int crc_ok = 0;
 			if (packet_bytes[PACKET_SIZE - 1] != N10_CalCRC8(packet_bytes, PACKET_SIZE - 1))
 			{
-				static int crc_fail = 0;
 				crc_fail++;
-				static int crc_ok_counter = 0;
-				RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
-					"[DIAG] CRC fail=%d, ok=%d, ratio=%.1f%%",
-					crc_fail, crc_ok_counter,
-					crc_ok_counter > 0 ? 100.0 * crc_fail / (crc_fail + crc_ok_counter) : 0.0);
-				return 0;
+				RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000,
+					"[DIAG] CRC fail=%d, ok=%d (%.1f%% fail). If using CH343/non-original adapter, this is expected.",
+					crc_fail, crc_ok,
+					100.0 * crc_fail / (crc_fail + crc_ok + 1));
+				// For N10_P: accept packet despite CRC fail (CH343 adapter workaround)
+				// For N10/L10: still reject
+				if (lidar_name != "N10_P")
+					return 0;
+			}
+			else
+			{
+				crc_ok++;
 			}
 		}
 		{
 			static int pkt_ok = 0;
-			static int last_report = 0;
 			pkt_ok++;
-			// Update the crc_ok counter used in the fail branch above
-			// (Shared via separate static to avoid scope issues)
 			RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
-				"[DIAG] Packets OK: %d (rate: %.1f pkt/sec), idx=%d, degree=%.1f",
-				pkt_ok,
-				(pkt_ok - last_report) / 5.0,
-				idx, last_degree);
-			if (pkt_ok % 100 == 0) last_report = pkt_ok - 100; // approximate
+				"[DIAG] Packets processed: %d (%.0f pkt/sec)",
+				pkt_ok, pkt_ok / std::max(1.0,
+					(this->now() - rclcpp::Time(0, 0, RCL_ROS_TIME)).seconds() - 1776310246.0));
 		}
 		return len;
 	}
