@@ -216,7 +216,7 @@ namespace lslidar_driver
 			degree_bits_start = 5;
 			end_degree_bits_start = 105;
 			baud_rate_ = 460800;
-			points_size_ = 420; // calibrated: 4200 pts/sec actual throughput / 10 Hz
+			points_size_ = 800; // safety overflow: motor runs at 6Hz real, ~700pts/rev
 			use_gps_ts = false;
 			compensation = false;
 		}
@@ -514,7 +514,29 @@ namespace lslidar_driver
 			this->declare_parameter<std::string>("in_file_name", "");
 			this->get_parameter("in_file_name", in_file_name);
 			if (in_file_name == "")
+			{
 				open_serial();
+				// N10_P: set motor speed to 10 Hz (default is 6 Hz)
+				if (lidar_name == "N10_P" || lidar_name == "N10")
+				{
+					usleep(100000); // 100ms — wait for serial port to stabilize
+					unsigned char data[188] = {0x00};
+					data[0] = 0xA5;
+					data[1] = 0x5A;
+					data[2] = 0x55;
+					data[172] = 10;   // target frequency: 10 Hz
+					data[184] = 0x0A; // command: set speed
+					data[185] = 0x01;
+					data[186] = 0xFA;
+					data[187] = 0xFB;
+					int rtn = serial_->send((const char *)data, 188);
+					if (rtn < 0)
+						RCLCPP_WARN(this->get_logger(), "Failed to send 10Hz speed command");
+					else
+						RCLCPP_INFO(this->get_logger(), "Sent motor speed command: 10 Hz");
+					usleep(500000); // 500ms — wait for motor to reach target speed
+				}
+			}
 			else
 			{
 				RCLCPP_INFO_STREAM(this->get_logger(), "Opening txt file " << in_file_name.c_str());
