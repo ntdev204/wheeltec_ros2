@@ -561,19 +561,21 @@ namespace lslidar_driver
 		int rc;
 
 		// --- Step 1: Find sync byte 0xA5 ---
-		// Use non-blocking reads with short usleep to avoid burning CPU.
-		// Overall timeout: 200ms (well above one full rotation period of 100ms).
 		int attempts = 0;
 		const int MAX_SYNC_ATTEMPTS = 4000; // 4000 * 50μs = 200ms
+		static int total_bytes_read = 0;
 		while (true)
 		{
 			rc = serial_->read(packet_bytes, 1);
 			if (rc > 0)
 			{
+				total_bytes_read++;
+				if (total_bytes_read % 5000 == 1)
+					printf("[DBG] byte #%d = 0x%02X (looking for 0xA5)\n", total_bytes_read, packet_bytes[0]);
 				if (packet_bytes[0] == 0xA5)
 					break;
-				attempts = 0; // got data, reset timeout (stream is alive)
-				continue;     // not sync byte, try next
+				attempts = 0; // got data, reset timeout
+				continue;
 			}
 			else if (rc < 0)
 				return 0;
@@ -581,7 +583,7 @@ namespace lslidar_driver
 			attempts++;
 			if (attempts > MAX_SYNC_ATTEMPTS)
 			{
-				// No data for 200ms — reinit serial
+				printf("[DBG] sync timeout after %d empty reads (total bytes: %d)\n", MAX_SYNC_ATTEMPTS, total_bytes_read);
 				serial_->close();
 				if (serial_->init() < 0)
 				{
@@ -590,13 +592,13 @@ namespace lslidar_driver
 				}
 				return 0;
 			}
-			usleep(50); // 50μs sleep — prevents CPU burn while waiting for UART
+			usleep(50);
 		}
 		count = 1;
 
 		static int sync_found = 0;
 		sync_found++;
-		if (sync_found % 500 == 1) printf("[DBG] 0xA5 found %d times\n", sync_found);
+		if (sync_found % 500 == 1) printf("[DBG] 0xA5 found %d times (after %d total bytes)\n", sync_found, total_bytes_read);
 		// --- Step 2: Read second sync byte 0x5A ---
 		attempts = 0;
 		while (true)
