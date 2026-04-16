@@ -570,11 +570,14 @@ namespace lslidar_driver
 			if (rc > 0)
 			{
 				total_bytes_read++;
-				if (total_bytes_read % 5000 == 1)
-					printf("[DBG] byte #%d = 0x%02X (looking for 0xA5)\n", total_bytes_read, packet_bytes[0]);
+				if (total_bytes_read % 100 == 1)
+				{
+					printf("[DBG] byte #%d = 0x%02X\n", total_bytes_read, packet_bytes[0]);
+					fflush(stdout);
+				}
 				if (packet_bytes[0] == 0xA5)
 					break;
-				attempts = 0; // got data, reset timeout
+				attempts = 0;
 				continue;
 			}
 			else if (rc < 0)
@@ -583,8 +586,8 @@ namespace lslidar_driver
 			attempts++;
 			if (attempts > MAX_SYNC_ATTEMPTS)
 			{
-				printf("[DBG] sync timeout after %d empty reads (total bytes: %d)\n", MAX_SYNC_ATTEMPTS, total_bytes_read);
-				serial_->close();
+				printf("[DBG] sync timeout (total bytes: %d)\n", total_bytes_read);
+				fflush(stdout);				serial_->close();
 				if (serial_->init() < 0)
 				{
 					RCLCPP_ERROR(this->get_logger(), "serial open fail");
