@@ -553,9 +553,6 @@ namespace lslidar_driver
 
 	int LslidarDriver::receive_data(unsigned char *packet_bytes)
 	{
-		static int call_count = 0;
-		call_count++;
-		if (call_count % 1000 == 1) printf("[DBG] receive_data called %d times\n", call_count);
 		int len = 0;
 		int count = 0;
 		int rc;
@@ -563,18 +560,11 @@ namespace lslidar_driver
 		// --- Step 1: Find sync byte 0xA5 ---
 		int attempts = 0;
 		const int MAX_SYNC_ATTEMPTS = 4000; // 4000 * 50μs = 200ms
-		static int total_bytes_read = 0;
 		while (true)
 		{
 			rc = serial_->read(packet_bytes, 1);
 			if (rc > 0)
 			{
-				total_bytes_read++;
-				if (total_bytes_read % 100 == 1)
-				{
-					printf("[DBG] byte #%d = 0x%02X\n", total_bytes_read, packet_bytes[0]);
-					fflush(stdout);
-				}
 				if (packet_bytes[0] == 0xA5)
 					break;
 				attempts = 0;
@@ -586,8 +576,7 @@ namespace lslidar_driver
 			attempts++;
 			if (attempts > MAX_SYNC_ATTEMPTS)
 			{
-				printf("[DBG] sync timeout (total bytes: %d)\n", total_bytes_read);
-				fflush(stdout);				serial_->close();
+				serial_->close();
 				if (serial_->init() < 0)
 				{
 					RCLCPP_ERROR(this->get_logger(), "serial open fail");
@@ -599,9 +588,6 @@ namespace lslidar_driver
 		}
 		count = 1;
 
-		static int sync_found = 0;
-		sync_found++;
-		if (sync_found % 500 == 1) printf("[DBG] 0xA5 found %d times (after %d total bytes)\n", sync_found, total_bytes_read);
 		// --- Step 2: Read second sync byte 0x5A ---
 		attempts = 0;
 		while (true)
@@ -610,13 +596,12 @@ namespace lslidar_driver
 			if (rc > 0) { count++; break; }
 			else if (rc < 0) return 0;
 			attempts++;
-			if (attempts > 2000) return 0; // 100ms timeout
+			if (attempts > 200) return 0; // 200 * 50μs = 10ms
 			usleep(50);
 		}
-		if (packet_bytes[1] != 0x5A)
-			return 0;
+		if (packet_bytes[1] != 0x5A) return 0;
 
-		// --- Step 3: Read 2 header bytes ---
+		// --- Step 3: Read header bytes [2] and [3] ---
 		while (count < 4)
 		{
 			rc = serial_->read(packet_bytes + count, 4 - count);
@@ -634,23 +619,25 @@ namespace lslidar_driver
 			len = 108;
 		else if (lidar_name == "N10" || lidar_name == "L10")
 			len = packet_bytes[2];
+		else if (lidar_name == "M10_P")
+			len = 160;
+		else if (lidar_name == "M10_PLUS")
+			len = 122;
+		else if (lidar_name == "M10_DOUBLE")
+			len = 188;
 		else
-		{
-			len = packet_bytes[2] * 256 + packet_bytes[3];
-		}
+			len = 92;
+
 		if (lidar_name == "M10" || lidar_name == "M10_DOUBLE" || lidar_name == "M10_GPS" || lidar_name == "M10_P" || lidar_name == "M10_PLUS")
 		{
 			if (packet_bytes[2] == 0x55 && packet_bytes[3] == 0x00)
 				len = 188;
 		}
 
-		// Sanity check length
 		if (len < 4 || len > 500)
 			return 0;
 
-		// --- Step 5: Read body bytes (non-blocking with usleep) ---
-		// At 460800 baud, 108 bytes = ~2.35ms. Use tight loop with 50μs sleeps.
-		// Max wait: 50ms (well above packet duration).
+		// --- Step 5: Read body bytes ---
 		int body_timeout = 0;
 		while (count < len)
 		{
@@ -671,42 +658,19 @@ namespace lslidar_driver
 			}
 		}
 
-		static int body_done = 0;
-		body_done++;
-		if (body_done % 500 == 1) printf("[DBG] body read done %d times, len=%d\n", body_done, len);
-		// --- Step 6: CRC check ---
+		// --- Step 6: CRC check (bypass for N10_P with CH343 adapter) ---
 		if (lidar_name == "N10" || lidar_name == "L10" || lidar_name == "N10_P")
 		{
-			static int crc_fail = 0;
-			static int crc_ok = 0;
 			if (packet_bytes[PACKET_SIZE - 1] != N10_CalCRC8(packet_bytes, PACKET_SIZE - 1))
 			{
-				crc_fail++;
-				RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 10000,
-					"[DIAG] CRC fail=%d, ok=%d (%.1f%% fail). If using CH343/non-original adapter, this is expected.",
-					crc_fail, crc_ok,
-					100.0 * crc_fail / (crc_fail + crc_ok + 1));
 				// For N10_P: accept packet despite CRC fail (CH343 adapter workaround)
-				// For N10/L10: still reject
 				if (lidar_name != "N10_P")
 					return 0;
-			}
-			else
-			{
-				crc_ok++;
-			}
-		}
-		{
-			static int pkt_ok = 0;
-			pkt_ok++;
-			if (pkt_ok % 500 == 1)
-			{
-				RCLCPP_INFO(this->get_logger(), "[DIAG] Packets processed: %d, idx=%d, degree=%.1f",
-					pkt_ok, idx, last_degree);
 			}
 		}
 		return len;
 	}
+	
 
 	uint8_t LslidarDriver::N10_CalCRC8(unsigned char *p, int len)
 	{
