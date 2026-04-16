@@ -685,10 +685,11 @@ namespace lslidar_driver
 		{
 			static int pkt_ok = 0;
 			pkt_ok++;
-			RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
-				"[DIAG] Packets processed: %d (%.0f pkt/sec)",
-				pkt_ok, pkt_ok / std::max(1.0,
-					(this->now() - rclcpp::Time(0, 0, RCL_ROS_TIME)).seconds() - 1776310246.0));
+			if (pkt_ok % 500 == 1)
+			{
+				RCLCPP_INFO(this->get_logger(), "[DIAG] Packets processed: %d, idx=%d, degree=%.1f",
+					pkt_ok, idx, last_degree);
+			}
 		}
 		return len;
 	}
