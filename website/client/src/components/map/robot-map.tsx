@@ -210,8 +210,17 @@ export function RobotMap() {
     if (!canvasRef.current || !mapInfo) return;
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const imgPx = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const imgPy = (e.clientY - rect.top) * (canvas.height / rect.height);
+    
+    // Handle object-fit: contain scaling and centering
+    const scale = Math.min(rect.width / canvas.width, rect.height / canvas.height);
+    const renderedWidth = canvas.width * scale;
+    const renderedHeight = canvas.height * scale;
+    const offsetX = (rect.width - renderedWidth) / 2;
+    const offsetY = (rect.height - renderedHeight) / 2;
+
+    const imgPx = (e.clientX - rect.left - offsetX) / scale;
+    const imgPy = (e.clientY - rect.top - offsetY) / scale;
+    
     if (imgPx < 0 || imgPx >= mapInfo.width || imgPy < 0 || imgPy >= mapInfo.height) return;
 
     const { rosX, rosY } = pixelToRos(imgPx, imgPy);
@@ -266,10 +275,9 @@ export function RobotMap() {
             className="cursor-crosshair"
             style={{
               imageRendering: 'pixelated',
-              maxWidth: '100%',
-              maxHeight: '100%',
-              width: 'auto',
-              height: 'auto',
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
               display: 'block',
             }}
           />

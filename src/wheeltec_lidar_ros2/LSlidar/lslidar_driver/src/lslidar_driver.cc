@@ -1062,8 +1062,11 @@ namespace lslidar_driver
 				if (pubScan)
 				{
 					auto scan = sensor_msgs::msg::LaserScan::UniquePtr(new sensor_msgs::msg::LaserScan());
-					////int scan_num = count_num * 2;
-					int scan_num = count_num ;
+					// N10_P: use FIXED scan resolution for SLAM compatibility
+					// count_num varies per rotation (207-463), but SLAM toolbox
+					// expects a constant number of readings per scan.
+					const int FIXED_SCAN_NUM = 360; // 1° angular resolution
+					int scan_num = FIXED_SCAN_NUM;
 
 					std::vector<ScanPoint> points;
 					rclcpp::Time start_time;
@@ -1081,26 +1084,17 @@ namespace lslidar_driver
 
 					scan->angle_min = 0;
 					scan->angle_max = 2 * M_PI;
-					scan->angle_increment = 2 * M_PI / (double)(count_num);
+					scan->angle_increment = 2 * M_PI / (double)(FIXED_SCAN_NUM);
 					scan->range_min = min_range;
 					scan->range_max = max_range;
-					scan->ranges.reserve(scan_num);
 					scan->ranges.assign(scan_num, std::numeric_limits<float>::infinity());
-					scan->intensities.reserve(scan_num);
-					scan->intensities.assign(scan_num, std::numeric_limits<float>::infinity());
-					// scan->scan_time = scan_time;
-					// scan->time_increment = scan_time / (double)(count_num);
-
-					for (int k = 0; k < scan_num; k++)
-					{
-						scan->ranges[k] = std::numeric_limits<float>::infinity();
-						scan->intensities[k] = 0;
-					}
+					scan->intensities.assign(scan_num, 0);
 
 					for (int i = 0; i < count_num && i < (int)points.size(); i++)
 					{
-						int point_idx = round((360 - points[i].degree) * count_num / 360);
-						if (point_idx < 0 || point_idx >= scan_num) continue; // bounds guard
+						int point_idx = round((360.0 - points[i].degree) * FIXED_SCAN_NUM / 360.0);
+						if (point_idx < 0) point_idx += FIXED_SCAN_NUM;
+						if (point_idx >= FIXED_SCAN_NUM) point_idx -= FIXED_SCAN_NUM;
 						if (points[i].range == 0.0)
 						{
 							scan->ranges[point_idx] = std::numeric_limits<float>::infinity();

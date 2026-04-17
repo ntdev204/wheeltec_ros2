@@ -58,6 +58,33 @@ async def trigger_map_resend():
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 
+@router.get("/live/info")
+async def get_live_map_info():
+    """Fallback endpoint for frontend to get map dimensions if telemetry map_info is missing."""
+    if not os.path.exists(MAP_PATH_YAML) or not os.path.exists(MAP_PATH_PGM):
+        return Response(status_code=404, content="Map files not found")
+        
+    try:
+        with open(MAP_PATH_YAML, 'r') as f:
+            data = yaml.safe_load(f)
+            
+        img = Image.open(MAP_PATH_PGM)
+        width, height = img.size
+        
+        return {
+            "resolution": data.get("resolution", 0.05),
+            "width": width,
+            "height": height,
+            "origin": {
+                "x": data.get("origin", [0, 0, 0])[0],
+                "y": data.get("origin", [0, 0, 0])[1]
+            }
+        }
+    except Exception as e:
+        print(f"[MapCache] Error reading map info: {e}")
+        return Response(status_code=500, content=str(e))
+
+
 @router.get("/static/image")
 async def get_static_map_image():
     if not os.path.exists(MAP_PATH_PGM):
