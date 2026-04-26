@@ -18,11 +18,7 @@ def generate_launch_description():
     lidar_ros = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'wheeltec_lidar.launch.py')),
     )
-    wheeltec_camera = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'wheeltec_camera.launch.py')),
-    )
-
     return LaunchDescription([
-        wheeltec_robot,lidar_ros,wheeltec_camera,]
+        wheeltec_robot,lidar_ros,]
     )
 
