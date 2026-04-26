@@ -22,7 +22,8 @@ setup(
     license='MIT',
     entry_points={
         'console_scripts': [
-            'context_aware_bridge = context_aware_bridge.main:main',
+            'context_aware_bridge = context_aware_bridge.bridge_node:main',
+            'safety_shield = context_aware_bridge.safety_shield:main',
         ],
     },
 )
