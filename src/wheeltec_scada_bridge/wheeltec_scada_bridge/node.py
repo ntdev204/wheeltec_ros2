@@ -36,7 +36,7 @@ class WheeltecControlNode(Node):
         cam_topic = self.get_parameter('camera_topic').value
 
         # Publishers
-        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel_keyboard', 10)
         self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
 
         # Subscribers

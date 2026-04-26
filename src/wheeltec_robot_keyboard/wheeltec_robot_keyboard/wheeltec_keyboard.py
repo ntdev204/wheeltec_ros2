@@ -128,7 +128,7 @@ def main():
 
     qos = QoSProfile(depth=10)
     node = rclpy.create_node('wheeltec_keyboard')
-    pub = node.create_publisher(Twist, 'cmd_vel', qos)
+    pub = node.create_publisher(Twist, 'cmd_vel_keyboard', qos)
     speed = 0.2 #默认移动速度 m/s
     turn  = 1.0   #默认转向速度 rad/
     x      = 0.0   #前进后退方向

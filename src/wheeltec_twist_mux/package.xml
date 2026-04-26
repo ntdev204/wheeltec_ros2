@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>wheeltec_twist_mux</name>
+  <version>1.0.0</version>
+  <description>twist_mux configuration for wheeltec_ros2: arbitrates /cmd_vel_keyboard (website), /cmd_vel_context (Jetson AI), and /cmd_vel_nav (Nav2).</description>
+  <maintainer email="thientn204@gmail.com">thientn204</maintainer>
+  <license>MIT</license>
+
+  <depend>twist_mux</depend>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
