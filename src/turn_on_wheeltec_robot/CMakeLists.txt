@@ -67,14 +67,8 @@ add_executable(wheeltec_robot_node src/wheeltec_robot.cpp src/Quaternion_Solutio
 ament_target_dependencies(wheeltec_robot_node tf2_ros tf2 tf2_geometry_msgs rclcpp std_msgs nav_msgs std_srvs sensor_msgs serial wheeltec_robot_msg turtlesim)
 
 
-add_executable(camera_info_node src/camera_info_node.cpp)
-ament_target_dependencies(camera_info_node rclcpp  sensor_msgs  )
-
-
 install(TARGETS
 wheeltec_robot_node
-camera_info_node
-
 DESTINATION lib/${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
