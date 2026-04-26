@@ -12,15 +12,14 @@ import launch_ros.actions
 def generate_launch_description():
     bringup_dir = get_package_share_directory('turn_on_wheeltec_robot')
     launch_dir = os.path.join(bringup_dir, 'launch')
-    rplidar_dir = get_package_share_directory('rplidar_ros')
-    lidar_launch_dir = os.path.join(rplidar_dir, 'launch')
+
 
     wheeltec_robot = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'turn_on_wheeltec_robot.launch.py')),
     )
 
     lidar_ros = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(lidar_launch_dir, 'rplidar_a1_launch.py')),
+            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'wheeltec_lidar.launch.py')),
     )
     return LaunchDescription([
         wheeltec_robot, lidar_ros]
