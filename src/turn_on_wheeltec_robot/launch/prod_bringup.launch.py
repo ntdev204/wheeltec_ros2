@@ -6,7 +6,6 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
     wheeltec_nav_dir = get_package_share_directory('wheeltec_nav2')
-    wheeltec_context_aware_dir = get_package_share_directory('context_aware_bridge')
     wheeltec_twist_mux_dir = get_package_share_directory('wheeltec_twist_mux')
     wheeltec_scada_bridge_dir = get_package_share_directory('wheeltec_scada_bridge')
     wheeltec_launch_dir = get_package_share_directory('turn_on_wheeltec_robot')
@@ -30,21 +29,14 @@ def generate_launch_description():
             }.items(),
         ),
 
-        #3. Context Aware 
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(wheeltec_context_aware_dir, 'launch', 'context_aware_bridge.launch.py')
-            )
-        ),
-
-        #4. Twist Mux
+        # 3. Twist Mux
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(wheeltec_twist_mux_dir, 'launch', 'twist_mux.launch.py')
             )
         ),
 
-        #5. SCADA ZMQ Bridge (ROS2 <-> Web Server)
+        # 4. SCADA ZMQ Bridge (ROS2 <-> Web Server)
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(wheeltec_scada_bridge_dir, 'launch', 'scada_bridge.launch.py')
