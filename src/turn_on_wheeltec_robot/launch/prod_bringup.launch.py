@@ -20,7 +20,11 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(get_package_share_directory('wheeltec_nav2'), 'launch', 'wheeltec_nav2.launch.py')
-            )
+            ),
+            launch_arguments={
+                'slam': 'False',
+                'use_sim_time': 'false',
+            }.items(),
         ),
 
         # 3. SCADA ZMQ Bridge (ROS2 <-> Web Server)

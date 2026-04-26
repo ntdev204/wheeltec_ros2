@@ -1,4 +1,35 @@
+# ROS2 Workspace
 build/
 install/
 log/
-__pycache__/
+
+# Python
+**/__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Environment and Secrets
+.env
+.env.*
+!.env.example
+
+# Databases
+*.db
+*.sqlite3
+website/server/robot.db
+
+# Frontend (Web SCADA)
+website/client/node_modules/
+website/client/.next/
+website/client/out/
+website/client/build/
+website/server/.venv/
+node_modules/
+
+# OS and IDEs
+.vscode/
+.idea/
+.DS_Store

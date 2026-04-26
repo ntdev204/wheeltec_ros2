@@ -10,6 +10,7 @@ export function Sidebar() {
     { href: '/', label: 'Omni Control' },
     { href: '/dashboard', label: 'SCADA Monitor' },
     { href: '/navigation', label: 'Autonomous Nav' },
+    { href: '/mapping', label: 'Mapping' },
   ];
 
   return (

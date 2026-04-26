@@ -8,9 +8,10 @@ import io
 
 router = APIRouter(prefix="/api/maps", tags=["maps"])
 
-MAP_PATH_PGM = r'E:\tailieu\UTC\NCKH\wheeltec_ros2\data\map\WHEELTEC.pgm'
-MAP_PATH_YAML = r'E:\tailieu\UTC\NCKH\wheeltec_ros2\data\map\WHEELTEC.yaml'
-LIVE_MAP_PATH = r'E:\tailieu\UTC\NCKH\wheeltec_ros2\data\map\live_map.png'
+MAP_BASE = os.environ.get('WHEELTEC_MAP_BASE', '/home/rai/wheeltec_ros2/data/map')
+MAP_PATH_PGM = os.path.join(MAP_BASE, 'WHEELTEC.pgm')
+MAP_PATH_YAML = os.path.join(MAP_BASE, 'WHEELTEC.yaml')
+LIVE_MAP_PATH = os.path.join(MAP_BASE, 'live_map.png')
 
 # Shared cache - PNG bytes from ZMQ background listener
 live_map_cache = {"png": None}
@@ -57,6 +58,33 @@ async def trigger_map_resend():
         return {"status": "ok", "robot_response": result}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
+
+@router.get("/live/info")
+async def get_live_map_info():
+    """Fallback endpoint for frontend to get map dimensions if telemetry map_info is missing."""
+    if not os.path.exists(MAP_PATH_YAML) or not os.path.exists(MAP_PATH_PGM):
+        return Response(status_code=404, content="Map files not found")
+        
+    try:
+        with open(MAP_PATH_YAML, 'r') as f:
+            data = yaml.safe_load(f)
+            
+        img = Image.open(MAP_PATH_PGM)
+        width, height = img.size
+        
+        return {
+            "resolution": data.get("resolution", 0.05),
+            "width": width,
+            "height": height,
+            "origin": {
+                "x": data.get("origin", [0, 0, 0])[0],
+                "y": data.get("origin", [0, 0, 0])[1]
+            }
+        }
+    except Exception as e:
+        print(f"[MapCache] Error reading map info: {e}")
+        return Response(status_code=500, content=str(e))
+
 
 @router.get("/static/image")
 async def get_static_map_image():

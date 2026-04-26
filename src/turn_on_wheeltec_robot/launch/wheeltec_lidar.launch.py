@@ -1,18 +1,40 @@
-# SAU (simplified, chỉ giữ lại lidar đang dùng):
+#!/usr/bin/env python3
+"""
+wheeltec_lidar.launch.py - RPLidar A1M8
+Thay the LSlidar trong wheeltec_sensors.launch.py
+
+udev symlink: /dev/wheeltec_lidar -> ttyUSB0 (CP2102, serial=0001)
+"""
 import os
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import Node
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+
 
 def generate_launch_description():
-    Lslidar_dir = get_package_share_directory('lslidar_driver')
-    Lslidar_launch_dir = os.path.join(Lslidar_dir, 'launch')
 
-    Lsn10p = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(Lslidar_launch_dir, 'lsn10p_launch.py')),)
+    return LaunchDescription([
+        # RPLidar A1M8 node
+        Node(
+            package='rplidar_ros',
+            executable='rplidar_node',
+            name='rplidar_node',
+            parameters=[{
+                'serial_port':      '/dev/wheeltec_lidar',
+                'serial_baudrate':  115200,
+                'frame_id':         'laser',
+                'angle_compensate': True,
+                'scan_mode':        'Standard',
+            }],
+            output='screen',
+        ),
 
-    ld = LaunchDescription()
-    ld.add_action(Lsn10p)
-    return ld
+        # Static TF: laser_link (URDF mini_mec) <-> laser (RPLidar frame_id)
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='laser_to_laser_link',
+            arguments=['0', '0', '0', '0', '0', '0', 'laser_link', 'laser'],
+        ),
+    ])

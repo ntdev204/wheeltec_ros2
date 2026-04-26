@@ -8,6 +8,7 @@ from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+    slam = LaunchConfiguration('slam', default='False')
 
     wheeltec_robot_dir = get_package_share_directory('turn_on_wheeltec_robot')
     wheeltec_launch_dir = os.path.join(wheeltec_robot_dir, 'launch')
@@ -15,9 +16,10 @@ def generate_launch_description():
     wheeltec_nav_dir = get_package_share_directory('wheeltec_nav2')
     wheeltec_nav_launchr = os.path.join(wheeltec_nav_dir, 'launch')
 
-    map_dir = os.path.join(wheeltec_nav_dir, 'map')
-    map_file = LaunchConfiguration('map', default=os.path.join(
-        map_dir, 'WHEELTEC.yaml'))
+    map_default = '/home/rai/wheeltec_ros2/data/map/WHEELTEC.yaml'
+    if not os.path.exists(map_default):
+        map_default = os.path.join(wheeltec_nav_dir, 'map', 'WHEELTEC.yaml')
+    map_file = LaunchConfiguration('map', default=map_default)
 
     #Modify the model parameter file, the options are:
     #param_mini_akm.yaml/param_mini_4wd.yaml/param_mini_diff.yaml/
@@ -41,6 +43,11 @@ def generate_launch_description():
             'params',
             default_value=param_file,
             description='Full path to param file to load'),
+
+        DeclareLaunchArgument(
+            'slam',
+            default_value='False',
+            description='Run SLAM if true, localization with map if false'),
         Node(
             name='waypoint_cycle',
             package='nav2_waypoint_cycle',
@@ -51,6 +58,7 @@ def generate_launch_description():
                 [wheeltec_nav_launchr, '/bringup_launch.py']),
             launch_arguments={
                 'map': map_file,
+                'slam': slam,
                 'use_sim_time': use_sim_time,
                 'params_file': param_file}.items(),
         ),

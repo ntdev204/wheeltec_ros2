@@ -51,8 +51,10 @@ export function useKeyboardControl() {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       
-      // Ignore if typing in an input
-      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+      // Ignore if focus is on an interactive form element — prevents e.g. Space triggering
+      // both a button click AND a robot movement command simultaneously.
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON' || tag === 'SELECT') return;
 
       if (key === KEY_MAPPINGS.SPEED_UP) {
         setSpeed((s) => Math.min(Number((s + ROBOT_CONFIG.speedStep).toFixed(2)), ROBOT_CONFIG.maxLinearSpeed));
