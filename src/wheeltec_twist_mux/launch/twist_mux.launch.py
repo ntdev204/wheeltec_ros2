@@ -16,7 +16,7 @@ def generate_launch_description():
 
     jetson_ip_arg = DeclareLaunchArgument(
         'jetson_ip',
-        default_value='192.168.1.100',
+        default_value='25.12.4.100',
         description='IP address of the Jetson AI server',
     )
 
@@ -38,6 +38,7 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'jetson_ip':        LaunchConfiguration('jetson_ip'),
+            'raspi_ip':         '25.12.4.101',
             'nav_cmd_port':     5555,
             'robot_state_port': 5560,
         }],
