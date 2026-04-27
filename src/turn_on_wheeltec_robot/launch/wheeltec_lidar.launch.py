@@ -26,6 +26,7 @@ def generate_launch_description():
                 'frame_id':         'laser',
                 'angle_compensate': True,
                 'scan_mode':        'Standard',
+                'auto_reconnect':   True,
             }],
             output='screen',
         ),
