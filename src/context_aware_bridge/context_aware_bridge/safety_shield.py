@@ -37,33 +37,41 @@ class SafetyShieldNode(Node):
         self.get_logger().info("🛡️ Context Safety Shield Node Started! Protecting /cmd_vel...")
 
     def scan_cb(self, msg: LaserScan):
-        # Chia Lidar thành 4 vùng
-        front_dists, rear_dists, left_dists, right_dists = [], [], [], []
+        # Bề rộng/dài vùng xét va chạm (nửa kích thước xe + margin nhỏ)
+        y_limit_for_x = 0.22  # Bề rộng xét va chạm khi đi thẳng (X)
+        x_limit_for_y = 0.25  # Bề dài xét va chạm khi trượt ngang (Y)
+
+        min_x_front = float('inf')
+        min_x_rear = float('inf')
+        min_y_left = float('inf')
+        min_y_right = float('inf')
         
         angle = msg.angle_min
         for r in msg.ranges:
             if not math.isinf(r) and not math.isnan(r) and r > msg.range_min:
-                # Chuyển góc sang độ để dễ chia vùng [-180, 180]
-                deg = math.degrees(angle)
+                x = r * math.cos(angle)
+                y = r * math.sin(angle)
                 
-                # Phía trước: [-60, 60] (Mở rộng góc để tránh đâm góc bumper khi trượt ngang/chéo)
-                if -60 <= deg <= 60:
-                    front_dists.append(r)
-                # Phía sau: [120, 180] hoặc [-180, -120]
-                elif deg >= 120 or deg <= -120:
-                    rear_dists.append(r)
-                # Bên trái: [60, 120]
-                elif 60 < deg < 120:
-                    left_dists.append(r)
-                # Bên phải: [-120, -60]
-                elif -120 < deg < -60:
-                    right_dists.append(r)
+                # 1. Trục X (Tiến/Lùi) - chỉ xét vật cản NẰM TRONG làn đường di chuyển của xe
+                if abs(y) <= y_limit_for_x:
+                    if x > 0:
+                        min_x_front = min(min_x_front, x)
+                    elif x < 0:
+                        min_x_rear = min(min_x_rear, abs(x))
+                        
+                # 2. Trục Y (Trượt ngang) - chỉ xét vật cản NẰM TRONG làn trượt của xe
+                if abs(x) <= x_limit_for_y:
+                    if y > 0:
+                        min_y_left = min(min_y_left, y)
+                    elif y < 0:
+                        min_y_right = min(min_y_right, abs(y))
+                        
             angle += msg.angle_increment
             
-        self.min_dist_front = min(front_dists) if front_dists else float('inf')
-        self.min_dist_rear = min(rear_dists) if rear_dists else float('inf')
-        self.min_dist_left = min(left_dists) if left_dists else float('inf')
-        self.min_dist_right = min(right_dists) if right_dists else float('inf')
+        self.min_dist_front = min_x_front
+        self.min_dist_rear = min_x_rear
+        self.min_dist_left = min_y_left
+        self.min_dist_right = min_y_right
 
     def cmd_cb(self, msg: Twist):
         safe_msg = Twist()
