@@ -139,15 +139,15 @@ class ContextAwareBridgeNode(Node):
 
     # ── /PowerVoltage callback (Volts → %) ─────────────────────────────────
     def _voltage_cb(self, msg: Float32) -> None:
-        # Wheeltec 3S LiPo: Full=12.6V, Low=11.0V (safe threshold)
+        # Wheeltec 24V system (6S LiPo): Full=25.2V, Low=21.0V (safe threshold)
         voltage = msg.data
-        if voltage > 12.6:
+        if voltage > 25.2:
             self._battery_percent = 100.0
-        elif voltage < 11.0:
+        elif voltage < 21.0:
             self._battery_percent = 0.0
         else:
-            # Linear mapping: (V - 11.0) / (12.6 - 11.0) * 100
-            self._battery_percent = (voltage - 11.0) / 1.6 * 100.0
+            # Linear mapping: (V - 21.0) / (25.2 - 21.0) * 100
+            self._battery_percent = (voltage - 21.0) / 4.2 * 100.0
 
     # ── ZMQ receive loop ─────────────────────────────────────────────────────
     def _recv_loop(self) -> None:
