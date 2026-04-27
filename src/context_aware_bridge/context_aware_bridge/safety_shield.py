@@ -38,7 +38,7 @@ class SafetyShieldNode(Node):
 
     def scan_cb(self, msg: LaserScan):
         # Bề rộng/dài vùng xét va chạm (nửa kích thước xe + margin nhỏ)
-        y_limit_for_x = 0.22  # Bề rộng xét va chạm khi đi thẳng (X)
+        y_limit_for_x = 0.25  # Bề rộng xét va chạm khi đi thẳng (X) (tăng từ 0.22 lên 0.25)
         x_limit_for_y = 0.25  # Bề dài xét va chạm khi trượt ngang (Y)
 
         min_x_front = float('inf')
