@@ -20,7 +20,7 @@ class SafetyShieldNode(Node):
         
         # Đọc tham số an toàn (bất đối xứng do vị trí đặt Lidar)
         self.declare_parameter('stop_dist_front', 0.35)
-        self.declare_parameter('stop_dist_rear', 0.40)   # giảm từ 0.80 xuống 0.40 để robot có thể lùi giữ khoảng cách
+        self.declare_parameter('stop_dist_rear', 0.80)   # Lidar ở đầu xe → đuôi xe thò ra xa hơn
         self.declare_parameter('stop_dist_side', 0.40)   # tăng từ 0.35 lên 0.40 để tránh và bên
         
         self.stop_front = self.get_parameter('stop_dist_front').value

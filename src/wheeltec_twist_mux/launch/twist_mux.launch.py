@@ -51,7 +51,7 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'stop_dist_front': 0.35,
-            'stop_dist_rear':  0.40,
+            'stop_dist_rear':  0.80,
             'stop_dist_side':  0.40,
         }],
     )
