@@ -50,7 +50,9 @@ def generate_launch_description():
         name='safety_shield',
         output='screen',
         parameters=[{
-            'lidar_stop_distance': 0.35
+            'stop_dist_front': 0.35,
+            'stop_dist_rear':  0.80,
+            'stop_dist_side':  0.35,
         }],
     )
 
