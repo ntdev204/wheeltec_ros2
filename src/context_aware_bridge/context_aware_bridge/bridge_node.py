@@ -24,6 +24,7 @@ import rclpy
 import zmq
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float32
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy
@@ -40,10 +41,11 @@ NAV_STOP     = 4
 _NAV_CMD_FMT  = '!iffiffB'
 _NAV_CMD_SIZE = struct.calcsize(_NAV_CMD_FMT)  # 25
 
-# Struct format for RobotState fallback (RasPi → Jetson), 36 bytes big-endian
-# Fields: vx(f) vy(f) vtheta(f) pos_x(f) pos_y(f) pos_theta(f) battery(f) timestamp(d)
-_ROBOT_STATE_FMT  = '!7fd'
-_ROBOT_STATE_SIZE = struct.calcsize(_ROBOT_STATE_FMT)  # 36
+# Struct format for RobotState fallback (RasPi → Jetson), 52 bytes big-endian
+# Fields: vx(f) vy(f) vtheta(f) pos_x(f) pos_y(f) pos_theta(f) battery(f) 
+#         dist_f(f) dist_r(f) dist_l(f) dist_ri(f) timestamp(d)
+_ROBOT_STATE_FMT  = '!11fd'
+_ROBOT_STATE_SIZE = struct.calcsize(_ROBOT_STATE_FMT)  # 52
 
 # Velocity limits
 MAX_LINEAR_VEL  = 0.8   # m/s — full velocity_scale=1.0 maps to this
@@ -73,6 +75,7 @@ class ContextAwareBridgeNode(Node):
         odom_qos = QoSProfile(depth=5, reliability=QoSReliabilityPolicy.BEST_EFFORT)
         self.create_subscription(Odometry, '/odom', self._odom_cb, odom_qos)
         self.create_subscription(Float32, '/PowerVoltage', self._voltage_cb, 10)
+        self.create_subscription(LaserScan, '/scan', self._scan_cb, rclpy.qos.qos_profile_sensor_data)
 
         # ── ZMQ setup ───────────────────────────────────────────────────────
         self._ctx = zmq.Context()
@@ -108,6 +111,7 @@ class ContextAwareBridgeNode(Node):
         self._last_cmd_time = time.monotonic()
         self._odom: dict = {}
         self._battery_percent = 0.0  # Will be updated by /PowerVoltage callback
+        self._lidar_sectors = [9.9, 9.9, 9.9, 9.9]  # F, R, L, Ri
 
         # ── Threads & timers ─────────────────────────────────────────────────
         self._recv_thread = Thread(target=self._recv_loop, daemon=True, name='zmq-nav-sub')
@@ -148,6 +152,26 @@ class ContextAwareBridgeNode(Node):
         else:
             # Linear mapping: (V - 21.0) / (25.2 - 21.0) * 100
             self._battery_percent = (voltage - 21.0) / 4.2 * 100.0
+
+    # ── /scan callback (Summarize into 4 sectors) ──────────────────────────
+    def _scan_cb(self, msg: LaserScan) -> None:
+        f, r, l, ri = [], [], [], []
+        angle = msg.angle_min
+        for dist in msg.ranges:
+            if msg.range_min < dist < msg.range_max:
+                deg = math.degrees(angle)
+                if -45 <= deg <= 45: f.append(dist)
+                elif deg >= 135 or deg <= -135: r.append(dist)
+                elif 45 < deg < 135: l.append(dist)
+                elif -135 < deg < -45: ri.append(dist)
+            angle += msg.angle_increment
+        
+        self._lidar_sectors = [
+            min(f) if f else 9.9,
+            min(r) if r else 9.9,
+            min(l) if l else 9.9,
+            min(ri) if ri else 9.9
+        ]
 
     # ── ZMQ receive loop ─────────────────────────────────────────────────────
     def _recv_loop(self) -> None:
@@ -223,7 +247,9 @@ class ContextAwareBridgeNode(Node):
             odom.get('pos_x', 0.0),
             odom.get('pos_y', 0.0),
             odom.get('pos_theta', 0.0),
-            self._battery_percent,          # battery_percent (real value from /PowerVoltage)
+            self._battery_percent,
+            self._lidar_sectors[0], self._lidar_sectors[1], 
+            self._lidar_sectors[2], self._lidar_sectors[3],
             time.time(),  # timestamp (double)
         )
 
