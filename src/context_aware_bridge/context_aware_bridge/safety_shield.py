@@ -46,17 +46,17 @@ class SafetyShieldNode(Node):
                 # Chuyển góc sang độ để dễ chia vùng [-180, 180]
                 deg = math.degrees(angle)
                 
-                # Phía trước: [-45, 45]
-                if -45 <= deg <= 45:
+                # Phía trước: [-60, 60] (Mở rộng góc để tránh đâm góc bumper khi trượt ngang/chéo)
+                if -60 <= deg <= 60:
                     front_dists.append(r)
-                # Phía sau: [135, 180] hoặc [-180, -135]
-                elif deg >= 135 or deg <= -135:
+                # Phía sau: [120, 180] hoặc [-180, -120]
+                elif deg >= 120 or deg <= -120:
                     rear_dists.append(r)
-                # Bên trái: [45, 135]
-                elif 45 < deg < 135:
+                # Bên trái: [60, 120]
+                elif 60 < deg < 120:
                     left_dists.append(r)
-                # Bên phải: [-135, -45]
-                elif -135 < deg < -45:
+                # Bên phải: [-120, -60]
+                elif -120 < deg < -60:
                     right_dists.append(r)
             angle += msg.angle_increment
             
