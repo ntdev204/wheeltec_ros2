@@ -91,10 +91,20 @@ class SafetyShieldNode(Node):
             safe_msg.linear.y = 0.0
             emergency_stopped = True
 
+        vx_blocked = (safe_msg.linear.x == 0.0 and msg.linear.x != 0.0)
+        vy_blocked = (safe_msg.linear.y == 0.0 and msg.linear.y != 0.0)
+
         if emergency_stopped:
-            # Ngừng xoay nếu đã dừng tịnh tiến để tránh quệt thân
-            safe_msg.angular.z = 0.0
-            self.get_logger().warn(f"🛑 EMERGENCY STOP! Obstacle detected! Front:{self.min_dist_front:.2f}m Rear:{self.min_dist_rear:.2f}m Left:{self.min_dist_left:.2f}m Right:{self.min_dist_right:.2f}m")
+            self.get_logger().warn(
+                f"🛑 BLOCKED: "
+                f"{'vx' if vx_blocked else ''} {'vy' if vy_blocked else ''} | "
+                f"F:{self.min_dist_front:.2f}m R:{self.min_dist_rear:.2f}m "
+                f"L:{self.min_dist_left:.2f}m Ri:{self.min_dist_right:.2f}m"
+            )
+            # Chỉ dừng angular.z khi CẢ vx VÀ vy đều bị chặn (robot hoàn toàn kẹt)
+            # Nếu chỉ vy bị chặn (vật bên hông) mà vx vẫn OK → vẫn cho quay/tiến
+            if vx_blocked and vy_blocked:
+                safe_msg.angular.z = 0.0
 
         self.pub_cmd.publish(safe_msg)
 
