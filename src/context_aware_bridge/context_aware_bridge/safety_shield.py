@@ -42,12 +42,10 @@ class SafetyShieldNode(Node):
         self.get_logger().info("🛡️ Context Safety Shield Node Started! Protecting /cmd_vel...")
 
     def scan_cb(self, msg: LaserScan):
-        # Giải thích cho user:
-        # 1. Khi đi thẳng (X), robot chỉ quan tâm những vật cản nằm CÙNG LÀN ĐƯỜNG với mình.
-        #    Vì vậy ta phải dùng kích thước CHIỀU NGANG (Y) để lọc các vật cản không nằm trên đường đi (nằm ngoài lề).
-        # 2. Ngược lại, khi trượt ngang (Y), robot chỉ quan tâm những vật nằm trong phạm vi CHIỀU DỌC (X) của thân xe.
-        y_limit_for_x = 0.35  # Bề rộng xét va chạm khi đi thẳng (X) (chiều ngang)
-        x_limit_for_y = 0.50  # Bề dài xét va chạm khi trượt ngang (Y) (chiều dọc)
+        # Kích thước footprint vật lý của robot (nửa chiều ngang / nửa chiều dọc)
+        # Không thay đổi trừ khi robot được lắp thêm phụ kiện mở rộng thân xe
+        y_limit_for_x = 0.22  # Nửa chiều NGANG robot — lọc vật cản ra ngoài làn tiến/lùi
+        x_limit_for_y = 0.25  # Nửa chiều DỌC robot — lọc vật cản ra ngoài làn trượt ngang
 
         min_x_front = float('inf')
         min_x_rear = float('inf')
