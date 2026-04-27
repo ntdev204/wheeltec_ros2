@@ -94,7 +94,7 @@ class SafetyShieldNode(Node):
         if emergency_stopped:
             # Ngừng xoay nếu đã dừng tịnh tiến để tránh quệt thân
             safe_msg.angular.z = 0.0
-            # self.get_logger().warn(f"🛑 EMERGENCY STOP! Obstacle detected! Front:{self.min_dist_front:.2f}m Rear:{self.min_dist_rear:.2f}m")
+            self.get_logger().warn(f"🛑 EMERGENCY STOP! Obstacle detected! Front:{self.min_dist_front:.2f}m Rear:{self.min_dist_rear:.2f}m Left:{self.min_dist_left:.2f}m Right:{self.min_dist_right:.2f}m")
 
         self.pub_cmd.publish(safe_msg)
 
