@@ -20,8 +20,8 @@ class SafetyShieldNode(Node):
         
         # Đọc tham số an toàn (bất đối xứng do vị trí đặt Lidar)
         self.declare_parameter('stop_dist_front', 0.35)
-        self.declare_parameter('stop_dist_rear', 0.80)
-        self.declare_parameter('stop_dist_side', 0.35)
+        self.declare_parameter('stop_dist_rear', 0.40)   # giảm từ 0.80 xuống 0.40 để robot có thể lùi giữ khoảng cách
+        self.declare_parameter('stop_dist_side', 0.40)   # tăng từ 0.35 lên 0.40 để tránh và bên
         
         self.stop_front = self.get_parameter('stop_dist_front').value
         self.stop_rear = self.get_parameter('stop_dist_rear').value
@@ -98,12 +98,23 @@ class SafetyShieldNode(Node):
             emergency_stopped = True
 
         # Kiểm tra đâm 2 bên (Trái/Phải)
-        if msg.linear.y > 0 and self.min_dist_left < self.stop_side:
+        both_sides_blocked = (
+            self.min_dist_left < self.stop_side
+            and self.min_dist_right < self.stop_side
+        )
+        if both_sides_blocked:
+            # Hành lang hẹp: vô hiệu trượt ngang để đi thẳng qua
             safe_msg.linear.y = 0.0
-            emergency_stopped = True
-        if msg.linear.y < 0 and self.min_dist_right < self.stop_side:
-            safe_msg.linear.y = 0.0
-            emergency_stopped = True
+            if msg.linear.y != 0.0:
+                emergency_stopped = True
+        else:
+            # Không phải hành lang hẹp: chỉ chặn hướng vi phạm
+            if msg.linear.y > 0 and self.min_dist_left < self.stop_side:
+                safe_msg.linear.y = 0.0
+                emergency_stopped = True
+            if msg.linear.y < 0 and self.min_dist_right < self.stop_side:
+                safe_msg.linear.y = 0.0
+                emergency_stopped = True
 
         vx_blocked = (safe_msg.linear.x == 0.0 and msg.linear.x != 0.0)
         vy_blocked = (safe_msg.linear.y == 0.0 and msg.linear.y != 0.0)
