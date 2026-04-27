@@ -10,17 +10,18 @@ def generate_launch_description():
     wheeltec_scada_bridge_dir = get_package_share_directory('wheeltec_scada_bridge')
     wheeltec_launch_dir = get_package_share_directory('turn_on_wheeltec_robot')
 
-    # Reset serial port Lidar trước khi khởi động để tránh phải rút ra cắm lại.
-    # Gửi lệnh STOP (0xA5 0x25) đến Lidar qua serial, đợi MCU reset.
+    # Gửi lệnh RESET (0xA5 0x40) để reboot firmware Lidar.
+    # Dùng RESET thay vì STOP vì STOP sẽ tắt motor, khiến rplidar_node
+    # không thể start scan (lỗi 80008002). RESET khởi động lại toàn bộ firmware.
     lidar_serial_reset = ExecuteProcess(
         cmd=['bash', '-c',
              'python3 -c "'
              'import serial, time; '
              's = serial.Serial(\'/dev/wheeltec_lidar\', 115200, timeout=1); '
-             's.write(bytes([0xa5, 0x25])); '
-             'time.sleep(0.5); '
+             's.write(bytes([0xa5, 0x40])); '
+             'time.sleep(0.1); '
              's.close(); '
-             'print(chr(10) + \'[lidar_reset] Lidar serial reset OK\')'
+             'print(chr(10) + \'[lidar_reset] Lidar RESET sent, waiting for motor spin-up...\')'
              '" || echo "[lidar_reset] Lidar reset skipped (port not ready)"'],
         output='screen',
     )
@@ -32,7 +33,7 @@ def generate_launch_description():
         # 1. Base Hardware Layer (Chassis, Lidar, IMU, EKF, TF)
         #    Delay 1.5s để đảm bảo serial reset hoàn tất trước khi rplidar_node khởi động
         TimerAction(
-            period=1.5,
+            period=3.0,
             actions=[
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
