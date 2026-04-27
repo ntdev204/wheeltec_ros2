@@ -18,9 +18,14 @@ class SafetyShieldNode(Node):
     def __init__(self):
         super().__init__('context_safety_shield')
         
-        # Đọc tham số an toàn
-        self.declare_parameter('lidar_stop_distance', 0.35) # Dừng nếu vật cản < 0.35m
-        self.stop_distance = self.get_parameter('lidar_stop_distance').value
+        # Đọc tham số an toàn (bất đối xứng do vị trí đặt Lidar)
+        self.declare_parameter('stop_dist_front', 0.50)
+        self.declare_parameter('stop_dist_rear', 0.80)
+        self.declare_parameter('stop_dist_side', 0.35)
+        
+        self.stop_front = self.get_parameter('stop_dist_front').value
+        self.stop_rear = self.get_parameter('stop_dist_rear').value
+        self.stop_side = self.get_parameter('stop_dist_side').value
         
         # Sub/Pub
         self.sub_cmd = self.create_subscription(Twist, '/cmd_vel_muxed', self.cmd_cb, 10)
@@ -37,9 +42,12 @@ class SafetyShieldNode(Node):
         self.get_logger().info("🛡️ Context Safety Shield Node Started! Protecting /cmd_vel...")
 
     def scan_cb(self, msg: LaserScan):
-        # Bề rộng/dài vùng xét va chạm (nửa kích thước xe + margin nhỏ)
-        y_limit_for_x = 0.25  # Bề rộng xét va chạm khi đi thẳng (X) (tăng từ 0.22 lên 0.25)
-        x_limit_for_y = 0.25  # Bề dài xét va chạm khi trượt ngang (Y)
+        # Giải thích cho user:
+        # 1. Khi đi thẳng (X), robot chỉ quan tâm những vật cản nằm CÙNG LÀN ĐƯỜNG với mình.
+        #    Vì vậy ta phải dùng kích thước CHIỀU NGANG (Y) để lọc các vật cản không nằm trên đường đi (nằm ngoài lề).
+        # 2. Ngược lại, khi trượt ngang (Y), robot chỉ quan tâm những vật nằm trong phạm vi CHIỀU DỌC (X) của thân xe.
+        y_limit_for_x = 0.35  # Bề rộng xét va chạm khi đi thẳng (X) (chiều ngang)
+        x_limit_for_y = 0.50  # Bề dài xét va chạm khi trượt ngang (Y) (chiều dọc)
 
         min_x_front = float('inf')
         min_x_rear = float('inf')
@@ -82,20 +90,20 @@ class SafetyShieldNode(Node):
         emergency_stopped = False
 
         # Kiểm tra đâm phía trước
-        if msg.linear.x > 0 and self.min_dist_front < self.stop_distance:
+        if msg.linear.x > 0 and self.min_dist_front < self.stop_front:
             safe_msg.linear.x = 0.0
             emergency_stopped = True
             
-        # Kiểm tra đâm phía sau (đặc biệt khi đang lùi để né vật cản)
-        if msg.linear.x < 0 and self.min_dist_rear < self.stop_distance:
+        # Kiểm tra đâm phía sau (Lidar ở đầu xe nên phía sau phải cách xa 0.8m)
+        if msg.linear.x < 0 and self.min_dist_rear < self.stop_rear:
             safe_msg.linear.x = 0.0
             emergency_stopped = True
 
-        # Kiểm tra đâm 2 bên (nếu robot có thể trượt ngang - mecanum)
-        if msg.linear.y > 0 and self.min_dist_left < self.stop_distance:
+        # Kiểm tra đâm 2 bên (Trái/Phải)
+        if msg.linear.y > 0 and self.min_dist_left < self.stop_side:
             safe_msg.linear.y = 0.0
             emergency_stopped = True
-        if msg.linear.y < 0 and self.min_dist_right < self.stop_distance:
+        if msg.linear.y < 0 and self.min_dist_right < self.stop_side:
             safe_msg.linear.y = 0.0
             emergency_stopped = True
 
