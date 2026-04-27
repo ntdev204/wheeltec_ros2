@@ -25,8 +25,6 @@ def generate_launch_description():
                 'serial_baudrate':  115200,
                 'frame_id':         'laser',
                 'angle_compensate': True,
-                'scan_mode':        'Standard',
-                'auto_reconnect':   True,
             }],
             output='screen',
         ),

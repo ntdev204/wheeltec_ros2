@@ -10,30 +10,31 @@ def generate_launch_description():
     wheeltec_scada_bridge_dir = get_package_share_directory('wheeltec_scada_bridge')
     wheeltec_launch_dir = get_package_share_directory('turn_on_wheeltec_robot')
 
-    # Gửi lệnh RESET (0xA5 0x40) để reboot firmware Lidar.
-    # Dùng RESET thay vì STOP vì STOP sẽ tắt motor, khiến rplidar_node
-    # không thể start scan (lỗi 80008002). RESET khởi động lại toàn bộ firmware.
+    # DTR toggle để reset Lidar — tương đương rút cắm USB.
+    # Đáng tin cậy hơn gửi lệnh protocol vì không bị ảnh hưởng bởi trạng thái device.
     lidar_serial_reset = ExecuteProcess(
         cmd=['bash', '-c',
              'python3 -c "'
              'import serial, time; '
              's = serial.Serial(\'/dev/wheeltec_lidar\', 115200, timeout=1); '
-             's.write(bytes([0xa5, 0x40])); '
-             'time.sleep(0.1); '
+             's.setDTR(False); s.setRTS(False); '
+             'time.sleep(0.5); '
+             's.setDTR(True); s.setRTS(True); '
+             'time.sleep(0.2); '
              's.close(); '
-             'print(chr(10) + \'[lidar_reset] Lidar RESET sent, waiting for motor spin-up...\')'
+             'print(chr(10) + \'[lidar_reset] DTR toggle OK — waiting for motor spin-up...\')'
              '" || echo "[lidar_reset] Lidar reset skipped (port not ready)"'],
         output='screen',
     )
 
     return LaunchDescription([
-        # 0. Reset Lidar serial trước khi launch (tránh Timeout khi restart)
+        # 0. DTR toggle Lidar (tương đương unplug/replug, tránh lỗi 80008002)
         lidar_serial_reset,
 
         # 1. Base Hardware Layer (Chassis, Lidar, IMU, EKF, TF)
-        #    Delay 1.5s để đảm bảo serial reset hoàn tất trước khi rplidar_node khởi động
+        #    Delay 5s để motor đủ thời gian spin-up sau DTR reset
         TimerAction(
-            period=3.0,
+            period=5.0,
             actions=[
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
@@ -45,7 +46,7 @@ def generate_launch_description():
 
         # 2. Twist Mux + Safety Shield
         TimerAction(
-            period=2.5,
+            period=6.5,
             actions=[
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
@@ -58,7 +59,7 @@ def generate_launch_description():
         # 3. SCADA ZMQ Bridge (ROS2 <-> Web Server)
         # NOTE: Nav2 đã được tắt — chế độ bám người KHÔNG cần map/global_costmap
         TimerAction(
-            period=3.0,
+            period=7.0,
             actions=[
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
