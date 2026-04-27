@@ -19,7 +19,7 @@ class SafetyShieldNode(Node):
         super().__init__('context_safety_shield')
         
         # Đọc tham số an toàn (bất đối xứng do vị trí đặt Lidar)
-        self.declare_parameter('stop_dist_front', 0.50)
+        self.declare_parameter('stop_dist_front', 0.35)
         self.declare_parameter('stop_dist_rear', 0.80)
         self.declare_parameter('stop_dist_side', 0.35)
         
