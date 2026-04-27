@@ -101,10 +101,8 @@ class ContextAwareBridgeNode(Node):
             self._pb = pb
             self.get_logger().info('Protobuf stubs loaded — RobotState will use Protobuf encoding.')
         except ImportError:
-            self.get_logger().warn(
-                'Protobuf stubs not found (src.communication.proto.messages_pb2). '
-                'Falling back to struct encoding for RobotState. '
-                'Jetson zmq_subscriber.py handles both formats.'
+            self.get_logger().debug(
+                'Protobuf stubs not found — using struct fallback for RobotState (expected).'
             )
 
         # ── Runtime state ────────────────────────────────────────────────────
@@ -216,8 +214,11 @@ class ContextAwareBridgeNode(Node):
         else:
             scale_x = vel_x   # CRUISE / FOLLOW
 
-        twist.linear.x  = scale_x * MAX_LINEAR_VEL
-        twist.linear.y  = vel_y * MAX_LINEAR_VEL
+        # vel_x / vel_y are already in m/s from Jetson heuristic_policy
+        # (range [follow_min_vel, follow_max_vel] = [0.3, 0.8] m/s)
+        # Do NOT multiply by MAX_LINEAR_VEL — that would double-scale the velocity.
+        twist.linear.x  = scale_x
+        twist.linear.y  = vel_y
         twist.angular.z = heading_offset * MAX_ANGULAR_VEL
         return twist
 
