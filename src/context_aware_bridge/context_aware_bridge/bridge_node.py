@@ -36,10 +36,10 @@ NAV_AVOID    = 2
 NAV_FOLLOW   = 3
 NAV_STOP     = 4
 
-# Struct format for NavigationCommand (Jetson → RasPi), 25 bytes big-endian
-# Fields: mode(i) vel_scale(f) heading_offset(f) follow_id(i) ts(f) confidence(f) safety_override(B)
-_NAV_CMD_FMT  = '!iffiffB'
-_NAV_CMD_SIZE = struct.calcsize(_NAV_CMD_FMT)  # 25
+# Struct format for NavigationCommand (Jetson → RasPi), 29 bytes big-endian
+# Fields: mode(i) vx(f) vy(f) vtheta(f) follow_id(i) ts(f) confidence(f) safety_override(B)
+_NAV_CMD_FMT  = '!ifffiffB'
+_NAV_CMD_SIZE = struct.calcsize(_NAV_CMD_FMT)  # 29
 
 # Struct format for RobotState fallback (RasPi → Jetson), 52 bytes big-endian
 # Fields: vx(f) vy(f) vtheta(f) pos_x(f) pos_y(f) pos_theta(f) battery(f) 
@@ -186,10 +186,10 @@ class ContextAwareBridgeNode(Node):
                         f'Unexpected nav_cmd size: {len(raw)} bytes (expected {_NAV_CMD_SIZE})'
                     )
                     continue
-                mode, vel_scale, heading_offset, _, _, _, safety_override = \
+                mode, vel_x, vel_y, heading_offset, _, _, _, safety_override = \
                     struct.unpack(_NAV_CMD_FMT, raw)
                 self._last_cmd_time = time.monotonic()
-                twist = self._to_twist(mode, vel_scale, heading_offset, bool(safety_override))
+                twist = self._to_twist(mode, vel_x, vel_y, heading_offset, bool(safety_override))
                 self.cmd_vel_pub.publish(twist)
             except zmq.Again:
                 pass   # poll timeout — watchdog handles silence
@@ -203,21 +203,22 @@ class ContextAwareBridgeNode(Node):
 
     # ── NavigationMode + velocity_scale → Twist ──────────────────────────────
     @staticmethod
-    def _to_twist(mode: int, vel_scale: float, heading_offset: float,
+    def _to_twist(mode: int, vel_x: float, vel_y: float, heading_offset: float,
                   safety_override: bool) -> Twist:
         twist = Twist()
         if mode == NAV_STOP:
             return twist
 
         if mode == NAV_AVOID:
-            scale = min(vel_scale, 0.3)
+            scale_x = min(vel_x, 0.3)
         elif mode == NAV_CAUTIOUS:
-            scale = min(vel_scale, 0.6)
+            scale_x = min(vel_x, 0.6)
         else:
-            scale = vel_scale   # CRUISE / FOLLOW
+            scale_x = vel_x   # CRUISE / FOLLOW
 
-        twist.linear.x  = scale * MAX_LINEAR_VEL
-        twist.angular.z = math.tan(heading_offset) * MAX_ANGULAR_VEL
+        twist.linear.x  = scale_x * MAX_LINEAR_VEL
+        twist.linear.y  = vel_y * MAX_LINEAR_VEL
+        twist.angular.z = heading_offset * MAX_ANGULAR_VEL
         return twist
 
     # ── RobotState encoding (Protobuf preferred, struct fallback) ────────────
