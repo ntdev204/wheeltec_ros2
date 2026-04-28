@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung R&D Institute Russia
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 
@@ -75,7 +75,7 @@ public:
 
 private:
   rclcpp::Publisher<nav2_msgs::msg::CostmapFilterInfo>::SharedPtr publisher_;
-};  // InfoPublisher
+};
 
 class MaskPublisher : public rclcpp::Node
 {
@@ -97,7 +97,7 @@ public:
 
 private:
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr publisher_;
-};  // MaskPublisher
+};
 
 class BinaryStateSubscriber : public rclcpp::Node
 {
@@ -109,7 +109,7 @@ public:
       binary_state_topic, rclcpp::QoS(10),
       std::bind(&BinaryStateSubscriber::binaryStateCallback, this, std::placeholders::_1));
 
-    // Initialize with default state
+
     msg_ = std::make_shared<std_msgs::msg::Bool>();
     msg_->data = default_state;
   }
@@ -140,7 +140,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr subscriber_;
   std_msgs::msg::Bool::SharedPtr msg_;
   bool binary_state_updated_;
-};  // BinaryStateSubscriber
+};
 
 class TestMask : public nav_msgs::msg::OccupancyGrid
 {
@@ -150,7 +150,7 @@ public:
     const std::string & mask_frame)
   : width_(width), height_(height)
   {
-    // Fill filter mask info
+
     header.frame_id = mask_frame;
     info.resolution = resolution;
     info.width = width_;
@@ -163,18 +163,18 @@ public:
     info.origin.orientation.z = 0.0;
     info.origin.orientation.w = 1.0;
 
-    // Fill test mask as follows:
-    //
-    //  mask           (10,11)
-    //   *----------------*
-    //   |91|92|...|99|100|
-    //   |...             |
-    //   |...             |
-    //   |11|12|13|...| 20|
-    //   | 1| 2| 3|...| 10|
-    //   |-1| 0| 0|...|  0|
-    //   *----------------*
-    // (0,0)
+
+
+
+
+
+
+
+
+
+
+
+
     data.resize(width_ * height_, nav2_util::OCC_GRID_UNKNOWN);
 
     unsigned int mx, my;
@@ -199,7 +199,7 @@ public:
 private:
   const unsigned int width_;
   const unsigned int height_;
-};  // TestMask
+};
 
 class TestNode : public ::testing::Test
 {
@@ -214,12 +214,12 @@ protected:
   void publishMaps(uint8_t type, const char * mask_topic, double base, double multiplier);
   void rePublishInfo(uint8_t type, const char * mask_topic, double base, double multiplier);
   void rePublishMask();
-  void setDefaultState(bool default_state);  // NOTE: must be called before createBinaryFilter()
+  void setDefaultState(bool default_state);
   bool createBinaryFilter(const std::string & global_frame, double flip_threshold);
   void createTFBroadcaster(const std::string & mask_frame, const std::string & global_frame);
   void publishTransform();
 
-  // Test methods
+
   void testFullMask(
     double base, double multiplier, double flip_threshold, double tr_x, double tr_y);
   void testSimpleMask(
@@ -264,26 +264,26 @@ private:
 
 void TestNode::createMaps(const std::string & mask_frame)
 {
-  // Make map and mask put as follows:
-  //  master_grid     (12,13)
-  //    *----------------*
-  //    |                |
-  //    |  mask  (10,11) |
-  //    |   *-------*    |
-  //    |   |///////|    |
-  //    |   |///////|    |
-  //    |   |///////|    |
-  //    |   *-------*    |
-  //    | (0,0)          |
-  //    |                |
-  //    *----------------*
-  // (-2,-2)
 
-  // Create master_grid_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   master_grid_ = std::make_shared<nav2_costmap_2d::Costmap2D>(
     width_ + 4, height_ + 4, resolution_, -2.0, -2.0, nav2_costmap_2d::FREE_SPACE);
 
-  // Create mask_
+
   mask_ = std::make_shared<TestMask>(width_, height_, resolution_, mask_frame);
 }
 
@@ -299,8 +299,8 @@ void TestNode::rePublishInfo(
 {
   info_publisher_.reset();
   info_publisher_ = std::make_shared<InfoPublisher>(type, mask_topic, base, multiplier);
-  // Allow both CostmapFilterInfo and filter mask subscribers
-  // to receive a new message
+
+
   waitSome(100ms);
 }
 
@@ -308,7 +308,7 @@ void TestNode::rePublishMask()
 {
   mask_publisher_.reset();
   mask_publisher_ = std::make_shared<MaskPublisher>(*mask_);
-  // Allow filter mask subscriber to receive a new message
+
   waitSome(100ms);
 }
 
@@ -355,7 +355,7 @@ bool TestNode::createBinaryFilter(const std::string & global_frame, double flip_
 {
   node_ = std::make_shared<nav2_util::LifecycleNode>("test_node");
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node_->get_clock());
-  tf_buffer_->setUsingDedicatedThread(true);  // One-thread broadcasting-listening model
+  tf_buffer_->setUsingDedicatedThread(true);
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
   nav2_costmap_2d::LayeredCostmap layers(global_frame, false, false);
@@ -388,7 +388,7 @@ bool TestNode::createBinaryFilter(const std::string & global_frame, double flip_
   binary_state_subscriber_ =
     std::make_shared<BinaryStateSubscriber>(BINARY_STATE_TOPIC, default_state_);
 
-  // Wait until mask will be received by BinaryFilter
+
   const std::chrono::nanoseconds timeout = 500ms;
   rclcpp::Time start_time = node_->now();
   while (!binary_filter_->isActive()) {
@@ -420,7 +420,7 @@ void TestNode::createTFBroadcaster(const std::string & mask_frame, const std::st
 
   tf_broadcaster_->sendTransform(*transform_);
 
-  // Allow tf_buffer_ to be filled by listener
+
   waitSome(100ms);
 }
 
@@ -464,7 +464,7 @@ void TestNode::testFullMask(
   bool prev_sign = false;
   bool sign;
 
-  // data = 0
+
   x = 1;
   y = 0;
   pose.x = x - tr_x;
@@ -473,16 +473,16 @@ void TestNode::testFullMask(
   binary_filter_->process(*master_grid_, min_i, min_j, max_i, max_j, pose);
   sign = getSign(x, y, base, multiplier, flip_threshold);
   if (sign != prev_sign) {
-    // Binary filter just flipped
+
     binary_state = waitBinaryState();
     prev_sign = sign;
   } else {
-    // Binary filter state should not be changed
+
     binary_state = getBinaryState();
   }
   verifyBinaryState(sign, binary_state);
 
-  // data in range [1..100] (sparsed for testing speed)
+
   for (y = 1; y < height_; y += 2) {
     for (x = 0; x < width_; x += 2) {
       pose.x = x - tr_x;
@@ -492,18 +492,18 @@ void TestNode::testFullMask(
 
       sign = getSign(x, y, base, multiplier, flip_threshold);
       if (prev_sign != sign) {
-        // Binary filter just flipped
+
         binary_state = waitBinaryState();
         prev_sign = sign;
       } else {
-        // Binary filter state should not be changed
+
         binary_state = getBinaryState();
       }
       verifyBinaryState(sign, binary_state);
     }
   }
 
-  // data = -1 (unknown)
+
   bool prev_state = binary_state->data;
   pose.x = -tr_x;
   pose.y = -tr_y;
@@ -511,7 +511,7 @@ void TestNode::testFullMask(
   binary_filter_->process(*master_grid_, min_i, min_j, max_i, max_j, pose);
   binary_state = getBinaryState();
   ASSERT_TRUE(binary_state != nullptr);
-  ASSERT_EQ(binary_state->data, prev_state);  // Binary state won't be updated
+  ASSERT_EQ(binary_state->data, prev_state);
 }
 
 void TestNode::testSimpleMask(
@@ -529,7 +529,7 @@ void TestNode::testSimpleMask(
   bool prev_sign = false;
   bool sign;
 
-  // data = 0
+
   x = 1;
   y = 0;
   pose.x = x - tr_x;
@@ -538,16 +538,16 @@ void TestNode::testSimpleMask(
   binary_filter_->process(*master_grid_, min_i, min_j, max_i, max_j, pose);
   sign = getSign(x, y, base, multiplier, flip_threshold);
   if (sign != prev_sign) {
-    // Binary filter just flipped
+
     binary_state = waitBinaryState();
     prev_sign = sign;
   } else {
-    // Binary filter state should not be changed
+
     binary_state = getBinaryState();
   }
   verifyBinaryState(sign, binary_state);
 
-  // data = <some_middle_value>
+
   x = width_ / 2 - 1;
   y = height_ / 2 - 1;
   pose.x = x - tr_x;
@@ -557,16 +557,16 @@ void TestNode::testSimpleMask(
 
   sign = getSign(x, y, base, multiplier, flip_threshold);
   if (prev_sign != sign) {
-    // Binary filter just flipped
+
     binary_state = waitBinaryState();
     prev_sign = sign;
   } else {
-    // Binary filter state should not be changed
+
     binary_state = getBinaryState();
   }
   verifyBinaryState(sign, binary_state);
 
-  // data = 100
+
   x = width_ - 1;
   y = height_ - 1;
   pose.x = x - tr_x;
@@ -576,16 +576,16 @@ void TestNode::testSimpleMask(
 
   sign = getSign(x, y, base, multiplier, flip_threshold);
   if (prev_sign != sign) {
-    // Binary filter just flipped
+
     binary_state = waitBinaryState();
     prev_sign = sign;
   } else {
-    // Binary filter state should not be changed
+
     binary_state = getBinaryState();
   }
   verifyBinaryState(sign, binary_state);
 
-  // data = -1 (unknown)
+
   bool prev_state = binary_state->data;
   pose.x = -tr_x;
   pose.y = -tr_y;
@@ -593,12 +593,12 @@ void TestNode::testSimpleMask(
   binary_filter_->process(*master_grid_, min_i, min_j, max_i, max_j, pose);
   binary_state = getBinaryState();
   ASSERT_TRUE(binary_state != nullptr);
-  ASSERT_EQ(binary_state->data, prev_state);  // Binary state won't be updated
+  ASSERT_EQ(binary_state->data, prev_state);
 }
 
 void TestNode::testOutOfMask()
 {
-  // base, multiplier and flip_threshold should have values as below for this test
+
   const double base = 0.0;
   const double multiplier = 1.0;
   const double flip_threshold = 10.0;
@@ -611,14 +611,14 @@ void TestNode::testOutOfMask()
   geometry_msgs::msg::Pose2D pose;
   std_msgs::msg::Bool::SharedPtr binary_state;
 
-  // data = <some_middle_value>
+
   pose.x = width_ / 2 - 1;
   pose.y = height_ / 2 - 1;
   binary_filter_->process(*master_grid_, min_i, min_j, max_i, max_j, pose);
   binary_state = waitBinaryState();
   verifyBinaryState(getSign(pose.x, pose.y, base, multiplier, flip_threshold), binary_state);
 
-  // Then go to out of mask bounds and ensure that binary state is set back to default
+
   pose.x = -2.0;
   pose.y = -2.0;
   binary_filter_->process(*master_grid_, min_i, min_j, max_i, max_j, pose);
@@ -644,7 +644,7 @@ void TestNode::testIncorrectTF()
   geometry_msgs::msg::Pose2D pose;
   std_msgs::msg::Bool::SharedPtr binary_state;
 
-  // data = <some_middle_value>
+
   pose.x = width_ / 2 - 1;
   pose.y = height_ / 2 - 1;
   binary_filter_->process(*master_grid_, min_i, min_j, max_i, max_j, pose);
@@ -654,7 +654,7 @@ void TestNode::testIncorrectTF()
 
 void TestNode::testResetFilter()
 {
-  // base, multiplier and flip_threshold should have values as below for this test
+
   const double base = 0.0;
   const double multiplier = 1.0;
   const double flip_threshold = 10.0;
@@ -667,7 +667,7 @@ void TestNode::testResetFilter()
   geometry_msgs::msg::Pose2D pose;
   std_msgs::msg::Bool::SharedPtr binary_state;
 
-  // Switch-on binary filter
+
   pose.x = width_ / 2 - 1;
   pose.y = height_ / 2 - 1;
   publishTransform();
@@ -675,7 +675,7 @@ void TestNode::testResetFilter()
   binary_state = waitBinaryState();
   verifyBinaryState(getSign(pose.x, pose.y, base, multiplier, flip_threshold), binary_state);
 
-  // Reset binary filter and check its state was resetted to default
+
   binary_filter_->resetFilter();
   binary_state = waitBinaryState();
   ASSERT_TRUE(binary_state != nullptr);
@@ -703,174 +703,174 @@ void TestNode::reset()
 
 TEST_F(TestNode, testBinaryState)
 {
-  // Initilize test system
+
   createMaps("map");
   publishMaps(nav2_costmap_2d::BINARY_FILTER, MASK_TOPIC, 0.0, 1.0);
   ASSERT_TRUE(createBinaryFilter("map", 10.0));
 
-  // Test BinaryFilter
+
   testSimpleMask(0.0, 1.0, 10.0, NO_TRANSLATION, NO_TRANSLATION);
 
-  // Clean-up
+
   binary_filter_->resetFilter();
   reset();
 }
 
 TEST_F(TestNode, testBinaryStateScaled)
 {
-  // Initilize test system
+
   createMaps("map");
   publishMaps(nav2_costmap_2d::BINARY_FILTER, MASK_TOPIC, 100.0, -1.0);
   ASSERT_TRUE(createBinaryFilter("map", 35.0));
 
-  // Test BinaryFilter
+
   testFullMask(100.0, -1.0, 35.0, NO_TRANSLATION, NO_TRANSLATION);
 
-  // Clean-up
+
   binary_filter_->resetFilter();
   reset();
 }
 
 TEST_F(TestNode, testInvertedBinaryState)
 {
-  // Initilize test system
+
   createMaps("map");
   publishMaps(nav2_costmap_2d::BINARY_FILTER, MASK_TOPIC, 0.0, 1.0);
   setDefaultState(true);
   ASSERT_TRUE(createBinaryFilter("map", 10.0));
 
-  // Test BinaryFilter
+
   testSimpleMask(0.0, 1.0, 10.0, NO_TRANSLATION, NO_TRANSLATION);
 
-  // Clean-up
+
   binary_filter_->resetFilter();
   reset();
 }
 
 TEST_F(TestNode, testOutOfBounds)
 {
-  // Initilize test system
+
   createMaps("map");
   publishMaps(nav2_costmap_2d::BINARY_FILTER, MASK_TOPIC, 0.0, 1.0);
   ASSERT_TRUE(createBinaryFilter("map", 10.0));
 
-  // Test BinaryFilter
+
   testOutOfMask();
 
-  // Clean-up
+
   binary_filter_->resetFilter();
   reset();
 }
 
 TEST_F(TestNode, testInfoRePublish)
 {
-  // Initilize test system
+
   createMaps("map");
-  // Publish Info with incorrect dummy mask topic
+
   publishMaps(nav2_costmap_2d::BINARY_FILTER, "dummy_topic", 0.0, 1.0);
   ASSERT_FALSE(createBinaryFilter("map", 10.0));
 
-  // Re-publish filter info with correct mask topic
-  // and ensure that everything works fine
+
+
   rePublishInfo(nav2_costmap_2d::BINARY_FILTER, MASK_TOPIC, 0.0, 1.0);
 
-  // Test BinaryFilter
+
   testSimpleMask(0.0, 1.0, 10.0, NO_TRANSLATION, NO_TRANSLATION);
 
-  // Clean-up
+
   binary_filter_->resetFilter();
   reset();
 }
 
 TEST_F(TestNode, testMaskRePublish)
 {
-  // Create mask in incorrect frame
+
   createMaps("dummy");
   publishMaps(nav2_costmap_2d::BINARY_FILTER, MASK_TOPIC, 0.0, 1.0);
   EXPECT_TRUE(createBinaryFilter("map", 10.0));
 
-  // Create mask in correct frame
+
   resetMaps();
   createMaps("map");
-  // Re-publish correct filter mask and ensure that everything works fine
+
   rePublishMask();
 
-  // Test BinaryFilter
+
   testSimpleMask(0.0, 1.0, 10.0, NO_TRANSLATION, NO_TRANSLATION);
 
-  // Clean-up
+
   binary_filter_->resetFilter();
   reset();
 }
 
 TEST_F(TestNode, testIncorrectFilterType)
 {
-  // Initilize test system
+
   createMaps("map");
   publishMaps(INCORRECT_TYPE, MASK_TOPIC, 0.0, 1.0);
   ASSERT_FALSE(createBinaryFilter("map", 10.0));
 
-  // Clean-up
+
   binary_filter_->resetFilter();
   reset();
 }
 
 TEST_F(TestNode, testDifferentFrame)
 {
-  // Initilize test system
+
   createMaps("map");
   publishMaps(nav2_costmap_2d::BINARY_FILTER, MASK_TOPIC, 0.0, 1.0);
   ASSERT_TRUE(createBinaryFilter("odom", 10.0));
   createTFBroadcaster("map", "odom");
 
-  // Test BinaryFilter
+
   testSimpleMask(0.0, 1.0, 10.0, TRANSLATION_X, TRANSLATION_Y);
 
-  // Clean-up
+
   binary_filter_->resetFilter();
   reset();
 }
 
 TEST_F(TestNode, testIncorrectFrame)
 {
-  // Initilize test system
+
   createMaps("map");
   publishMaps(nav2_costmap_2d::BINARY_FILTER, MASK_TOPIC, 0.0, 1.0);
   ASSERT_TRUE(createBinaryFilter("odom", 10.0));
-  // map->odom TF does not exit
 
-  // Test BinaryFilter with incorrect TF chain
+
+
   testIncorrectTF();
 
-  // Clean-up
+
   binary_filter_->resetFilter();
   reset();
 }
 
 TEST_F(TestNode, testResetState)
 {
-  // Initilize test system
+
   createMaps("map");
   publishMaps(nav2_costmap_2d::BINARY_FILTER, MASK_TOPIC, 0.0, 1.0);
   ASSERT_TRUE(createBinaryFilter("map", 10.0));
 
   testResetFilter();
 
-  // Clean-up
-  // do not need to resetFilter(): this was already done in testResetFilter()
+
+
   reset();
 }
 
 int main(int argc, char ** argv)
 {
-  // Initialize the system
+
   testing::InitGoogleTest(&argc, argv);
   rclcpp::init(argc, argv);
 
-  // Actual testing
+
   bool test_result = RUN_ALL_TESTS();
 
-  // Shutdown
+
   rclcpp::shutdown();
 
   return test_result;

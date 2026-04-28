@@ -1,36 +1,5 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2017, Locus Robotics
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of the copyright holder nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- */
+
+
 
 #include <cmath>
 #include <vector>
@@ -160,7 +129,7 @@ TEST(VelocityIterator, max_xy)
   gen.initialize(nh, "dwb");
 
   std::vector<nav_2d_msgs::msg::Twist2D> twists = gen.getTwists(zero);
-  // Expect more twists since max_speed_xy is now beyond feasible limits
+
   EXPECT_EQ(twists.size(), 2010u);
   checkLimits(twists, 0.0, 0.55, -0.1, 0.1, -1.0, 1.0, hypot(0.55, 0.1));
 }
@@ -171,7 +140,7 @@ TEST(VelocityIterator, min_xy)
   StandardTrajectoryGenerator gen;
   gen.initialize(nh, "dwb");
   std::vector<nav_2d_msgs::msg::Twist2D> twists = gen.getTwists(zero);
-  // Expect even more since theres no min_speed_xy
+
   EXPECT_EQ(twists.size(), 2015u);
   checkLimits(twists, 0.0, 0.55, -0.1, 0.1, -1.0, 1.0);
 }
@@ -182,7 +151,7 @@ TEST(VelocityIterator, min_theta)
   StandardTrajectoryGenerator gen;
   gen.initialize(nh, "dwb");
   std::vector<nav_2d_msgs::msg::Twist2D> twists = gen.getTwists(zero);
-  // Expect even more since theres no min_speed_xy
+
   EXPECT_EQ(twists.size(), 2015u);
   checkLimits(twists, 0.0, 0.55, -0.1, 0.1, -1.0, 1.0);
 }
@@ -197,7 +166,7 @@ TEST(VelocityIterator, no_limits)
   StandardTrajectoryGenerator gen;
   gen.initialize(nh, "dwb");
   std::vector<nav_2d_msgs::msg::Twist2D> twists = gen.getTwists(zero);
-  // vx_samples * vtheta_samples * vy_samples + added zero theta samples - (0,0,0)
+
   EXPECT_EQ(twists.size(), 20u * 20u * 5u + 100u - 1u);
   checkLimits(twists, 0.0, 0.55, -0.1, 0.1, -1.0, 1.0, hypot(0.55, 0.1), 0.0, 0.0);
 }
@@ -226,7 +195,7 @@ TEST(VelocityIterator, dwa_gen)
   dwb_plugins::LimitedAccelGenerator gen;
   gen.initialize(nh, "dwb");
   std::vector<nav_2d_msgs::msg::Twist2D> twists = gen.getTwists(zero);
-  // Same as no-limits since everything is within our velocity limits
+
   EXPECT_EQ(twists.size(), 20u * 20u * 5u + 100u - 1u);
   checkLimits(twists, 0.0, 0.125, -0.1, 0.1, -0.16, 0.16, hypot(0.125, 0.1), 0.0, 0.1);
 }
@@ -237,7 +206,7 @@ TEST(VelocityIterator, dwa_gen_zero_frequency)
   nh->declare_parameter("controller_frequency", 0.0);
   LimitedAccelGeneratorTest gen;
   gen.initialize(nh, "dwb");
-  // Default value should be 0.05
+
   EXPECT_EQ(gen.getAccelerationTime(), 0.05);
 }
 

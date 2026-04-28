@@ -1,16 +1,16 @@
-// Copyright 2020 Anshumaan Singh
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <vector>
 #include <memory>
@@ -73,7 +73,7 @@ void ThetaStarPlanner::cleanup()
 void ThetaStarPlanner::activate()
 {
   RCLCPP_INFO(logger_, "Activating plugin %s of type nav2_theta_star_planner", name_.c_str());
-  // Add callback for dynamic parameters
+
   auto node = parent_node_.lock();
   dyn_params_handler_ = node->add_on_set_parameters_callback(
     std::bind(&ThetaStarPlanner::dynamicParametersCallback, this, std::placeholders::_1));
@@ -91,7 +91,7 @@ nav_msgs::msg::Path ThetaStarPlanner::createPlan(
   nav_msgs::msg::Path global_path;
   auto start_time = std::chrono::steady_clock::now();
 
-  // Corner case of start and goal beeing on the same cell
+
   unsigned int mx_start, my_start, mx_goal, my_goal;
   planner_->costmap_->worldToMap(start.pose.position.x, start.pose.position.y, mx_start, my_start);
   planner_->costmap_->worldToMap(goal.pose.position.x, goal.pose.position.y, mx_goal, my_goal);
@@ -107,9 +107,9 @@ nav_msgs::msg::Path ThetaStarPlanner::createPlan(
     pose.pose.position.z = 0.0;
 
     pose.pose = start.pose;
-    // if we have a different start and goal orientation, set the unique path pose to the goal
-    // orientation, unless use_final_approach_orientation=true where we need it to be the start
-    // orientation to avoid movement from the local planner
+
+
+
     if (start.pose.orientation != goal.pose.orientation && !use_final_approach_orientation_) {
       pose.pose.orientation = goal.pose.orientation;
     }
@@ -122,16 +122,16 @@ nav_msgs::msg::Path ThetaStarPlanner::createPlan(
     logger_, "Got the src and dst... (%i, %i) && (%i, %i)",
     planner_->src_.x, planner_->src_.y, planner_->dst_.x, planner_->dst_.y);
   getPlan(global_path);
-  // check if a plan is generated
+
   size_t plan_size = global_path.poses.size();
   if (plan_size > 0) {
     global_path.poses.back().pose.orientation = goal.pose.orientation;
   }
 
-  // If use_final_approach_orientation=true, interpolate the last pose orientation from the
-  // previous pose to set the orientation to the 'final approach' orientation of the robot so
-  // it does not rotate.
-  // And deal with corner case of plan of length 1
+
+
+
+
   if (use_final_approach_orientation_) {
     if (plan_size == 1) {
       global_path.poses.back().pose.orientation = start.pose.orientation;
@@ -229,7 +229,7 @@ ThetaStarPlanner::dynamicParametersCallback(std::vector<rclcpp::Parameter> param
   return result;
 }
 
-}  // namespace nav2_theta_star_planner
+}
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(nav2_theta_star_planner::ThetaStarPlanner, nav2_core::GlobalPlanner)

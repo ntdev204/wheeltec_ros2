@@ -1,16 +1,3 @@
-# Copyright (c) 2019 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 from typing import Dict
 from typing import List
@@ -19,18 +6,13 @@ import tempfile
 import launch
 
 class ReplaceString(launch.Substitution):
-  """
-  Substitution that replaces strings on a given file.
-
-  Used in launch system
-  """
 
   def __init__(self,
     source_file: launch.SomeSubstitutionsType,
     replacements: Dict) -> None:
     super().__init__()
 
-    from launch.utilities import normalize_to_list_of_substitutions  # import here to avoid loop
+    from launch.utilities import normalize_to_list_of_substitutions
     self.__source_file = normalize_to_list_of_substitutions(source_file)
     self.__replacements = {}
     for key in replacements:
@@ -38,11 +20,9 @@ class ReplaceString(launch.Substitution):
 
   @property
   def name(self) -> List[launch.Substitution]:
-    """Getter for name."""
     return self.__source_file
 
   def describe(self) -> Text:
-    """Return a description of this substitution as a string."""
     return ''
 
   def perform(self, context: launch.LaunchContext) -> Text:
@@ -51,7 +31,7 @@ class ReplaceString(launch.Substitution):
     try:
       input_file = open(launch.utilities.perform_substitutions(context, self.name), 'r')
       self.replace(input_file, output_file, replacements)
-    except Exception as err:  # noqa: B902
+    except Exception as err:
       print('ReplaceString substitution error: ', err)
     finally:
       input_file.close()

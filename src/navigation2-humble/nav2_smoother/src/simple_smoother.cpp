@@ -1,16 +1,16 @@
-// Copyright (c) 2022, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <vector>
 #include <memory>
@@ -18,16 +18,16 @@
 
 namespace nav2_smoother
 {
-using namespace smoother_utils;  // NOLINT
-using namespace nav2_util::geometry_utils;  // NOLINT
-using namespace std::chrono;  // NOLINT
+using namespace smoother_utils;
+using namespace nav2_util::geometry_utils;
+using namespace std::chrono;
 using nav2_util::declare_parameter_if_not_declared;
 
 void SimpleSmoother::configure(
   const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-  std::string name, std::shared_ptr<tf2_ros::Buffer>/*tf*/,
+  std::string name, std::shared_ptr<tf2_ros::Buffer>,
   std::shared_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub,
-  std::shared_ptr<nav2_costmap_2d::FootprintSubscriber>/*footprint_sub*/)
+  std::shared_ptr<nav2_costmap_2d::FootprintSubscriber>)
 {
   costmap_sub_ = costmap_sub;
 
@@ -70,22 +70,22 @@ bool SimpleSmoother::smooth(
 
   for (unsigned int i = 0; i != path_segments.size(); i++) {
     if (path_segments[i].end - path_segments[i].start > 9) {
-      // Populate path segment
+
       curr_path_segment.poses.clear();
       std::copy(
         path.poses.begin() + path_segments[i].start,
         path.poses.begin() + path_segments[i].end + 1,
         std::back_inserter(curr_path_segment.poses));
 
-      // Make sure we're still able to smooth with time remaining
+
       steady_clock::time_point now = steady_clock::now();
       time_remaining = max_time.seconds() - duration_cast<duration<double>>(now - start).count();
 
-      // Smooth path segment naively
+
       success = success && smoothImpl(
         curr_path_segment, reversing_segment, costmap.get(), time_remaining);
 
-      // Assemble the path changes to the main path
+
       std::copy(
         curr_path_segment.poses.begin(),
         curr_path_segment.poses.end(),
@@ -118,7 +118,7 @@ bool SimpleSmoother::smoothImpl(
     its += 1;
     change = 0.0;
 
-    // Make sure the smoothing function will converge
+
     if (its >= max_its_) {
       RCLCPP_WARN(
         logger_,
@@ -128,7 +128,7 @@ bool SimpleSmoother::smoothImpl(
       return false;
     }
 
-    // Make sure still have time left to process
+
     steady_clock::time_point b = steady_clock::now();
     rclcpp::Duration timespan(duration_cast<duration<double>>(b - a));
     if (timespan > max_dur) {
@@ -148,13 +148,13 @@ bool SimpleSmoother::smoothImpl(
         y_ip1 = getFieldByDim(new_path.poses[i + 1], j);
         y_i_org = y_i;
 
-        // Smooth based on local 3 point neighborhood and original data locations
+
         y_i += data_w_ * (x_i - y_i) + smooth_w_ * (y_ip1 + y_m1 - (2.0 * y_i));
         setFieldByDim(new_path.poses[i], j, y_i);
         change += abs(y_i - y_i_org);
       }
 
-      // validate update is admissible, only checks cost if a valid costmap pointer is provided
+
       float cost = 0.0;
       if (costmap) {
         costmap->worldToMap(
@@ -178,8 +178,8 @@ bool SimpleSmoother::smoothImpl(
     last_path = new_path;
   }
 
-  // Lets do additional refinement, it shouldn't take more than a couple milliseconds
-  // but really puts the path quality over the top.
+
+
   if (do_refinement_ && refinement_ctr_ < 4) {
     refinement_ctr_++;
     smoothImpl(new_path, reversing_segment, costmap, max_time);
@@ -215,7 +215,7 @@ void SimpleSmoother::setFieldByDim(
   }
 }
 
-}  // namespace nav2_smoother
+}
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(nav2_smoother::SimpleSmoother, nav2_core::Smoother)

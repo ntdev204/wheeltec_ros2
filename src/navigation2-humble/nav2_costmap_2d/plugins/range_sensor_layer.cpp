@@ -1,37 +1,5 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2018 David V. Lu!!
- *  Copyright (c) 2020, Bytes Robotics
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of the copyright holder nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- */
+
+
 
 #include <angles/angles.h>
 #include <algorithm>
@@ -120,7 +88,7 @@ void RangeSensorLayer::onInitialize()
       name_.c_str(), sensor_type_name.c_str());
   }
 
-  // Validate topic names list: it must be a (normally non-empty) list of strings
+
   if (topic_names.empty()) {
     RCLCPP_FATAL(
       logger_, "Invalid topic names list: it must"
@@ -128,7 +96,7 @@ void RangeSensorLayer::onInitialize()
     return;
   }
 
-  // Traverse the topic names list subscribing to all of them with the same callback method
+
   for (auto & topic_name : topic_names) {
     if (input_sensor_type == InputSensorType::VARIABLE) {
       processRangeMessageFunc_ = std::bind(
@@ -253,9 +221,9 @@ void RangeSensorLayer::processFixedRangeMsg(sensor_msgs::msg::Range & range_mess
 
   bool clear_sensor_cone = false;
 
-  if (range_message.range > 0) {  // +inf
+  if (range_message.range > 0) {
     if (!clear_on_max_reading_) {
-      return;  // no clearing at all
+      return;
     }
     clear_sensor_cone = true;
   }
@@ -313,23 +281,23 @@ void RangeSensorLayer::updateCostmap(
 
   double tx = out.point.x, ty = out.point.y;
 
-  // calculate target props
+
   double dx = tx - ox, dy = ty - oy, theta = atan2(dy, dx), d = sqrt(dx * dx + dy * dy);
 
-  // Integer Bounds of Update
+
   int bx0, by0, bx1, by1;
 
-  // Triangle that will be really updated; the other cells within bounds are ignored
-  // This triangle is formed by the origin and left and right sides of sonar cone
+
+
   int Ox, Oy, Ax, Ay, Bx, By;
 
-  // Bounds includes the origin
+
   worldToMapNoBounds(ox, oy, Ox, Oy);
   bx1 = bx0 = Ox;
   by1 = by0 = Oy;
   touch(ox, oy, &min_x_, &min_y_, &max_x_, &max_y_);
 
-  // Update Map with Target Point
+
   unsigned int aa, ab;
   if (worldToMap(tx, ty, aa, ab)) {
     setCost(aa, ab, 233);
@@ -338,7 +306,7 @@ void RangeSensorLayer::updateCostmap(
 
   double mx, my;
 
-  // Update left side of sonar cone
+
   mx = ox + cos(theta - max_angle_) * d * 1.2;
   my = oy + sin(theta - max_angle_) * d * 1.2;
   worldToMapNoBounds(mx, my, Ax, Ay);
@@ -348,7 +316,7 @@ void RangeSensorLayer::updateCostmap(
   by1 = std::max(by1, Ay);
   touch(mx, my, &min_x_, &min_y_, &max_x_, &max_y_);
 
-  // Update right side of sonar cone
+
   mx = ox + cos(theta + max_angle_) * d * 1.2;
   my = oy + sin(theta + max_angle_) * d * 1.2;
 
@@ -359,7 +327,7 @@ void RangeSensorLayer::updateCostmap(
   by1 = std::max(by1, By);
   touch(mx, my, &min_x_, &min_y_, &max_x_, &max_y_);
 
-  // Limit Bounds to Grid
+
   bx0 = std::max(0, bx0);
   by0 = std::max(0, by0);
   bx1 = std::min(static_cast<int>(size_x_), bx1);
@@ -369,19 +337,19 @@ void RangeSensorLayer::updateCostmap(
     for (unsigned int y = by0; y <= (unsigned int)by1; y++) {
       bool update_xy_cell = true;
 
-      // Unless inflate_cone_ is set to 100 %, we update cells only within the
-      // (partially inflated) sensor cone, projected on the costmap as a triangle.
-      // 0 % corresponds to just the triangle, but if your sensor fov is very
-      // narrow, the covered area can become zero due to cell discretization.
-      // See wiki description for more details
+
+
+
+
+
       if (inflate_cone_ < 1.0) {
-        // Determine barycentric coordinates
+
         int w0 = orient2d(Ax, Ay, Bx, By, x, y);
         int w1 = orient2d(Bx, By, Ox, Oy, x, y);
         int w2 = orient2d(Ox, Oy, Ax, Ay, x, y);
 
-        // Barycentric coordinates inside area threshold; this is not mathematically
-        // sound at all, but it works!
+
+
         float bcciath = -static_cast<float>(inflate_cone_) * area(Ax, Ay, Bx, By, Ox, Oy);
         update_xy_cell = w0 >= bcciath && w1 >= bcciath && w2 >= bcciath;
       }
@@ -439,7 +407,7 @@ void RangeSensorLayer::updateBounds(
   double robot_yaw, double * min_x, double * min_y,
   double * max_x, double * max_y)
 {
-  robot_yaw = 0 + robot_yaw;  // Avoid error if variable not in use
+  robot_yaw = 0 + robot_yaw;
   if (layered_costmap_->isRolling()) {
     updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
   }
@@ -513,7 +481,7 @@ void RangeSensorLayer::updateCosts(
 
   buffered_readings_ = 0;
 
-  // if not current due to reset, set current now after clearing
+
   if (!current_ && was_reset_) {
     was_reset_ = false;
     current_ = true;
@@ -539,4 +507,4 @@ void RangeSensorLayer::activate()
   range_msgs_buffer_.clear();
 }
 
-}  // namespace nav2_costmap_2d
+}

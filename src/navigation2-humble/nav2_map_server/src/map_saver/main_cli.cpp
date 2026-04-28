@@ -1,17 +1,17 @@
-// Copyright 2019 Rover Robotics
-// Copyright (c) 2008, Willow Garage, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <memory>
 #include <string>
@@ -23,7 +23,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-using namespace nav2_map_server;  // NOLINT
+using namespace nav2_map_server;
 
 const char * USAGE_STRING{
   "Usage:\n"
@@ -63,9 +63,9 @@ typedef enum
   HELP_MESSAGE
 } ARGUMENTS_STATUS;
 
-// Arguments parser
-// Input parameters: logger, argc, argv
-// Output parameters: map_topic, save_parameters
+
+
+
 ARGUMENTS_STATUS parse_arguments(
   const rclcpp::Logger & logger, int argc, char ** argv,
   std::string & map_topic, SaveParameters & save_parameters)
@@ -142,11 +142,11 @@ ARGUMENTS_STATUS parse_arguments(
 
 int main(int argc, char ** argv)
 {
-  // ROS2 init
+
   rclcpp::init(argc, argv);
   auto logger = rclcpp::get_logger("map_saver_cli");
 
-  // Parse CLI-arguments
+
   SaveParameters save_parameters;
   std::string map_topic = "map";
   switch (parse_arguments(logger, argc, argv, map_topic, save_parameters)) {
@@ -160,7 +160,7 @@ int main(int argc, char ** argv)
       break;
   }
 
-  // Call saveMapTopicToFile()
+
   int retcode;
   try {
     auto map_saver = std::make_shared<nav2_map_server::MapSaver>();
@@ -175,7 +175,7 @@ int main(int argc, char ** argv)
     retcode = -1;
   }
 
-  // Exit
+
   rclcpp::shutdown();
   return retcode;
 }

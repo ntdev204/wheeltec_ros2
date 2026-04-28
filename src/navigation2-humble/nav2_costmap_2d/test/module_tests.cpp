@@ -1,36 +1,8 @@
-/*
- * Copyright (c) 2008, Willow Garage, Inc.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Willow Garage, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived from
- *       this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 
-/**
- * @author Conor McGann
- * Test harness for Costmap2D
- */
+
+
+
+
 #include <gtest/gtest.h>
 #include <set>
 #include <vector>
@@ -87,11 +59,10 @@ bool find(const std::vector<unsigned int> & l, unsigned int n)
   return false;
 }
 
-/**
- * Tests the reset method
- */
+
+
 TEST(costmap, testResetForStaticMap) {
-  // Define a static map with a large object in the center
+
   std::vector<unsigned char> staticMap;
   for (unsigned int i = 0; i < 10; i++) {
     for (unsigned int j = 0; j < 10; j++) {
@@ -99,37 +70,37 @@ TEST(costmap, testResetForStaticMap) {
     }
   }
 
-  // Allocate the cost map, with a inflation to 3 cells all around
+
   nav2_costmap_2d::Costmap2D map(10, 10, RESOLUTION, 0.0, 0.0, 3, 3, 3,
     OBSTACLE_MAX_RANGE, OBSTACLE_MIN_RANGE, MAX_Z, RAYTRACE_MAX_RANGE, RAYTRACE_MIN_RANGE, 25,
     staticMap, THRESHOLD);
 
-  // Populate the cost map with a wall around the perimeter. Free space should clear out the room.
+
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(40);
 
-  // Left wall
+
   unsigned int ind = 0;
   for (unsigned int i = 0; i < 10; i++) {
-    // Left
+
     cloud.points[ind].x = 0;
     cloud.points[ind].y = i;
     cloud.points[ind].z = MAX_Z;
     ind++;
 
-    // Top
+
     cloud.points[ind].x = i;
     cloud.points[ind].y = 0;
     cloud.points[ind].z = MAX_Z;
     ind++;
 
-    // Right
+
     cloud.points[ind].x = 9;
     cloud.points[ind].y = i;
     cloud.points[ind].z = MAX_Z;
     ind++;
 
-    // Bottom
+
     cloud.points[ind].x = i;
     cloud.points[ind].y = 9;
     cloud.points[ind].z = MAX_Z;
@@ -147,11 +118,11 @@ TEST(costmap, testResetForStaticMap) {
   std::vector<nav2_costmap_2d::Observation> obsBuf;
   obsBuf.push_back(obs);
 
-  // Update the cost map for this observation
+
   map.updateWorld(wx, wy, obsBuf, obsBuf);
 
-  // Verify that we now have only 36 cells with lethal cost,
-  // thus provong that we have correctly cleared free space
+
+
   int hitCount = 0;
   for (unsigned int i = 0; i < 10; ++i) {
     for (unsigned int j = 0; j < 10; ++j) {
@@ -162,7 +133,7 @@ TEST(costmap, testResetForStaticMap) {
   }
   ASSERT_EQ(hitCount, 36);
 
-  // Veriy that we have 64 non-leathal
+
   hitCount = 0;
   for (unsigned int i = 0; i < 10; ++i) {
     for (unsigned int j = 0; j < 10; ++j) {
@@ -173,10 +144,10 @@ TEST(costmap, testResetForStaticMap) {
   }
   ASSERT_EQ(hitCount, 64);
 
-  // Now if we reset the cost map, we should have our map go back to being completely occupied
+
   map.resetMapOutsideWindow(wx, wy, 0.0, 0.0);
 
-  // We should now go back to everything being occupied
+
   hitCount = 0;
   for (unsigned int i = 0; i < 10; ++i) {
     for (unsigned int j = 0; j < 10; ++j) {
@@ -188,19 +159,18 @@ TEST(costmap, testResetForStaticMap) {
   ASSERT_EQ(hitCount, 100);
 }
 
-/**
- * Test for the cost function correctness with a larger range and different values
- */
+
+
 TEST(costmap, testCostFunctionCorrectness) {
   nav2_costmap_2d::Costmap2D map(100, 100, RESOLUTION, 0.0, 0.0,
     ROBOT_RADIUS * 5.0, ROBOT_RADIUS * 8.0, ROBOT_RADIUS * 10.5,
     100.0, MAX_Z, 100.0, 25, EMPTY_100_BY_100, THRESHOLD);
 
-  // Verify that the circumscribed cost lower bound is as expected: based on the cost function.
+
   unsigned char c = map.computeCost((ROBOT_RADIUS * 8.0 / RESOLUTION));
   ASSERT_EQ(map.getCircumscribedCost(), c);
 
-  // Add a point in the center
+
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(1);
   cloud.points[0].x = 50;
@@ -219,21 +189,21 @@ TEST(costmap, testCostFunctionCorrectness) {
   map.updateWorld(0, 0, obsBuf, obsBuf);
 
   for (unsigned int i = 0; i <= (unsigned int)ceil(ROBOT_RADIUS * 5.0); i++) {
-    // To the right
+
     ASSERT_EQ(map.getCost(50 + i, 50) >= nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
     ASSERT_EQ(map.getCost(50 + i, 50) >= nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
-    // To the left
+
     ASSERT_EQ(map.getCost(50 - i, 50) >= nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
     ASSERT_EQ(map.getCost(50 - i, 50) >= nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
-    // Down
+
     ASSERT_EQ(map.getCost(50, 50 + i) >= nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
     ASSERT_EQ(map.getCost(50, 50 + i) >= nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
-    // Up
+
     ASSERT_EQ(map.getCost(50, 50 - i) >= nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
     ASSERT_EQ(map.getCost(50, 50 - i) >= nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
   }
 
-  // Verify the normalized cost attenuates as expected
+
   for (unsigned int i = (unsigned int)(ceil(ROBOT_RADIUS * 5.0) + 1);
     i <= (unsigned int)ceil(ROBOT_RADIUS * 10.5); i++)
   {
@@ -241,7 +211,7 @@ TEST(costmap, testCostFunctionCorrectness) {
     ASSERT_EQ(map.getCost(50 + i, 50), expectedValue);
   }
 
-  // Update with no hits. Should clear (revert to the static map
+
   map.resetMapOutsideWindow(0, 0, 0.0, 0.0);
   cloud.points.resize(0);
 
@@ -273,16 +243,15 @@ char printableCost(unsigned char cost)
   }
 }
 
-/**
- * Test for wave interference
- */
+
+
 TEST(costmap, testWaveInterference) {
-  // Start with an empty map
+
   nav2_costmap_2d::Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0,
     ROBOT_RADIUS, ROBOT_RADIUS * 2, ROBOT_RADIUS * 3.01,
     10.0, MAX_Z * 2, 10.0, 1, EMPTY_10_BY_10, THRESHOLD);
 
-  // Lay out 3 obstacles in a line - along the diagonal, separated by a cell.
+
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(3);
   cloud.points[0].x = 3;
@@ -308,7 +277,7 @@ TEST(costmap, testWaveInterference) {
 
   int update_count = 0;
 
-  // Expect to see a union of obstacles
+
   printf("map:\n");
   for (unsigned int i = 0; i < 10; ++i) {
     for (unsigned int j = 0; j < 10; ++j) {
@@ -323,50 +292,43 @@ TEST(costmap, testWaveInterference) {
   ASSERT_EQ(update_count, 79);
 }
 
-/** Test for copying a window of a costmap */
+
 TEST(costmap, testWindowCopy) {
   nav2_costmap_2d::Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0,
     ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
     10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-  /*
-  for(unsigned int i = 0; i < 10; ++i){
-    for(unsigned int j = 0; j < 10; ++j){
-      printf("%3d ", map.getCost(i, j));
-    }
-    printf("\n");
-  }
-  printf("\n");
-  */
+  
+
 
   nav2_costmap_2d::Costmap2D windowCopy;
 
-  // first test that if we try to make a window that is too big, things fail
+
   windowCopy.copyCostmapWindow(map, 2.0, 2.0, 6.0, 12.0);
   ASSERT_EQ(windowCopy.getSizeInCellsX(), (unsigned int)0);
   ASSERT_EQ(windowCopy.getSizeInCellsY(), (unsigned int)0);
 
-  // Next, test that trying to make a map window itself fails
+
   map.copyCostmapWindow(map, 2.0, 2.0, 6.0, 6.0);
   ASSERT_EQ(map.getSizeInCellsX(), (unsigned int)10);
   ASSERT_EQ(map.getSizeInCellsY(), (unsigned int)10);
 
-  // Next, test that legal input generates the result that we expect
+
   windowCopy.copyCostmapWindow(map, 2.0, 2.0, 6.0, 6.0);
   ASSERT_EQ(windowCopy.getSizeInCellsX(), (unsigned int)6);
   ASSERT_EQ(windowCopy.getSizeInCellsY(), (unsigned int)6);
 
-  // check that we actually get the windo that we expect
+
   for (unsigned int i = 0; i < windowCopy.getSizeInCellsX(); ++i) {
     for (unsigned int j = 0; j < windowCopy.getSizeInCellsY(); ++j) {
       ASSERT_EQ(windowCopy.getCost(i, j), map.getCost(i + 2, j + 2));
-      // printf("%3d ", windowCopy.getCost(i, j));
+
     }
-    // printf("\n");
+
   }
 }
 
-// test for updating costmaps with static data
+
 TEST(costmap, testFullyContainedStaticMapUpdate) {
   nav2_costmap_2d::Costmap2D map(5, 5, RESOLUTION, 0.0, 0.0,
     ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
@@ -408,7 +370,7 @@ TEST(costmap, testOverlapStaticMapUpdate) {
 
   std::vector<unsigned char> blank(100);
 
-  // check to make sure that inflation on updates are being done correctly
+
   map.updateStaticMapWindow(-10, -10, 10, 10, blank);
 
   for (unsigned int i = 0; i < map.getSizeInCellsX(); ++i) {
@@ -440,15 +402,14 @@ TEST(costmap, testOverlapStaticMapUpdate) {
   }
 }
 
-/**
- * Test for ray tracing free space
- */
+
+
 TEST(costmap, testRaytracing) {
   nav2_costmap_2d::Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0,
     ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
     10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-  // Add a point cloud, should not affect the map
+
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(1);
   cloud.points[0].x = 0;
@@ -476,7 +437,7 @@ TEST(costmap, testRaytracing) {
     }
   }
 
-  // we expect just one obstacle to be added
+
   ASSERT_EQ(lethal_count, 21);
 }
 
@@ -562,7 +523,7 @@ TEST(costmap, testStaticMap) {
   ASSERT_EQ(map.getSizeInCellsX(), (unsigned int)10);
   ASSERT_EQ(map.getSizeInCellsY(), (unsigned int)10);
 
-  // Verify that obstacles correctly identified from the static map.
+
   std::vector<unsigned int> occupiedCells;
 
   for (unsigned int i = 0; i < 10; ++i) {
@@ -575,7 +536,7 @@ TEST(costmap, testStaticMap) {
 
   ASSERT_EQ(occupiedCells.size(), (unsigned int)20);
 
-  // Iterate over all id's and verify that they are present according to their
+
   for (std::vector<unsigned int>::const_iterator it = occupiedCells.begin();
     it != occupiedCells.end(); ++it)
   {
@@ -587,7 +548,7 @@ TEST(costmap, testStaticMap) {
     ASSERT_EQ(map.getCost(x, y) >= 100, true);
   }
 
-  // Block of 200
+
   ASSERT_EQ(find(occupiedCells, map.getIndex(7, 2)), true);
   ASSERT_EQ(find(occupiedCells, map.getIndex(8, 2)), true);
   ASSERT_EQ(find(occupiedCells, map.getIndex(9, 2)), true);
@@ -598,17 +559,17 @@ TEST(costmap, testStaticMap) {
   ASSERT_EQ(find(occupiedCells, map.getIndex(8, 4)), true);
   ASSERT_EQ(find(occupiedCells, map.getIndex(9, 4)), true);
 
-  // Block of 100
+
   ASSERT_EQ(find(occupiedCells, map.getIndex(4, 3)), true);
   ASSERT_EQ(find(occupiedCells, map.getIndex(4, 4)), true);
 
-  // Block of 200
+
   ASSERT_EQ(find(occupiedCells, map.getIndex(3, 7)), true);
   ASSERT_EQ(find(occupiedCells, map.getIndex(4, 7)), true);
   ASSERT_EQ(find(occupiedCells, map.getIndex(5, 7)), true);
 
 
-  // Verify Coordinate Transformations, ROW MAJOR ORDER
+
   ASSERT_EQ(worldToIndex(map, 0.0, 0.0), (unsigned int)0);
   ASSERT_EQ(worldToIndex(map, 0.0, 0.99), (unsigned int)0);
   ASSERT_EQ(worldToIndex(map, 0.0, 1.0), (unsigned int)10);
@@ -616,7 +577,7 @@ TEST(costmap, testStaticMap) {
   ASSERT_EQ(worldToIndex(map, 9.99, 9.99), (unsigned int)99);
   ASSERT_EQ(worldToIndex(map, 8.2, 3.4), (unsigned int)38);
 
-  // Ensure we hit the middle of the cell for world co-ordinates
+
   double wx, wy;
   indexToWorld(map, 99, wx, wy);
   ASSERT_EQ(wx, 9.5);
@@ -624,16 +585,15 @@ TEST(costmap, testStaticMap) {
 }
 
 
-/**
- * Verify that dynamic obstacles are added
- */
+
+
 
 TEST(costmap, testDynamicObstacles) {
   nav2_costmap_2d::Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0,
     ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
     10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-  // Add a point cloud and verify its insertion. There should be only one new one
+
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(3);
   cloud.points[0].x = 0;
@@ -664,23 +624,22 @@ TEST(costmap, testDynamicObstacles) {
     }
   }
 
-  // Should now have 1 insertion and no deletions
+
   ASSERT_EQ(ids.size(), (unsigned int)21);
 
-  // Repeating the call - we should see no insertions or deletions
+
   map.updateWorld(0, 0, obsBuf, obsBuf);
   ASSERT_EQ(ids.size(), (unsigned int)21);
 }
 
-/**
- * Verify that if we add a point that is already a static obstacle we do not end up with a new ostacle
- */
+
+
 TEST(costmap, testMultipleAdditions) {
   nav2_costmap_2d::Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0,
     ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
     10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-  // A point cloud with one point that falls within an existing obstacle
+
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(1);
   cloud.points[0].x = 7;
@@ -710,15 +669,14 @@ TEST(costmap, testMultipleAdditions) {
   ASSERT_EQ(ids.size(), (unsigned int)20);
 }
 
-/**
- * Make sure we ignore points outside of our z threshold
- */
+
+
 TEST(costmap, testZThreshold) {
   nav2_costmap_2d::Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0,
     ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
     10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-  // A point cloud with 2 points falling in a cell with a non-lethal cost
+
   pcl::PointCloud<pcl::PointXYZ> c0;
   c0.points.resize(2);
   c0.points[0].x = 0;
@@ -751,16 +709,15 @@ TEST(costmap, testZThreshold) {
   ASSERT_EQ(ids.size(), (unsigned int)21);
 }
 
-/**
- * Test inflation for both static and dynamic obstacles
- */
+
+
 
 TEST(costmap, testInflation) {
   nav2_costmap_2d::Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0,
     ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
     10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-  // Verify that obstacles correctly identified
+
   std::vector<unsigned int> occupiedCells;
 
   for (unsigned int i = 0; i < 10; ++i) {
@@ -773,7 +730,7 @@ TEST(costmap, testInflation) {
     }
   }
 
-  // There should be no duplicates
+
   std::set<unsigned int> setOfCells;
   for (unsigned int i = 0; i < occupiedCells.size(); i++) {
     setOfCells.insert(i);
@@ -782,7 +739,7 @@ TEST(costmap, testInflation) {
   ASSERT_EQ(setOfCells.size(), occupiedCells.size());
   ASSERT_EQ(setOfCells.size(), (unsigned int)48);
 
-  // Iterate over all id's and verify they are obstacles
+
   for (std::vector<unsigned int>::const_iterator it = occupiedCells.begin();
     it != occupiedCells.end(); ++it)
   {
@@ -795,7 +752,7 @@ TEST(costmap, testInflation) {
       map.getCost(x, y) == nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
   }
 
-  // Set an obstacle at the origin and observe insertions for it and its neighbors
+
   pcl::PointCloud<pcl::PointXYZ> c0;
   c0.points.resize(1);
   c0.points[0].x = 0;
@@ -824,11 +781,11 @@ TEST(costmap, testInflation) {
     }
   }
 
-  // It and its 2 neighbors makes 3 obstacles
+
   ASSERT_EQ(occupiedCells.size(), (unsigned int)51);
 
-  // @todo Rewrite
-  // Add an obstacle at <2,0> which will inflate and refresh to of the other inflated cells
+
+
   pcl::PointCloud<pcl::PointXYZ> c1;
   c1.points.resize(1);
   c1.points[0].x = 2;
@@ -857,14 +814,14 @@ TEST(costmap, testInflation) {
     }
   }
 
-  // Now we expect insertions for it, and 2 more neighbors,
-  // but not all 5. Free space will propagate from
-  // the origin to the target, clearing the point at <0, 0>,
-  // but not over-writing the inflation of the obstacle at <0, 1>
+
+
+
+
   ASSERT_EQ(occupiedCells.size(), (unsigned int)54);
 
 
-  // Add an obstacle at <1, 9>. This will inflate obstacles around it
+
   pcl::PointCloud<pcl::PointXYZ> c2;
   c2.points.resize(1);
   c2.points[0].x = 1;
@@ -886,7 +843,7 @@ TEST(costmap, testInflation) {
   ASSERT_EQ(map.getCost(0, 9), nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
   ASSERT_EQ(map.getCost(2, 9), nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
 
-  // Add an obstacle and verify that it over-writes its inflated status
+
   pcl::PointCloud<pcl::PointXYZ> c3;
   c3.points.resize(1);
   c3.points[0].x = 0;
@@ -907,15 +864,14 @@ TEST(costmap, testInflation) {
   ASSERT_EQ(map.getCost(0, 9), nav2_costmap_2d::LETHAL_OBSTACLE);
 }
 
-/**
- * Test specific inflation scenario to ensure we do not set inflated obstacles to be raw obstacles.
- */
+
+
 TEST(costmap, testInflation2) {
   nav2_costmap_2d::Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0,
     ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
     10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-  // Creat a small L-Shape all at once
+
   pcl::PointCloud<pcl::PointXYZ> c0;
   c0.points.resize(3);
   c0.points[0].x = 1;
@@ -943,9 +899,8 @@ TEST(costmap, testInflation2) {
   ASSERT_EQ(map.getCost(3, 3), nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
 }
 
-/**
- * Test inflation behavior, starting with an empty map
- */
+
+
 TEST(costmap, testInflation3) {
   std::vector<unsigned char> mapData;
   for (unsigned int i = 0; i < GRID_WIDTH; i++) {
@@ -958,7 +913,7 @@ TEST(costmap, testInflation3) {
     ROBOT_RADIUS, ROBOT_RADIUS * 2, ROBOT_RADIUS * 3,
     10.0, MAX_Z, 10.0, 1, mapData, THRESHOLD);
 
-  // There should be no occupied cells
+
   std::vector<unsigned int> ids;
 
   for (unsigned int i = 0; i < 10; ++i) {
@@ -973,7 +928,7 @@ TEST(costmap, testInflation3) {
 
   ASSERT_EQ(ids.size(), (unsigned int)0);
 
-  // Add an obstacle at 5,5
+
   pcl::PointCloud<pcl::PointXYZ> c0;
   c0.points.resize(1);
   c0.points[0].x = 5;
@@ -1014,7 +969,7 @@ TEST(costmap, testInflation3) {
 
   ASSERT_EQ(ids.size(), (unsigned int)5);
 
-  // Update again - should see no change
+
   map.updateWorld(0, 0, obsBuf, obsBuf);
 
   ids.clear();
@@ -1029,17 +984,16 @@ TEST(costmap, testInflation3) {
   ASSERT_EQ(ids.size(), (unsigned int)29);
 }
 
-/**
- * Test for ray tracing free space
- */
+
+
 
 TEST(costmap, testRaytracing2) {
   nav2_costmap_2d::Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0,
     ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
     100.0, MAX_Z, 100.0, 1, MAP_10_BY_10, THRESHOLD);
 
-  // The sensor origin will be <0,0>. So if we add an obstacle at 9,9, we would expect cells
-  // <0, 0> thru <8, 8> to be traced through
+
+
   pcl::PointCloud<pcl::PointXYZ> c0;
   c0.points.resize(1);
   c0.points[0].x = 9.5;
@@ -1078,24 +1032,21 @@ TEST(costmap, testRaytracing2) {
     }
   }
 
-  // Two obstacles should be removed from the map by raytracing
+
   ASSERT_EQ(obstacles.size(), obs_before - 2);
 
 
-  // many cells will have been switched to free space along the diagonal except
-  // for those inflated in the update.. tests that inflation happens properly
-  // after raytracing
+
+
+
   unsigned char test[10] = {0, 0, 0, 253, 253, 0, 0, 253, 253, 254};
   for (unsigned int i = 0; i < 10; i++) {
     ASSERT_EQ(map.getCost(i, i), test[i]);
   }
 }
 
-/**
- * Within a certian radius of the robot, the cost map most propagate obstacles. This
- * is to avoid a case where a hit on a far obstacle clears inscribed radius around a
- * near one.
- */
+
+
 
 TEST(costmap, testTrickyPropagation) {
   const unsigned char MAP_HALL_CHAR[10 * 10] = {
@@ -1120,19 +1071,19 @@ TEST(costmap, testTrickyPropagation) {
     100.0, MAX_Z, 100.0, 1, MAP_HALL, THRESHOLD);
 
 
-  // Add a dynamic obstacle
+
   pcl::PointCloud<pcl::PointXYZ> c2;
   c2.points.resize(3);
-  // Dynamic obstacle that raytaces.
+
   c2.points[0].x = 7.0;
   c2.points[0].y = 8.0;
   c2.points[0].z = 1.0;
-  // Dynamic obstacle that should not be raytraced the
-  // first update, but should on the second.
+
+
   c2.points[1].x = 3.0;
   c2.points[1].y = 4.0;
   c2.points[1].z = 1.0;
-  // Dynamic obstacle that should not be erased.
+
   c2.points[2].x = 6.0;
   c2.points[2].y = 3.0;
   c2.points[2].z = 1.0;
@@ -1167,7 +1118,7 @@ TEST(costmap, testTrickyPropagation) {
 
   pcl::PointCloud<pcl::PointXYZ> c;
   c.points.resize(1);
-  // Dynamic obstacle that raytaces the one at (3.0, 4.0).
+
   c.points[0].x = 4.0;
   c.points[0].y = 5.0;
   c.points[0].z = 1.0;

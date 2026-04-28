@@ -1,23 +1,23 @@
-// Copyright (c) 2022 Adam Aposhian
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <memory>
 
 #include "path_utils.hpp"
 #include "gtest/gtest.h"
 
-using namespace path_utils; // NOLINT
+using namespace path_utils;
 
 TEST(PathUtils, test_generate_straight)
 {
@@ -50,7 +50,7 @@ TEST(PathUtils, test_generate_straight)
 
 TEST(PathUtils, test_half_turn)
 {
-  // Start at a more interesting place, turned the other way
+
   geometry_msgs::msg::PoseStamped start;
   start.header.frame_id = "map";
   start.pose.position.x = 1.0;
@@ -73,14 +73,14 @@ TEST(PathUtils, test_half_turn)
     EXPECT_EQ(pose.header.frame_id, start.header.frame_id);
   }
 
-  // Check the last pose
+
   auto & last_pose = path.poses.back();
   auto & last_position = last_pose.pose.position;
   EXPECT_NEAR(last_position.x, 1.0, 0.2);
   EXPECT_NEAR(last_position.y, 3.0, 0.2);
   EXPECT_DOUBLE_EQ(last_position.z, 0.0);
 
-  // Should be facing forward now
+
   auto & last_orientation = last_pose.pose.orientation;
   EXPECT_NEAR(last_orientation.x, 0.0, 0.1);
   EXPECT_NEAR(last_orientation.y, 0.0, 0.1);
@@ -104,7 +104,7 @@ TEST(PathUtils, test_generate_all)
     std::make_unique<RightTurnAround>(1.0),
     std::make_unique<LeftCircle>(1.0),
     std::make_unique<RightCircle>(1.0),
-    std::make_unique<Arc>(1.0, 2 * M_PI),  // another circle
+    std::make_unique<Arc>(1.0, 2 * M_PI),
   });
   constexpr double expected_path_length = 1.0 + 2.0 * (M_PI_2 + M_PI_2) + 2.0 * (M_PI) +3.0 *
     (2.0 * M_PI);
@@ -113,7 +113,7 @@ TEST(PathUtils, test_generate_all)
     EXPECT_EQ(pose.header.frame_id, start.header.frame_id);
   }
 
-  // Check the last pose
+
   auto & last_pose = path.poses.back();
   auto & last_position = last_pose.pose.position;
   EXPECT_NEAR(last_position.x, 3.0, 0.5);

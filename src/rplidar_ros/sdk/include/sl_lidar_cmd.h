@@ -1,35 +1,8 @@
-/*
-* Slamtec LIDAR SDK
-*
-* sl_lidar_cmd.h
-*
-* Copyright (c) 2020 Shanghai Slamtec Co., Ltd.
-*/
 
-/*
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- */
+
+
+
+
 
 #pragma once
 
@@ -40,36 +13,36 @@
 
 #include "sl_lidar_protocol.h"
 
- // Commands
- //-----------------------------------------
+
+
 
 
 #define SL_LIDAR_AUTOBAUD_MAGICBYTE         0x41
 
- // Commands without payload and response
+
 #define SL_LIDAR_CMD_STOP                   0x25
 #define SL_LIDAR_CMD_SCAN                   0x20
 #define SL_LIDAR_CMD_FORCE_SCAN             0x21
 #define SL_LIDAR_CMD_RESET                  0x40
 
-// Commands with payload but no response
-#define SL_LIDAR_CMD_NEW_BAUDRATE_CONFIRM   0x90 //added in fw 1.30
 
-// Commands without payload but have response
+#define SL_LIDAR_CMD_NEW_BAUDRATE_CONFIRM   0x90
+
+
 #define SL_LIDAR_CMD_GET_DEVICE_INFO        0x50
 #define SL_LIDAR_CMD_GET_DEVICE_HEALTH      0x52
 
-#define SL_LIDAR_CMD_GET_SAMPLERATE         0x59 //added in fw 1.17
+#define SL_LIDAR_CMD_GET_SAMPLERATE         0x59
 
 #define SL_LIDAR_CMD_HQ_MOTOR_SPEED_CTRL    0xA8
 
 
-// Commands with payload and have response
-#define SL_LIDAR_CMD_EXPRESS_SCAN           0x82 //added in fw 1.17
-#define SL_LIDAR_CMD_HQ_SCAN                0x83 //added in fw 1.24
-#define SL_LIDAR_CMD_GET_LIDAR_CONF         0x84 //added in fw 1.24
-#define SL_LIDAR_CMD_SET_LIDAR_CONF         0x85 //added in fw 1.24
-//add for A2 to set RPLIDAR motor pwm when using accessory board
+
+#define SL_LIDAR_CMD_EXPRESS_SCAN           0x82
+#define SL_LIDAR_CMD_HQ_SCAN                0x83
+#define SL_LIDAR_CMD_GET_LIDAR_CONF         0x84
+#define SL_LIDAR_CMD_SET_LIDAR_CONF         0x85
+
 #define SL_LIDAR_CMD_SET_MOTOR_PWM          0xF0
 #define SL_LIDAR_CMD_GET_ACC_BOARD_FLAG     0xFF
 
@@ -78,15 +51,15 @@
 #endif
 
 
-// Payloads
-// ------------------------------------------
+
+
 #define SL_LIDAR_EXPRESS_SCAN_MODE_NORMAL      0 
-#define SL_LIDAR_EXPRESS_SCAN_MODE_FIXANGLE    0  // won't been supported but keep to prevent build fail
-//for express working flag(extending express scan protocol)
+#define SL_LIDAR_EXPRESS_SCAN_MODE_FIXANGLE    0
+
 #define SL_LIDAR_EXPRESS_SCAN_FLAG_BOOST                 0x0001 
 #define SL_LIDAR_EXPRESS_SCAN_FLAG_SUNLIGHT_REJECTION    0x0002
 
-//for ultra express working flag
+
 #define SL_LIDAR_ULTRAEXPRESS_SCAN_FLAG_STD                 0x0001 
 #define SL_LIDAR_ULTRAEXPRESS_SCAN_FLAG_HIGH_SENSITIVITY    0x0002
 
@@ -131,30 +104,30 @@ typedef struct _sl_lidar_payload_hq_spd_ctrl_t {
 
 
 typedef struct _sl_lidar_payload_new_bps_confirmation_t {
-    sl_u16   flag; // reserved, must be 0x5F5F
+    sl_u16   flag;
     sl_u32  required_bps;
     sl_u16  param;
 } __attribute__((packed)) sl_lidar_payload_new_bps_confirmation_t;
 
-// Response
-// ------------------------------------------
+
+
 #define SL_LIDAR_ANS_TYPE_DEVINFO          0x4
 #define SL_LIDAR_ANS_TYPE_DEVHEALTH        0x6
 
 #define SL_LIDAR_ANS_TYPE_MEASUREMENT                       0x81
-// Added in FW ver 1.17
+
 #define SL_LIDAR_ANS_TYPE_MEASUREMENT_CAPSULED              0x82
 #define SL_LIDAR_ANS_TYPE_MEASUREMENT_HQ                    0x83
-//added in FW ver 1.23alpha
+
 #define SL_LIDAR_ANS_TYPE_MEASUREMENT_CAPSULED_ULTRA        0x84
 #define SL_LIDAR_ANS_TYPE_MEASUREMENT_DENSE_CAPSULED        0x85
 #define SL_LIDAR_ANS_TYPE_MEASUREMENT_ULTRA_DENSE_CAPSULED  0x86
 
 
-// Added in FW ver 1.17
+
 #define SL_LIDAR_ANS_TYPE_SAMPLE_RATE      0x15
 
-//added in FW ver 1.24
+
 #define SL_LIDAR_ANS_TYPE_GET_LIDAR_CONF     0x20
 #define SL_LIDAR_ANS_TYPE_SET_LIDAR_CONF     0x21
 
@@ -188,19 +161,19 @@ typedef struct _sl_lidar_response_sample_rate_t
 
 typedef struct _sl_lidar_response_measurement_node_t
 {
-    sl_u8    sync_quality;      // syncbit:1;syncbit_inverse:1;quality:6;
-    sl_u16   angle_q6_checkbit; // check_bit:1;angle_q6:15;
+    sl_u8    sync_quality;
+    sl_u16   angle_q6_checkbit;
     sl_u16   distance_q2;
 } __attribute__((packed)) sl_lidar_response_measurement_node_t;
 
-//[distance_sync flags]
+
 #define SL_LIDAR_RESP_MEASUREMENT_EXP_ANGLE_MASK           (0x3)
 #define SL_LIDAR_RESP_MEASUREMENT_EXP_DISTANCE_MASK        (0xFC)
 
 typedef struct _sl_lidar_response_cabin_nodes_t
 {
-    sl_u16   distance_angle_1; // see [distance_sync flags]
-    sl_u16   distance_angle_2; // see [distance_sync flags]
+    sl_u16   distance_angle_1;
+    sl_u16   distance_angle_2;
     sl_u8    offset_angles_q3;
 } __attribute__((packed)) sl_lidar_response_cabin_nodes_t;
 
@@ -214,8 +187,8 @@ typedef struct _sl_lidar_response_cabin_nodes_t
 
 typedef struct _sl_lidar_response_capsule_measurement_nodes_t
 {
-    sl_u8                             s_checksum_1; // see [s_checksum_1]
-    sl_u8                             s_checksum_2; // see [s_checksum_1]
+    sl_u8                             s_checksum_1;
+    sl_u8                             s_checksum_2;
     sl_u16                            start_angle_sync_q6;
     sl_lidar_response_cabin_nodes_t  cabins[16];
 } __attribute__((packed)) sl_lidar_response_capsule_measurement_nodes_t;
@@ -227,8 +200,8 @@ typedef struct _sl_lidar_response_dense_cabin_nodes_t
 
 typedef struct _sl_lidar_response_dense_capsule_measurement_nodes_t
 {
-    sl_u8                             s_checksum_1; // see [s_checksum_1]
-    sl_u8                             s_checksum_2; // see [s_checksum_1]
+    sl_u8                             s_checksum_1;
+    sl_u8                             s_checksum_2;
     sl_u16                            start_angle_sync_q6;
     sl_lidar_response_dense_cabin_nodes_t  cabins[40];
 } __attribute__((packed)) sl_lidar_response_dense_capsule_measurement_nodes_t;
@@ -240,8 +213,8 @@ typedef struct _sl_lidar_response_ultra_dense_cabin_nodes_t {
 } __attribute__((packed)) sl_lidar_response_ultra_dense_cabin_nodes_t;
 
 typedef struct _sl_lidar_response_ultra_dense_capsule_measurement_nodes_t {
-    sl_u8                             s_checksum_1; // see [s_checksum_1]
-    sl_u8                             s_checksum_2; // see [s_checksum_1]
+    sl_u8                             s_checksum_1;
+    sl_u8                             s_checksum_2;
     sl_u32                            time_stamp;
     sl_u16                            dev_status;
     sl_u16                            start_angle_sync_q6;
@@ -249,22 +222,22 @@ typedef struct _sl_lidar_response_ultra_dense_capsule_measurement_nodes_t {
 } __attribute__((packed)) sl_lidar_response_ultra_dense_capsule_measurement_nodes_t;
 
 
-// ext1 : x2 boost mode
+
 
 #define SL_LIDAR_RESP_MEASUREMENT_EXP_ULTRA_MAJOR_BITS     12
 #define SL_LIDAR_RESP_MEASUREMENT_EXP_ULTRA_PREDICT_BITS   10
 
 typedef struct _sl_lidar_response_ultra_cabin_nodes_t
 {
-    // 31                                              0
-    // | predict2 10bit | predict1 10bit | major 12bit |
+
+
     sl_u32 combined_x3;
 } __attribute__((packed)) sl_lidar_response_ultra_cabin_nodes_t;
 
 typedef struct _sl_lidar_response_ultra_capsule_measurement_nodes_t
 {
-    sl_u8                             s_checksum_1; // see [s_checksum_1]
-    sl_u8                             s_checksum_2; // see [s_checksum_1]
+    sl_u8                             s_checksum_1;
+    sl_u8                             s_checksum_2;
     sl_u16                            start_angle_sync_q6;
     sl_lidar_response_ultra_cabin_nodes_t  ultra_cabins[32];
 } __attribute__((packed)) sl_lidar_response_ultra_capsule_measurement_nodes_t;
@@ -360,7 +333,7 @@ typedef struct  _sl_lidar_response_desired_rot_speed_t{
     sl_u16 pwm_ref;
 }__attribute__((packed)) sl_lidar_response_desired_rot_speed_t;
 
-// Definition of the variable bit scale encoding mechanism
+
 #define SL_LIDAR_VARBITSCALE_X2_SRC_BIT  9
 #define SL_LIDAR_VARBITSCALE_X4_SRC_BIT  11
 #define SL_LIDAR_VARBITSCALE_X8_SRC_BIT  12

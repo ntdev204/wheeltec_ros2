@@ -10,8 +10,6 @@ def generate_launch_description():
     wheeltec_scada_bridge_dir = get_package_share_directory('wheeltec_scada_bridge')
     wheeltec_launch_dir = get_package_share_directory('turn_on_wheeltec_robot')
 
-    # DTR toggle để reset Lidar — tương đương rút cắm USB.
-    # Đáng tin cậy hơn gửi lệnh protocol vì không bị ảnh hưởng bởi trạng thái device.
     lidar_serial_reset = ExecuteProcess(
         cmd=['bash', '-c',
              'python3 -c "'
@@ -28,11 +26,8 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        # 0. DTR toggle Lidar (tương đương unplug/replug, tránh lỗi 80008002)
         lidar_serial_reset,
 
-        # 1. Base Hardware Layer (Chassis, Lidar, IMU, EKF, TF)
-        #    Delay 5s để motor đủ thời gian spin-up sau DTR reset
         TimerAction(
             period=5.0,
             actions=[
@@ -44,7 +39,6 @@ def generate_launch_description():
             ]
         ),
 
-        # 2. Twist Mux + Safety Shield
         TimerAction(
             period=6.5,
             actions=[
@@ -56,8 +50,6 @@ def generate_launch_description():
             ]
         ),
 
-        # 3. SCADA ZMQ Bridge (ROS2 <-> Web Server)
-        # NOTE: Nav2 đã được tắt — chế độ bám người KHÔNG cần map/global_costmap
         TimerAction(
             period=7.0,
             actions=[

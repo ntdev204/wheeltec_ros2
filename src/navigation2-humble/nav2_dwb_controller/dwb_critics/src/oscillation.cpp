@@ -1,36 +1,5 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2017, Locus Robotics
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of the copyright holder nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- */
+
+
 
 #include "dwb_critics/oscillation.hpp"
 #include <chrono>
@@ -114,35 +83,30 @@ void OscillationCritic::onInit()
     node,
     dwb_plugin_name_ + "." + name_ + ".x_only_threshold", rclcpp::ParameterValue(0.05));
 
-  /**
-   * Historical Parameter Loading
-   * If x_only_threshold is set, use that.
-   * If min_speed_xy is set in the namespace (as it is often used for trajectory generation), use that.
-   * If min_trans_vel is set in the namespace, as it used to be used for trajectory generation, complain then use that.
-   * Otherwise, set x_only_threshold_ to 0.05
-   */
+  
+
   node->get_parameter(dwb_plugin_name_ + "." + name_ + ".x_only_threshold", x_only_threshold_);
-  // TODO(crdelsey): How to handle searchParam?
-  // std::string resolved_name;
-  // if (node->hasParam("x_only_threshold"))
-  // {
-  //   node->param("x_only_threshold", x_only_threshold_);
-  // }
-  // else if (node->searchParam("min_speed_xy", resolved_name))
-  // {
-  //   node->param(resolved_name, x_only_threshold_);
-  // }
-  // else if (node->searchParam("min_trans_vel", resolved_name))
-  // {
-  //   ROS_WARN_NAMED("OscillationCritic",
-  //     "Parameter min_trans_vel is deprecated. "
-  //     "Please use the name min_speed_xy or x_only_threshold instead.");
-  //   node->param(resolved_name, x_only_threshold_);
-  // }
-  // else
-  // {
-  //   x_only_threshold_ = 0.05;
-  // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   reset();
 }
@@ -164,9 +128,9 @@ void OscillationCritic::debrief(const nav_2d_msgs::msg::Twist2D & cmd_vel)
     prev_reset_time_ = clock_->now();
   }
 
-  // if we've got restrictions... check if we can reset any oscillation flags
+
   if (x_trend_.hasSignFlipped() || y_trend_.hasSignFlipped() || theta_trend_.hasSignFlipped()) {
-    // Reset flags if enough time or distance has passed
+
     if (resetAvailable()) {
       reset();
     }
@@ -208,10 +172,10 @@ void OscillationCritic::reset()
 bool OscillationCritic::setOscillationFlags(const nav_2d_msgs::msg::Twist2D & cmd_vel)
 {
   bool flag_set = false;
-  // set oscillation flags for moving forward and backward
+
   flag_set |= x_trend_.update(cmd_vel.x);
 
-  // we'll only set flags for strafing and rotating when we're not moving forward at all
+
   if (x_only_threshold_ < 0.0 || fabs(cmd_vel.x) <= x_only_threshold_) {
     flag_set |= y_trend_.update(cmd_vel.y);
     flag_set |= theta_trend_.update(cmd_vel.theta);
@@ -231,4 +195,4 @@ double OscillationCritic::scoreTrajectory(const dwb_msgs::msg::Trajectory2D & tr
   return 0.0;
 }
 
-}  // namespace dwb_critics
+}

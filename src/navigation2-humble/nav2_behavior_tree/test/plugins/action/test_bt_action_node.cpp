@@ -1,17 +1,17 @@
-// Copyright (c) 2018 Intel Corporation
-// Copyright (c) 2020 Sarthak Mittal
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 #include <memory>
@@ -28,8 +28,8 @@
 
 #include "test_msgs/action/fibonacci.hpp"
 
-using namespace std::chrono_literals; // NOLINT
-using namespace std::placeholders;  // NOLINT
+using namespace std::chrono_literals;
+using namespace std::placeholders;
 
 class FibonacciActionServer : public rclcpp::Node
 {
@@ -74,7 +74,7 @@ protected:
   void handle_accepted(
     const std::shared_ptr<rclcpp_action::ServerGoalHandle<test_msgs::action::Fibonacci>> handle)
   {
-    // this needs to return quickly to avoid blocking the executor, so spin up a new thread
+
     if (handle) {
       const auto goal = handle->get_goal();
       auto result = std::make_shared<test_msgs::action::Fibonacci::Result>();
@@ -137,9 +137,9 @@ public:
 
     config_ = new BT::NodeConfiguration();
 
-    // Create the blackboard that will be shared by all of the nodes in the tree
+
     config_->blackboard = BT::Blackboard::create();
-    // Put items on the blackboard
+
     config_->blackboard->set<rclcpp::Node::SharedPtr>("node", node_);
     config_->blackboard->set<std::chrono::milliseconds>("server_timeout", 20ms);
     config_->blackboard->set<std::chrono::milliseconds>("bt_loop_duration", 10ms);
@@ -165,7 +165,7 @@ public:
 
   void SetUp() override
   {
-    // initialize action server and spin on new thread
+
     action_server_ = std::make_shared<FibonacciActionServer>();
     server_thread_ = std::make_shared<std::thread>(
       []() {
@@ -203,7 +203,7 @@ std::shared_ptr<std::thread> BTActionNodeTestFixture::server_thread_ = nullptr;
 
 TEST_F(BTActionNodeTestFixture, test_server_timeout_success)
 {
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -212,77 +212,77 @@ TEST_F(BTActionNodeTestFixture, test_server_timeout_success)
         </BehaviorTree>
       </root>)";
 
-  // the server timeout is larger than the goal handling duration
+
   config_->blackboard->set<std::chrono::milliseconds>("server_timeout", 20ms);
   config_->blackboard->set<std::chrono::milliseconds>("bt_loop_duration", 10ms);
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // setting a small action server goal handling duration
+
   action_server_->setHandleGoalSleepDuration(2ms);
 
-  // to keep track of the number of ticks it took to reach a terminal result
+
   int ticks = 0;
 
   BT::NodeStatus result = BT::NodeStatus::RUNNING;
 
-  // BT loop execution rate
+
   rclcpp::WallRate loopRate(10ms);
 
-  // main BT execution loop
+
   while (rclcpp::ok() && result == BT::NodeStatus::RUNNING) {
     result = tree_->tickRoot();
     ticks++;
     loopRate.sleep();
   }
 
-  // get calculated fibonacci sequence from blackboard
+
   auto sequence = config_->blackboard->get<std::vector<int>>("sequence");
 
-  // expected fibonacci sequence for order 5
+
   std::vector<int> expected = {0, 1, 1, 2, 3, 5};
 
-  // since the server timeout was larger than the action server goal handling duration
-  // the BT should have succeeded
+
+
   EXPECT_EQ(result, BT::NodeStatus::SUCCESS);
 
-  // checking the output fibonacci sequence
+
   EXPECT_EQ(sequence.size(), expected.size());
   for (size_t i = 0; i < expected.size(); ++i) {
     EXPECT_EQ(sequence[i], expected[i]);
   }
 
-  // start a new execution cycle with the previous BT to ensure previous state doesn't leak into
-  // the new cycle
 
-  // halt BT for a new execution cycle
+
+
+
   tree_->haltTree();
 
-  // setting a large action server goal handling duration
+
   action_server_->setHandleGoalSleepDuration(100ms);
 
-  // reset state variables
+
   ticks = 0;
   result = BT::NodeStatus::RUNNING;
 
-  // main BT execution loop
+
   while (rclcpp::ok() && result == BT::NodeStatus::RUNNING) {
     result = tree_->tickRoot();
     ticks++;
     loopRate.sleep();
   }
 
-  // since the server timeout was smaller than the action server goal handling duration
-  // the BT should have failed
+
+
   EXPECT_EQ(result, BT::NodeStatus::FAILURE);
 
-  // since the server timeout is 20ms and bt loop duration is 10ms, number of ticks should be 2
+
   EXPECT_EQ(ticks, 2);
 }
 
 TEST_F(BTActionNodeTestFixture, test_server_timeout_failure)
 {
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -291,60 +291,60 @@ TEST_F(BTActionNodeTestFixture, test_server_timeout_failure)
         </BehaviorTree>
       </root>)";
 
-  // setting a server timeout smaller than the time the action server will take to accept the goal
-  // to simulate a server timeout scenario
+
+
   config_->blackboard->set<std::chrono::milliseconds>("server_timeout", 90ms);
   config_->blackboard->set<std::chrono::milliseconds>("bt_loop_duration", 10ms);
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // the action server will take 100ms before accepting the goal
+
   action_server_->setHandleGoalSleepDuration(100ms);
 
-  // to keep track of the number of ticks it took to reach a terminal result
+
   int ticks = 0;
 
   BT::NodeStatus result = BT::NodeStatus::RUNNING;
 
-  // BT loop execution rate
+
   rclcpp::WallRate loopRate(10ms);
 
-  // main BT execution loop
+
   while (rclcpp::ok() && result == BT::NodeStatus::RUNNING) {
     result = tree_->tickRoot();
     ticks++;
     loopRate.sleep();
   }
 
-  // since the server timeout was smaller than the action server goal handling duration
-  // the BT should have failed
+
+
   EXPECT_EQ(result, BT::NodeStatus::FAILURE);
 
-  // since the server timeout is 90ms and bt loop duration is 10ms, number of ticks should be 9
+
   EXPECT_EQ(ticks, 9);
 
-  // start a new execution cycle with the previous BT to ensure previous state doesn't leak into
-  // the new cycle
 
-  // halt BT for a new execution cycle
+
+
+
   tree_->haltTree();
 
-  // setting a small action server goal handling duration
+
   action_server_->setHandleGoalSleepDuration(25ms);
 
-  // reset state variables
+
   ticks = 0;
   result = BT::NodeStatus::RUNNING;
 
-  // main BT execution loop
+
   while (rclcpp::ok() && result == BT::NodeStatus::RUNNING) {
     result = tree_->tickRoot();
     ticks++;
     loopRate.sleep();
   }
 
-  // since the server timeout was smaller than the action server goal handling duration
-  // the BT should have failed
+
+
   EXPECT_EQ(result, BT::NodeStatus::SUCCESS);
 }
 
@@ -352,12 +352,12 @@ int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
 
-  // initialize ROS
+
   rclcpp::init(argc, argv);
 
   int all_successful = RUN_ALL_TESTS();
 
-  // shutdown ROS
+
   rclcpp::shutdown();
 
   return all_successful;

@@ -1,16 +1,16 @@
-// Copyright (c) 2020 Fetullah Atas
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_waypoint_follower/plugins/photo_at_waypoint.hpp"
 
@@ -58,7 +58,7 @@ void PhotoAtWaypoint::initialize(
   node->get_parameter(plugin_name + ".save_dir", save_dir_as_string);
   node->get_parameter(plugin_name + ".image_format", image_format_);
 
-  // get inputted save directory and make sure it exists, if not log and create  it
+
   save_dir_ = save_dir_as_string;
   try {
     if (!std::experimental::filesystem::exists(save_dir_)) {
@@ -109,13 +109,13 @@ bool PhotoAtWaypoint::processAtWaypoint(
     return true;
   }
   try {
-    // construct the full path to image filename
+
     std::experimental::filesystem::path file_name = std::to_string(
       curr_waypoint_index) + "_" +
       std::to_string(curr_pose.header.stamp.sec) + "." + image_format_;
     std::experimental::filesystem::path full_path_image_path = save_dir_ / file_name;
 
-    // save the taken photo at this waypoint to given directory
+
     std::lock_guard<std::mutex> guard(global_mutex_);
     cv::Mat curr_frame_mat;
     deepCopyMsg2Mat(curr_frame_msg_, curr_frame_mat);
@@ -153,7 +153,7 @@ void PhotoAtWaypoint::deepCopyMsg2Mat(
   frame.copyTo(mat);
 }
 
-}      // namespace nav2_waypoint_follower
+}
 PLUGINLIB_EXPORT_CLASS(
   nav2_waypoint_follower::PhotoAtWaypoint,
   nav2_core::WaypointTaskExecutor)

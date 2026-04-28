@@ -1,23 +1,23 @@
-// Copyright (c) 2018 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <string>
 #include <chrono>
 
 #include "nav2_behavior_tree/plugins/condition/is_stuck_condition.hpp"
 
-using namespace std::chrono_literals; // NOLINT
+using namespace std::chrono_literals;
 
 namespace nav2_behavior_tree
 {
@@ -68,23 +68,23 @@ void IsStuckCondition::onOdomReceived(const typename nav_msgs::msg::Odometry::Sh
 
   odom_history_.push_back(*msg);
 
-  // TODO(orduno) #383 Move the state calculation and is stuck to robot class
+
   updateStates();
 }
 
 BT::NodeStatus IsStuckCondition::tick()
 {
-  // TODO(orduno) #383 Once check for is stuck and state calculations are moved to robot class
-  //              this becomes
-  // if (robot_state_.isStuck()) {
+
+
+
 
   if (is_stuck_) {
     logStuck("Robot got stuck!");
-    return BT::NodeStatus::SUCCESS;  // Successfully detected a stuck condition
+    return BT::NodeStatus::SUCCESS;
   }
 
   logStuck("Robot is free");
-  return BT::NodeStatus::FAILURE;  // Failed to detected a stuck condition
+  return BT::NodeStatus::FAILURE;
 }
 
 void IsStuckCondition::logStuck(const std::string & msg) const
@@ -101,8 +101,8 @@ void IsStuckCondition::logStuck(const std::string & msg) const
 
 void IsStuckCondition::updateStates()
 {
-  // Approximate acceleration
-  // TODO(orduno) #400 Smooth out velocity history for better accel approx.
+
+
   if (odom_history_.size() > 2) {
     auto curr_odom = odom_history_.end()[-1];
     double curr_time = static_cast<double>(curr_odom.header.stamp.sec);
@@ -123,13 +123,13 @@ void IsStuckCondition::updateStates()
 
 bool IsStuckCondition::isStuck()
 {
-  // TODO(orduno) #400 The robot getting stuck can result on different types of motion
-  // depending on the state prior to getting stuck (sudden change in accel, not moving at all,
-  // random oscillations, etc). For now, we only address the case where there is a sudden
-  // harsh deceleration. A better approach to capture all situations would be to do a forward
-  // simulation of the robot motion and compare it with the actual one.
 
-  // Detect if robot bumped into something by checking for abnormal deceleration
+
+
+
+
+
+
   if (current_accel_ < brake_accel_limit_) {
     RCLCPP_DEBUG(
       node_->get_logger(), "Current deceleration is beyond brake limit."
@@ -141,7 +141,7 @@ bool IsStuckCondition::isStuck()
   return false;
 }
 
-}  // namespace nav2_behavior_tree
+}
 
 #include "behaviortree_cpp_v3/bt_factory.h"
 BT_REGISTER_NODES(factory)

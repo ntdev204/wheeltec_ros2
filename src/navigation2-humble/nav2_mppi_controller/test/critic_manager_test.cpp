@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <chrono>
 #include <thread>
@@ -19,7 +19,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_mppi_controller/critic_manager.hpp"
 
-// Tests critic manager
+
 
 class RosLockGuard
 {
@@ -29,14 +29,14 @@ public:
 };
 RosLockGuard g_rclcpp;
 
-using namespace mppi;  // NOLINT
-using namespace mppi::critics;  // NOLINT
+using namespace mppi;
+using namespace mppi::critics;
 
 class DummyCritic : public CriticFunction
 {
 public:
   virtual void initialize() {initialized_ = true;}
-  virtual void score(CriticData & /*data*/) {scored_ = true;}
+  virtual void score(CriticData & ) {scored_ = true;}
   bool initialized_{false}, scored_{false};
 };
 
@@ -93,12 +93,12 @@ TEST(CriticManagerTests, BasicCriticOperations)
   rclcpp_lifecycle::State lstate;
   costmap_ros->on_configure(lstate);
 
-  // Configuration should get parameters and initialize critic functions
+
   CriticManagerWrapper critic_manager;
   critic_manager.on_configure(node, "critic_manager", costmap_ros, &param_handler);
   EXPECT_TRUE(critic_manager.getDummyCriticInitialized());
 
-  // Evaluation of critics should score them, but only if failure flag is not set
+
   models::State state;
   models::ControlSequence control_sequence;
   models::Trajectories generated_trajectories;
@@ -115,7 +115,7 @@ TEST(CriticManagerTests, BasicCriticOperations)
   critic_manager.evalTrajectoriesScores(data);
   EXPECT_TRUE(critic_manager.getDummyCriticScored());
 
-  // This should get the full namespaced name of the critics
+
   EXPECT_EQ(critic_manager.getFullNameWrapper("name"), std::string("mppi::critics::name"));
 }
 
@@ -131,7 +131,7 @@ TEST(CriticManagerTests, CriticLoadingTest)
   rclcpp_lifecycle::State state;
   costmap_ros->on_configure(state);
 
-  // This should grab the critics parameter and load the 2 requested plugins
+
   CriticManagerWrapperEnum critic_manager;
   critic_manager.on_configure(node, "critic_manager", costmap_ros, &param_handler);
   EXPECT_EQ(critic_manager.getCriticNum(), 2u);

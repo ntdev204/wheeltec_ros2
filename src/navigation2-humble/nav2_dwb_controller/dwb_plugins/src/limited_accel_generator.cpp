@@ -1,36 +1,5 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2017, Locus Robotics
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of the copyright holder nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- */
+
+
 
 #include "dwb_plugins/limited_accel_generator.hpp"
 #include <vector>
@@ -55,10 +24,10 @@ void LimitedAccelGenerator::initialize(
     nav2_util::declare_parameter_if_not_declared(
       nh, plugin_name + ".sim_period", rclcpp::PARAMETER_DOUBLE);
     if (!nh->get_parameter(plugin_name + ".sim_period", acceleration_time_)) {
-      // This actually should never appear, since declare_parameter_if_not_declared()
-      // completed w/o exceptions guarantee that static parameter will be initialized
-      // with some value. However for reliability we should also process the case
-      // when get_parameter() will return a failure for some other reasons.
+
+
+
+
       throw std::runtime_error("Failed to get 'sim_period' value");
     }
   } catch (std::exception &) {
@@ -81,18 +50,18 @@ void LimitedAccelGenerator::initialize(
 
 void LimitedAccelGenerator::startNewIteration(const nav_2d_msgs::msg::Twist2D & current_velocity)
 {
-  // Limit our search space to just those within the limited acceleration_time
+
   velocity_iterator_->startNewIteration(current_velocity, acceleration_time_);
 }
 
 nav_2d_msgs::msg::Twist2D LimitedAccelGenerator::computeNewVelocity(
   const nav_2d_msgs::msg::Twist2D & cmd_vel,
-  const nav_2d_msgs::msg::Twist2D & /*start_vel*/,
-  const double /*dt*/)
+  const nav_2d_msgs::msg::Twist2D & ,
+  const double )
 {
   return cmd_vel;
 }
 
-}  // namespace dwb_plugins
+}
 
 PLUGINLIB_EXPORT_CLASS(dwb_plugins::LimitedAccelGenerator, dwb_core::TrajectoryGenerator)

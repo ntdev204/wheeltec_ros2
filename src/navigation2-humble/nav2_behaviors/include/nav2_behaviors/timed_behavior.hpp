@@ -1,16 +1,16 @@
-// Copyright (c) 2018 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef NAV2_BEHAVIORS__TIMED_BEHAVIOR_HPP_
 #define NAV2_BEHAVIORS__TIMED_BEHAVIOR_HPP_
@@ -45,21 +45,18 @@ enum class Status : int8_t
   RUNNING = 3,
 };
 
-using namespace std::chrono_literals;  //NOLINT
+using namespace std::chrono_literals;
 
-/**
- * @class nav2_behaviors::Behavior
- * @brief An action server Behavior base class implementing the action server and basic factory.
- */
+
+
 template<typename ActionT>
 class TimedBehavior : public nav2_core::Behavior
 {
 public:
   using ActionServer = nav2_util::SimpleActionServer<ActionT>;
 
-  /**
-   * @brief A TimedBehavior constructor
-   */
+  
+
   TimedBehavior()
   : action_server_(nullptr),
     cycle_frequency_(10.0),
@@ -70,37 +67,37 @@ public:
 
   virtual ~TimedBehavior() = default;
 
-  // Derived classes can override this method to catch the command and perform some checks
-  // before getting into the main loop. The method will only be called
-  // once and should return SUCCEEDED otherwise behavior will return FAILED.
+
+
+
   virtual Status onRun(const std::shared_ptr<const typename ActionT::Goal> command) = 0;
 
 
-  // This is the method derived classes should mainly implement
-  // and will be called cyclically while it returns RUNNING.
-  // Implement the behavior such that it runs some unit of work on each call
-  // and provides a status. The Behavior will finish once SUCCEEDED is returned
-  // It's up to the derived class to define the final commanded velocity.
+
+
+
+
+
   virtual Status onCycleUpdate() = 0;
 
-  // an opportunity for derived classes to do something on configuration
-  // if they chose
+
+
   virtual void onConfigure()
   {
   }
 
-  // an opportunity for derived classes to do something on cleanup
-  // if they chose
+
+
   virtual void onCleanup()
   {
   }
 
-  // an opportunity for a derived class to do something on action completion
+
   virtual void onActionCompletion()
   {
   }
 
-  // configure the server on lifecycle setup
+
   void configure(
     const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
     const std::string & name, std::shared_ptr<tf2_ros::Buffer> tf,
@@ -132,7 +129,7 @@ public:
     onConfigure();
   }
 
-  // Cleanup server on lifecycle transition
+
   void cleanup() override
   {
     action_server_.reset();
@@ -140,7 +137,7 @@ public:
     onCleanup();
   }
 
-  // Activate server on lifecycle transition
+
   void activate() override
   {
     RCLCPP_INFO(logger_, "Activating %s", behavior_name_.c_str());
@@ -150,7 +147,7 @@ public:
     enabled_ = true;
   }
 
-  // Deactivate server on lifecycle transition
+
   void deactivate() override
   {
     vel_pub_->on_deactivate();
@@ -174,14 +171,14 @@ protected:
   double transform_tolerance_;
   rclcpp::Duration elasped_time_{0, 0};
 
-  // Clock
+
   rclcpp::Clock steady_clock_{RCL_STEADY_TIME};
 
-  // Logger
+
   rclcpp::Logger logger_{rclcpp::get_logger("nav2_behaviors")};
 
-  // Main execution callbacks for the action server implementation calling the Behavior's
-  // onRun and cycle functions to execute a specific behavior
+
+
   void execute()
   {
     RCLCPP_INFO(logger_, "Running %s", behavior_name_.c_str());
@@ -203,7 +200,7 @@ protected:
 
     auto start_time = steady_clock_.now();
 
-    // Initialize the ActionT result
+
     auto result = std::make_shared<typename ActionT::Result>();
 
     rclcpp::WallRate loop_rate(cycle_frequency_);
@@ -219,7 +216,7 @@ protected:
         return;
       }
 
-      // TODO(orduno) #868 Enable preempting a Behavior on-the-fly without stopping
+
       if (action_server_->is_preempt_requested()) {
         RCLCPP_ERROR(
           logger_, "Received a preemption request for %s,"
@@ -258,7 +255,7 @@ protected:
     }
   }
 
-  // Stop the robot with a commanded velocity
+
   void stopRobot()
   {
     auto cmd_vel = std::make_unique<geometry_msgs::msg::Twist>();
@@ -270,6 +267,6 @@ protected:
   }
 };
 
-}  // namespace nav2_behaviors
+}
 
-#endif  // NAV2_BEHAVIORS__TIMED_BEHAVIOR_HPP_
+#endif

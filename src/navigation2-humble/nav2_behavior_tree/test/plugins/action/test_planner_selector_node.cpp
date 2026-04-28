@@ -1,17 +1,17 @@
-// Copyright (c) 2018 Intel Corporation
-// Copyright (c) 2020 Pablo Iñigo Blasco
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 
@@ -35,9 +35,9 @@ public:
 
     config_ = new BT::NodeConfiguration();
 
-    // Create the blackboard that will be shared by all of the nodes in the tree
+
     config_->blackboard = BT::Blackboard::create();
-    // Put items on the blackboard
+
     config_->blackboard->set<rclcpp::Node::SharedPtr>("node", node_);
 
     BT::NodeBuilder builder = [](const std::string & name, const BT::NodeConfiguration & config) {
@@ -75,7 +75,7 @@ std::shared_ptr<BT::Tree> PlannerSelectorTestFixture::tree_ = nullptr;
 
 TEST_F(PlannerSelectorTestFixture, test_custom_topic)
 {
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -86,12 +86,12 @@ TEST_F(PlannerSelectorTestFixture, test_custom_topic)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS) {
     tree_->rootNode()->executeTick();
   }
 
-  // check default value
+
   std::string selected_planner_result;
   config_->blackboard->get("selected_planner", selected_planner_result);
 
@@ -107,7 +107,7 @@ TEST_F(PlannerSelectorTestFixture, test_custom_topic)
   auto planner_selector_pub =
     node_->create_publisher<std_msgs::msg::String>("planner_selector_custom_topic_name", qos);
 
-  // publish a few updates of the selected_planner
+
   auto start = node_->now();
   while ((node_->now() - start).seconds() < 0.5) {
     tree_->rootNode()->executeTick();
@@ -116,14 +116,14 @@ TEST_F(PlannerSelectorTestFixture, test_custom_topic)
     rclcpp::spin_some(node_);
   }
 
-  // check planner updated
+
   config_->blackboard->get("selected_planner", selected_planner_result);
   EXPECT_EQ("RRT", selected_planner_result);
 }
 
 TEST_F(PlannerSelectorTestFixture, test_default_topic)
 {
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -134,12 +134,12 @@ TEST_F(PlannerSelectorTestFixture, test_default_topic)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS) {
     tree_->rootNode()->executeTick();
   }
 
-  // check default value
+
   std::string selected_planner_result;
   config_->blackboard->get("selected_planner", selected_planner_result);
 
@@ -155,7 +155,7 @@ TEST_F(PlannerSelectorTestFixture, test_default_topic)
   auto planner_selector_pub =
     node_->create_publisher<std_msgs::msg::String>("planner_selector", qos);
 
-  // publish a few updates of the selected_planner
+
   auto start = node_->now();
   while ((node_->now() - start).seconds() < 0.5) {
     tree_->rootNode()->executeTick();
@@ -164,7 +164,7 @@ TEST_F(PlannerSelectorTestFixture, test_default_topic)
     rclcpp::spin_some(node_);
   }
 
-  // check planner updated
+
   config_->blackboard->get("selected_planner", selected_planner_result);
   EXPECT_EQ("RRT", selected_planner_result);
 }
@@ -173,12 +173,12 @@ int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
 
-  // initialize ROS
+
   rclcpp::init(argc, argv);
 
   int all_successful = RUN_ALL_TESTS();
 
-  // shutdown ROS
+
   rclcpp::shutdown();
 
   return all_successful;

@@ -1,17 +1,17 @@
-// Copyright (c) 2020, Samsung Research America
-// Copyright (c) 2020, Applied Electric Vehicles Pty Ltd
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <omp.h>
 #include <cmath>
@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "nav2_smac_planner/a_star.hpp"
-using namespace std::chrono;  // NOLINT
+using namespace std::chrono;
 
 namespace nav2_smac_planner
 {
@@ -79,7 +79,7 @@ void AStarAlgorithm<Node2D>::initialize(
   int & max_iterations,
   const int & max_on_approach_iterations,
   const double & max_planning_time,
-  const float & /*lookup_table_size*/,
+  const float & ,
   const unsigned int & dim_3_size)
 {
   _traverse_unknown = allow_unknown;
@@ -193,24 +193,24 @@ void AStarAlgorithm<NodeT>::setGoal(
 template<typename NodeT>
 bool AStarAlgorithm<NodeT>::areInputsValid()
 {
-  // Check if graph was filled in
+
   if (_graph.empty()) {
     throw std::runtime_error("Failed to compute path, no costmap given.");
   }
 
-  // Check if points were filled in
+
   if (!_start || !_goal) {
     throw std::runtime_error("Failed to compute path, no valid start or goal given.");
   }
 
-  // Check if ending point is valid
+
   if (getToleranceHeuristic() < 0.001 &&
     !_goal->isNodeValid(_traverse_unknown, _collision_checker))
   {
     throw std::runtime_error("Failed to compute path, goal is occupied with no tolerance.");
   }
 
-  // Check if starting point is valid
+
   if (!_start->isNodeValid(_traverse_unknown, _collision_checker)) {
     throw std::runtime_error("Starting point in lethal space! Cannot create feasible plan.");
   }
@@ -232,11 +232,11 @@ bool AStarAlgorithm<NodeT>::createPath(
     return false;
   }
 
-  // 0) Add starting point to the open set
+
   addNode(0.0, getStart());
   getStart()->setAccumulatedCost(0.0);
 
-  // Optimization: preallocate all variables
+
   NodePtr current_node = nullptr;
   NodePtr neighbor = nullptr;
   NodePtr expansion_result = nullptr;
@@ -247,7 +247,7 @@ bool AStarAlgorithm<NodeT>::createPath(
   int analytic_iterations = 0;
   int closest_distance = std::numeric_limits<int>::max();
 
-  // Given an index, return a node ptr reference if its collision-free and valid
+
   const unsigned int max_index = getSizeX() * getSizeY() * getSizeDim3();
   NodeGetter neighborGetter =
     [&, this](const unsigned int & index, NodePtr & neighbor_rtn) -> bool
@@ -261,7 +261,7 @@ bool AStarAlgorithm<NodeT>::createPath(
     };
 
   while (iterations < getMaxIterations() && !_queue.empty()) {
-    // Check for planning timeout only on every Nth iteration
+
     if (iterations % _timing_interval == 0) {
       std::chrono::duration<double> planning_duration =
         std::chrono::duration_cast<std::chrono::duration<double>>(steady_clock::now() - start_time);
@@ -270,21 +270,21 @@ bool AStarAlgorithm<NodeT>::createPath(
       }
     }
 
-    // 1) Pick Nbest from O s.t. min(f(Nbest)), remove from queue
+
     current_node = getNextNode();
 
-    // We allow for nodes to be queued multiple times in case
-    // shorter paths result in it, but we can visit only once
+
+
     if (current_node->wasVisited()) {
       continue;
     }
 
     iterations++;
 
-    // 2) Mark Nbest as visited
+
     current_node->visited();
 
-    // 2.1) Use an analytic expansion (if available) to generate a path
+
     expansion_result = nullptr;
     expansion_result = _expander->tryAnalyticExpansion(
       current_node, getGoal(), neighborGetter, analytic_iterations, closest_distance);
@@ -292,18 +292,18 @@ bool AStarAlgorithm<NodeT>::createPath(
       current_node = expansion_result;
     }
 
-    // 3) Check if we're at the goal, backtrace if required
+
     if (isGoal(current_node)) {
       return current_node->backtracePath(path);
     } else if (_best_heuristic_node.first < getToleranceHeuristic()) {
-      // Optimization: Let us find when in tolerance and refine within reason
+
       approach_iterations++;
       if (approach_iterations >= getOnApproachMaxIterations()) {
         return _graph.at(_best_heuristic_node.second).backtracePath(path);
       }
     }
 
-    // 4) Expand neighbors of Nbest not visited
+
     neighbors.clear();
     current_node->getNeighbors(neighborGetter, _collision_checker, _traverse_unknown, neighbors);
 
@@ -312,22 +312,22 @@ bool AStarAlgorithm<NodeT>::createPath(
     {
       neighbor = *neighbor_iterator;
 
-      // 4.1) Compute the cost to go to this node
+
       g_cost = current_node->getAccumulatedCost() + current_node->getTraversalCost(neighbor);
 
-      // 4.2) If this is a lower cost than prior, we set this as the new cost and new approach
+
       if (g_cost < neighbor->getAccumulatedCost()) {
         neighbor->setAccumulatedCost(g_cost);
         neighbor->parent = current_node;
 
-        // 4.3) Add to queue with heuristic cost
+
         addNode(g_cost + getHeuristicCost(neighbor), neighbor);
       }
     }
   }
 
   if (_best_heuristic_node.first < getToleranceHeuristic()) {
-    // If we run out of serach options, return the path that is closest, if within tolerance.
+
     return _graph.at(_best_heuristic_node.second).backtracePath(path);
   }
 
@@ -435,9 +435,9 @@ unsigned int & AStarAlgorithm<NodeT>::getSizeDim3()
   return _dim3_size;
 }
 
-// Instantiate algorithm for the supported template types
+
 template class AStarAlgorithm<Node2D>;
 template class AStarAlgorithm<NodeHybrid>;
 template class AStarAlgorithm<NodeLattice>;
 
-}  // namespace nav2_smac_planner
+}

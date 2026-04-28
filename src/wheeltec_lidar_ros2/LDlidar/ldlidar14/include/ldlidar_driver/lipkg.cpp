@@ -1,23 +1,5 @@
-/**
- * @file lipkg.cpp
- * @author LDRobot (contact@ldrobot.com)
- * @brief  LiDAR data protocol processing App
- *         This code is only applicable to LDROBOT LiDAR LD00 LD03 LD08 LD14
- * products sold by Shenzhen LDROBOT Co., LTD
- * @version 0.1
- * @date 2021-11-10
- *
- * @copyright Copyright (c) 2021  SHENZHEN LDROBOT CO., LTD. All rights
- * reserved.
- * Licensed under the MIT License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License in the file LICENSE
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
+
 
 #include "lipkg.h"
 
@@ -123,7 +105,7 @@ bool LiPkg::AnalysisOne(uint8_t byte) {
 bool LiPkg::Parse(const uint8_t *data, long len) {
   for (int i = 0; i < len; i++) {
     if (AnalysisOne(data[i])) {
-      // parse a package is success
+
       double diff = (pkg.end_angle / 100 - pkg.start_angle / 100 + 360) % 360;
       if (diff > ((double)pkg.speed * POINT_PER_PACK / kPointFrequence * 1.5)) {
         error_times_++;
@@ -161,16 +143,16 @@ bool LiPkg::AssemblePacket() {
   }
 
   for (auto n : frame_tmp_) {
-    // wait for enough data, need enough data to show a circle
-    // enough data has been obtained
+
+
     if ((n.angle < 20.0) && (last_angle > 340.0)) {
       if ((count * GetSpeed()) > (kPointFrequence * 1.4)) {
         frame_tmp_.erase(frame_tmp_.begin(), frame_tmp_.begin() + count - 1);
         return false;
       }
       data.insert(data.begin(), frame_tmp_.begin(), frame_tmp_.begin() + count);
-      SlTransform trans(ld_product_type_, laser_scan_dir_); // Lidar coordinate system changed from left hand (counterclockwise) to right hand (clockwise)
-      data = trans.Transform(data); // transform raw data to stantard data
+      SlTransform trans(ld_product_type_, laser_scan_dir_);
+      data = trans.Transform(data);
       Slbf sb(speed_);
       tmp = sb.NearFilter(data);
       std::sort(tmp.begin(), tmp.end(), [](PointData a, PointData b) { return a.angle < b.angle; });
@@ -207,7 +189,7 @@ void LiPkg::SetLaserScanDir(bool dir) {
 }
 
 double LiPkg::GetSpeed(void) { 
-  return (speed_ / 360.0);  // unit is hz 
+  return (speed_ / 360.0);
 }
 
 uint16_t LiPkg::GetSpeedOrigin(void) {
@@ -248,7 +230,6 @@ long LiPkg::GetErrorTimes(void) {
   return error_times_; 
 }
 
-} // namespace ldlidar 
+}
 
-/********************* (C) COPYRIGHT SHENZHEN LDROBOT CO., LTD *******END OF
- * FILE ********/
+

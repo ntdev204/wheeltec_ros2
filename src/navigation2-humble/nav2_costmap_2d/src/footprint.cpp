@@ -1,31 +1,5 @@
-/*
- * Copyright (c) 2013, Willow Garage, Inc.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Willow Garage, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived from
- *       this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+
+
 #include "nav2_costmap_2d/footprint.hpp"
 
 #include <algorithm>
@@ -52,7 +26,7 @@ void calculateMinAndMaxDistances(
   }
 
   for (unsigned int i = 0; i < footprint.size() - 1; ++i) {
-    // check the distance from the robot center point to the first vertex
+
     double vertex_dist = distance(0.0, 0.0, footprint[i].x, footprint[i].y);
     double edge_dist = distanceToLine(
       0.0, 0.0, footprint[i].x, footprint[i].y,
@@ -61,7 +35,7 @@ void calculateMinAndMaxDistances(
     max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
   }
 
-  // we also need to do the last vertex and the first vertex
+
   double vertex_dist = distance(0.0, 0.0, footprint.back().x, footprint.back().y);
   double edge_dist = distanceToLine(
     0.0, 0.0, footprint.back().x, footprint.back().y,
@@ -111,7 +85,7 @@ void transformFootprint(
   const std::vector<geometry_msgs::msg::Point> & footprint_spec,
   std::vector<geometry_msgs::msg::Point> & oriented_footprint)
 {
-  // build the oriented footprint at a given location
+
   oriented_footprint.resize(footprint_spec.size());
   double cos_th = cos(theta);
   double sin_th = sin(theta);
@@ -129,7 +103,7 @@ void transformFootprint(
   const std::vector<geometry_msgs::msg::Point> & footprint_spec,
   geometry_msgs::msg::PolygonStamped & oriented_footprint)
 {
-  // build the oriented footprint at a given location
+
   oriented_footprint.polygon.points.clear();
   double cos_th = cos(theta);
   double sin_th = sin(theta);
@@ -143,7 +117,7 @@ void transformFootprint(
 
 void padFootprint(std::vector<geometry_msgs::msg::Point> & footprint, double padding)
 {
-  // pad footprint in place
+
   for (unsigned int i = 0; i < footprint.size(); i++) {
     geometry_msgs::msg::Point & pt = footprint[i];
     pt.x += sign0(pt.x) * padding;
@@ -156,7 +130,7 @@ std::vector<geometry_msgs::msg::Point> makeFootprintFromRadius(double radius)
 {
   std::vector<geometry_msgs::msg::Point> points;
 
-  // Loop over 16 angles around a circle making a point each time
+
   int N = 16;
   geometry_msgs::msg::Point pt;
   for (int i = 0; i < N; ++i) {
@@ -188,12 +162,12 @@ bool makeFootprintFromString(
     return false;
   }
 
-  // convert vvf into points.
+
   if (vvf.size() < 3) {
     RCLCPP_ERROR(
       rclcpp::get_logger(
         "nav2_costmap_2d"),
-      "You must specify at least three points for the robot footprint, reverting to previous footprint."); //NOLINT
+      "You must specify at least three points for the robot footprint, reverting to previous footprint.");
     return false;
   }
   footprint.reserve(vvf.size());
@@ -208,7 +182,7 @@ bool makeFootprintFromString(
       RCLCPP_ERROR(
         rclcpp::get_logger(
           "nav2_costmap_2d"),
-        "Points in the footprint specification must be pairs of numbers. Found a point with %d numbers.", //NOLINT
+        "Points in the footprint specification must be pairs of numbers. Found a point with %d numbers.",
         static_cast<int>(vvf[i].size()));
       return false;
     }
@@ -217,4 +191,4 @@ bool makeFootprintFromString(
   return true;
 }
 
-}  // end namespace nav2_costmap_2d
+}

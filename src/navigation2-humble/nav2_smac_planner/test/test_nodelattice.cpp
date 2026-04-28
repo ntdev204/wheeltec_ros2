@@ -1,17 +1,17 @@
-// Copyright (c) 2021 Joshua Wallace
-// Copyright (c) 2021 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <fstream>
 #include <string>
@@ -49,7 +49,7 @@ TEST(NodeLatticeTest, parser_test)
 
   nav2_smac_planner::fromJsonToMetaData(jsonMetaData, metaData);
 
-  // Checks for parsing meta data
+
   EXPECT_NEAR(metaData.min_turning_radius, 0.5, 0.001);
   EXPECT_NEAR(metaData.grid_resolution, 0.05, 0.001);
   EXPECT_NEAR(metaData.number_of_headings, 16, 0.01);
@@ -64,7 +64,7 @@ TEST(NodeLatticeTest, parser_test)
     myPrimitives.push_back(newPrimative);
   }
 
-  // Checks for parsing primitives
+
   EXPECT_EQ(myPrimitives.size(), 80u);
   EXPECT_NEAR(myPrimitives[0].trajectory_id, 0, 0.01);
   EXPECT_NEAR(myPrimitives[0].start_angle, 0.0, 0.01);
@@ -189,7 +189,7 @@ TEST(NodeLatticeTest, test_node_lattice)
   nav2_smac_planner::NodeLattice::initMotionModel(
     nav2_smac_planner::MotionModel::STATE_LATTICE, x, y, angle_quantization, info);
 
-  // Check defaults
+
   nav2_smac_planner::NodeLattice aNode(0);
   nav2_smac_planner::NodeLattice testA(49);
   EXPECT_EQ(testA.getIndex(), 49u);
@@ -197,7 +197,7 @@ TEST(NodeLatticeTest, test_node_lattice)
   EXPECT_TRUE(std::isnan(testA.getCost()));
   EXPECT_EQ(testA.getMotionPrimitive(), nullptr);
 
-  // Test visited state / reset
+
   EXPECT_EQ(testA.wasVisited(), false);
   testA.visited();
   EXPECT_EQ(testA.wasVisited(), true);
@@ -210,7 +210,7 @@ TEST(NodeLatticeTest, test_node_lattice)
     std::make_unique<nav2_smac_planner::GridCollisionChecker>(costmapA, 72);
   checker->setFootprint(nav2_costmap_2d::Footprint(), true, 0.0);
 
-  // test node valid and cost
+
   testA.pose.x = 5;
   testA.pose.y = 5;
   testA.pose.theta = 0;
@@ -218,18 +218,18 @@ TEST(NodeLatticeTest, test_node_lattice)
   EXPECT_EQ(testA.isNodeValid(false, checker.get()), true);
   EXPECT_EQ(testA.getCost(), 0.0f);
 
-  // check collision checking
+
   EXPECT_EQ(testA.isNodeValid(false, checker.get()), true);
 
-  // check operator== works on index
+
   nav2_smac_planner::NodeLattice testC(49);
   EXPECT_TRUE(testA == testC);
 
-  // check accumulated costs are set
+
   testC.setAccumulatedCost(100);
   EXPECT_EQ(testC.getAccumulatedCost(), 100.0f);
 
-  // check set pose and pose
+
   testC.setPose(nav2_smac_planner::NodeLattice::Coordinates(10.0, 5.0, 4));
   EXPECT_EQ(testC.pose.x, 10.0);
   EXPECT_EQ(testC.pose.y, 5.0);
@@ -277,13 +277,13 @@ TEST(NodeLatticeTest, test_get_neighbors)
   std::function<bool(const unsigned int &, nav2_smac_planner::NodeLattice * &)> neighborGetter =
     [&, this](const unsigned int & index, nav2_smac_planner::NodeLattice * & neighbor_rtn) -> bool
     {
-      // because we don't return a real object
+
       return false;
     };
 
   nav2_smac_planner::NodeLattice::NodeVector neighbors;
   node.getNeighbors(neighborGetter, checker.get(), false, neighbors);
-  // should be empty since totally invalid
+
   EXPECT_EQ(neighbors.size(), 0u);
 
   delete costmapA;

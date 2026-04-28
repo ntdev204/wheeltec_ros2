@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <chrono>
 #include <thread>
@@ -21,7 +21,7 @@
 #include "nav2_mppi_controller/tools/utils.hpp"
 #include "nav2_mppi_controller/models/path.hpp"
 
-// Tests noise generator object
+
 
 class RosLockGuard
 {
@@ -31,8 +31,8 @@ public:
 };
 RosLockGuard g_rclcpp;
 
-using namespace mppi::utils;  // NOLINT
-using namespace mppi;  // NOLINT
+using namespace mppi::utils;
+using namespace mppi;
 
 class TestGoalChecker : public nav2_core::GoalChecker
 {
@@ -40,20 +40,20 @@ public:
   TestGoalChecker() {}
 
   virtual void initialize(
-    const rclcpp_lifecycle::LifecycleNode::WeakPtr & /*parent*/,
-    const std::string & /*plugin_name*/,
-    const std::shared_ptr<nav2_costmap_2d::Costmap2DROS>/*costmap_ros*/) {}
+    const rclcpp_lifecycle::LifecycleNode::WeakPtr & ,
+    const std::string & ,
+    const std::shared_ptr<nav2_costmap_2d::Costmap2DROS>) {}
 
   virtual void reset() {}
 
   virtual bool isGoalReached(
-    const geometry_msgs::msg::Pose & /*query_pose*/,
-    const geometry_msgs::msg::Pose & /*goal_pose*/,
-    const geometry_msgs::msg::Twist & /*velocity*/) {return false;}
+    const geometry_msgs::msg::Pose & ,
+    const geometry_msgs::msg::Pose & ,
+    const geometry_msgs::msg::Twist & ) {return false;}
 
   virtual bool getTolerances(
     geometry_msgs::msg::Pose & pose_tolerance,
-    geometry_msgs::msg::Twist & /*vel_tolerance*/)
+    geometry_msgs::msg::Twist & )
   {
     pose_tolerance.position.x = 0.25;
     pose_tolerance.position.y = 0.25;
@@ -94,7 +94,7 @@ TEST(UtilsTests, ConversionTests)
   geometry_msgs::msg::TwistStamped output;
   builtin_interfaces::msg::Time time;
 
-  // Check population is correct
+
   output = toTwistStamped(0.5, 0.3, time, "map");
   EXPECT_NEAR(output.twist.linear.x, 0.5, 1e-6);
   EXPECT_NEAR(output.twist.linear.y, 0.0, 1e-6);
@@ -115,7 +115,7 @@ TEST(UtilsTests, ConversionTests)
   path.poses[2].pose.position.y = 50;
   models::Path path_t = toTensor(path);
 
-  // Check population is correct
+
   EXPECT_EQ(path_t.x.shape(0), 5u);
   EXPECT_EQ(path_t.y.shape(0), 5u);
   EXPECT_EQ(path_t.yaws.shape(0), 5u);
@@ -132,7 +132,7 @@ TEST(UtilsTests, WithTolTests)
 
   nav2_core::GoalChecker * goal_checker = new TestGoalChecker;
 
-  // Test not in tolerance
+
   nav_msgs::msg::Path path;
   path.poses.resize(2);
   path.poses[1].pose.position.x = 0.0;
@@ -141,7 +141,7 @@ TEST(UtilsTests, WithTolTests)
   EXPECT_FALSE(withinPositionGoalTolerance(goal_checker, pose, path_t));
   EXPECT_FALSE(withinPositionGoalTolerance(0.25, pose, path_t));
 
-  // Test in tolerance
+
   path.poses[1].pose.position.x = 9.8;
   path.poses[1].pose.position.y = 0.95;
   path_t = toTensor(path);
@@ -167,7 +167,7 @@ TEST(UtilsTests, WithTolTests)
 
 TEST(UtilsTests, AnglesTests)
 {
-  // Test angle normalization by creating insane angles
+
   xt::xtensor<float, 1> angles, zero_angles;
   angles = xt::ones<float>({100});
   for (unsigned int i = 0; i != angles.shape(0); i++) {
@@ -182,14 +182,14 @@ TEST(UtilsTests, AnglesTests)
     EXPECT_TRUE((norm_ang(i) >= -M_PI) && (norm_ang(i) <= M_PI));
   }
 
-  // Test shortest angular distance
+
   zero_angles = xt::zeros<float>({100});
   auto ang_dist = shortest_angular_distance(angles, zero_angles);
   for (unsigned int i = 0; i != ang_dist.shape(0); i++) {
     EXPECT_TRUE((ang_dist(i) >= -M_PI) && (ang_dist(i) <= M_PI));
   }
 
-  // Test point-pose angle
+
   geometry_msgs::msg::Pose pose;
   pose.position.x = 0.0;
   pose.position.y = 0.0;
@@ -215,21 +215,21 @@ TEST(UtilsTests, FurthestAndClosestReachedPoint)
 
   CriticData data =
   {state, generated_trajectories, path, costs, model_dt, false, nullptr, nullptr,
-    std::nullopt, std::nullopt};  /// Caution, keep references
+    std::nullopt, std::nullopt};
 
-  // Attempt to set furthest point if notionally set, should not change
+
   data.furthest_reached_path_point = 99999;
   setPathFurthestPointIfNotSet(data);
   EXPECT_EQ(data.furthest_reached_path_point, 99999);
 
-  // Attempt to set if not set already with no other information, should fail
+
   CriticData data2 =
   {state, generated_trajectories, path, costs, model_dt, false, nullptr, nullptr,
-    std::nullopt, std::nullopt};  /// Caution, keep references
+    std::nullopt, std::nullopt};
   setPathFurthestPointIfNotSet(data2);
   EXPECT_EQ(data2.furthest_reached_path_point, 0);
 
-  // Test the actual computation of the path point reached
+
   generated_trajectories.x = xt::ones<float>({100, 2});
   generated_trajectories.y = xt::zeros<float>({100, 2});
   generated_trajectories.yaws = xt::zeros<float>({100, 2});
@@ -244,7 +244,7 @@ TEST(UtilsTests, FurthestAndClosestReachedPoint)
 
   CriticData data3 =
   {state, generated_trajectories, path, costs, model_dt, false, nullptr, nullptr,
-    std::nullopt, std::nullopt};  /// Caution, keep references
+    std::nullopt, std::nullopt};
   EXPECT_EQ(findPathFurthestReachedPoint(data3), 5u);
   EXPECT_EQ(findPathTrajectoryInitialPoint(data3), 5u);
 }
@@ -259,9 +259,9 @@ TEST(UtilsTests, findPathCosts)
 
   CriticData data =
   {state, generated_trajectories, path, costs, model_dt, false, nullptr, nullptr,
-    std::nullopt, std::nullopt};  /// Caution, keep references
+    std::nullopt, std::nullopt};
 
-  // Test not set if already set, should not change
+
   data.path_pts_valid = std::vector<bool>(10, false);
   for (unsigned int i = 0; i != 10; i++) {
     (*data.path_pts_valid)[i] = false;
@@ -272,34 +272,34 @@ TEST(UtilsTests, findPathCosts)
 
   CriticData data3 =
   {state, generated_trajectories, path, costs, model_dt, false, nullptr, nullptr,
-    std::nullopt, std::nullopt};  /// Caution, keep references
+    std::nullopt, std::nullopt};
 
   auto costmap_ros = std::make_shared<nav2_costmap_2d::Costmap2DROS>(
     "dummy_costmap", "", "dummy_costmap");
   rclcpp_lifecycle::State lstate;
   costmap_ros->on_configure(lstate);
   auto * costmap = costmap_ros->getCostmap();
-  // island in the middle of lethal cost to cross. Costmap defaults to size 5x5 @ 10cm resolution
-  for (unsigned int i = 10; i <= 30; ++i) {  // 1m-3m
-    for (unsigned int j = 10; j <= 30; ++j) {  // 1m-3m
+
+  for (unsigned int i = 10; i <= 30; ++i) {
+    for (unsigned int j = 10; j <= 30; ++j) {
       costmap->setCost(i, j, 254);
     }
   }
-  for (unsigned int i = 40; i <= 45; ++i) {  // 4m-4.5m
-    for (unsigned int j = 45; j <= 45; ++j) {  // 4m-4.5m
+  for (unsigned int i = 40; i <= 45; ++i) {
+    for (unsigned int j = 45; j <= 45; ++j) {
       costmap->setCost(i, j, 253);
     }
   }
 
   path.reset(50);
-  path.x(1) = 999999999;  // OFF COSTMAP
+  path.x(1) = 999999999;
   path.y(1) = 999999999;
-  path.x(10) = 1.5;  // IN LETHAL
+  path.x(10) = 1.5;
   path.y(10) = 1.5;
-  path.x(20) = 4.2;  // IN INFLATED
+  path.x(20) = 4.2;
   path.y(20) = 4.2;
 
-  // This should be evaluated and have real outputs now
+
   setPathCostsIfNotSet(data3, costmap_ros);
   EXPECT_TRUE(data3.path_pts_valid.has_value());
   for (unsigned int i = 0; i != path.x.shape(0) - 1; i++) {
@@ -318,7 +318,7 @@ TEST(UtilsTests, SmootherTest)
   noisey_sequence.vy = 0.0 * xt::ones<float>({30});
   noisey_sequence.wz = 0.3 * xt::ones<float>({30});
 
-  // Make the sequence noisey
+
   auto noises = xt::random::randn<float>({30}, 0.0, 0.2);
   noisey_sequence.vx += noises;
   noisey_sequence.vy += noises;
@@ -341,21 +341,21 @@ TEST(UtilsTests, SmootherTest)
   history_init = history;
 
   models::OptimizerSettings settings;
-  settings.shift_control_sequence = false;  // so result stores 0th value in history
+  settings.shift_control_sequence = false;
 
   savitskyGolayFilter(noisey_sequence, history, settings);
 
-  // Check history is propogated backward
+
   EXPECT_NEAR(history_init[3].vx, history[2].vx, 0.02);
   EXPECT_NEAR(history_init[3].vy, history[2].vy, 0.02);
   EXPECT_NEAR(history_init[3].wz, history[2].wz, 0.02);
 
-  // Check history element is updated for first command
+
   EXPECT_NEAR(history[3].vx, 0.2, 0.05);
   EXPECT_NEAR(history[3].vy, 0.0, 0.035);
   EXPECT_NEAR(history[3].wz, 0.23, 0.02);
 
-  // Check that path is smoother
+
   float smoothed_val, original_val;
   for (unsigned int i = 0; i != noisey_sequence.vx.shape(0); i++) {
     smoothed_val += fabs(noisey_sequence.vx(i) - 0.2);
@@ -372,7 +372,7 @@ TEST(UtilsTests, SmootherTest)
 
 TEST(UtilsTests, FindPathInversionTest)
 {
-  // Straight path, no inversions to be found
+
   nav_msgs::msg::Path path;
   for (unsigned int i = 0; i != 10; i++) {
     geometry_msgs::msg::PoseStamped pose;
@@ -381,12 +381,12 @@ TEST(UtilsTests, FindPathInversionTest)
   }
   EXPECT_EQ(utils::findFirstPathInversion(path), 10u);
 
-  // To short to process
+
   path.poses.erase(path.poses.begin(), path.poses.begin() + 7);
   EXPECT_EQ(utils::findFirstPathInversion(path), 3u);
 
-  // Has inversion at index 10, so should return 11 for the first point afterwards
-  // 0 1 2 3 4 5 6 7 8 9 10 **9** 8 7 6 5 4 3 2 1
+
+
   path.poses.clear();
   for (unsigned int i = 0; i != 10; i++) {
     geometry_msgs::msg::PoseStamped pose;
@@ -404,7 +404,7 @@ TEST(UtilsTests, FindPathInversionTest)
 TEST(UtilsTests, RemovePosesAfterPathInversionTest)
 {
   nav_msgs::msg::Path path;
-  // straight path
+
   for (unsigned int i = 0; i != 10; i++) {
     geometry_msgs::msg::PoseStamped pose;
     pose.pose.position.x = i;
@@ -412,11 +412,11 @@ TEST(UtilsTests, RemovePosesAfterPathInversionTest)
   }
   EXPECT_EQ(utils::removePosesAfterFirstInversion(path), 0u);
 
-  // try empty path
+
   path.poses.clear();
   EXPECT_EQ(utils::removePosesAfterFirstInversion(path), 0u);
 
-  // cusping path
+
   for (unsigned int i = 0; i != 10; i++) {
     geometry_msgs::msg::PoseStamped pose;
     pose.pose.position.x = i;
@@ -428,7 +428,7 @@ TEST(UtilsTests, RemovePosesAfterPathInversionTest)
     path.poses.push_back(pose);
   }
   EXPECT_EQ(utils::removePosesAfterFirstInversion(path), 11u);
-  // Check to see if removed
+
   EXPECT_EQ(path.poses.size(), 11u);
   EXPECT_EQ(path.poses.back().pose.position.x, 10);
 }

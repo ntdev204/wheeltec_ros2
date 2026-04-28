@@ -1,14 +1,5 @@
-/**
- * Velocity Smoother Node for Wheeltec Mecanum Robot
- *
- * Replaces PID controller. Key difference:
- * - NO odometry feedback → NO fighting with MPPI
- * - Pure signal processing: low-pass filter + rate limiter + lateral suppression
- * - Very lightweight for Raspberry Pi 4
- *
- * Pipeline:
- *   cmd_vel_raw (MPPI) → [low-pass] → [lateral suppress] → [rate limit] → cmd_vel (STM32)
- */
+
+
 
 #include <chrono>
 #include <functional>
@@ -28,7 +19,7 @@ class VelocitySmootherNode : public rclcpp::Node
 {
 public:
   VelocitySmootherNode()
-  : Node("pid_controller")  // Keep node name for launch compatibility
+  : Node("pid_controller")
   {
     declare_parameters();
     load_parameters();
@@ -40,7 +31,7 @@ public:
       "cmd_vel_raw", 10,
       std::bind(&VelocitySmootherNode::cmd_vel_raw_callback, this, std::placeholders::_1));
 
-    // Control loop timer
+
     double freq = get_parameter("control_frequency").as_double();
     auto period = std::chrono::duration<double>(1.0 / freq);
     control_timer_ = create_wall_timer(
@@ -65,30 +56,30 @@ private:
     declare_parameter("control_frequency", 50.0);
     declare_parameter("cmd_timeout", 0.5);
 
-    // Low-pass filter coefficient for incoming cmd_vel_raw
-    // Lower = more filtering = smoother but slower response
+
+
     declare_parameter("lowpass_alpha", 0.3);
 
-    // Lateral velocity suppression threshold
-    // vy below this is zeroed — kills MPPI sampling noise
+
+
     declare_parameter("vy_suppress_threshold", 0.03);
 
-    // Velocity limits
+
     declare_parameter("max_vx", 0.5);
     declare_parameter("max_vy", 0.15);
     declare_parameter("max_wz", 1.5);
 
-    // Acceleration limits (rate limiter) — the primary smoothing mechanism
+
     declare_parameter("max_ax", 0.8);
     declare_parameter("max_ay", 0.3);
     declare_parameter("max_awz", 0.8);
 
-    // Deadband per axis — zero commands below this
+
     declare_parameter("vx_deadband", 0.005);
     declare_parameter("vy_deadband", 0.02);
     declare_parameter("wz_deadband", 0.02);
 
-    // Enable/disable (passthrough when false)
+
     declare_parameter("enabled", true);
   }
 
@@ -127,7 +118,7 @@ private:
 
     if (dt <= 0.0 || dt > 1.0) return;
 
-    // Timeout: stop if no command received
+
     double time_since_cmd = (current_time - last_cmd_time_).seconds();
     if (time_since_cmd > cmd_timeout_) {
       geometry_msgs::msg::Twist stop;
@@ -146,8 +137,8 @@ private:
     if (!enabled_ || !cmd_received_) {
       output = cmd_raw_;
     } else {
-      // ═══ STAGE 1: Low-pass filter on raw input ═══
-      // Removes high-frequency jitter from MPPI trajectory sampling
+
+
       filtered_vx_ = lowpass_alpha_ * cmd_raw_.linear.x +
                       (1.0 - lowpass_alpha_) * filtered_vx_;
       filtered_vy_ = lowpass_alpha_ * cmd_raw_.linear.y +
@@ -155,15 +146,15 @@ private:
       filtered_wz_ = lowpass_alpha_ * cmd_raw_.angular.z +
                       (1.0 - lowpass_alpha_) * filtered_wz_;
 
-      // ═══ STAGE 2: Lateral velocity suppression ═══
-      // Small vy from MPPI Omni model is noise, not intentional strafe
+
+
       double vy_input = filtered_vy_;
       if (std::fabs(vy_input) < vy_suppress_) {
         vy_input = 0.0;
       }
 
-      // ═══ STAGE 3: Rate limiting (acceleration clamp) ═══
-      // This is the main smoother — limits how fast velocity can change
+
+
       output.linear.x = vx_smoother_.smooth(filtered_vx_, dt);
       output.linear.y = vy_smoother_.smooth(vy_input, dt);
       output.angular.z = wz_smoother_.smooth(filtered_wz_, dt);
@@ -171,7 +162,7 @@ private:
 
     cmd_vel_pub_->publish(output);
 
-    // Debug output: [raw_vx, raw_vy, raw_wz, filtered_vx, filtered_vy, filtered_wz, out_vx, out_vy, out_wz]
+
     std_msgs::msg::Float64MultiArray debug_msg;
     debug_msg.data = {
       cmd_raw_.linear.x, cmd_raw_.linear.y, cmd_raw_.angular.z,
@@ -194,27 +185,27 @@ private:
     return result;
   }
 
-  // ─── Members ───
+
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr debug_pub_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_raw_sub_;
   rclcpp::TimerBase::SharedPtr control_timer_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_handle_;
 
-  // Per-axis smoothers (rate limiter + deadband)
+
   wheeltec_smoother::AxisSmoother vx_smoother_;
   wheeltec_smoother::AxisSmoother vy_smoother_;
   wheeltec_smoother::AxisSmoother wz_smoother_;
 
-  // Raw command from MPPI
+
   geometry_msgs::msg::Twist cmd_raw_;
 
-  // Low-pass filtered values
+
   double filtered_vx_ = 0.0;
   double filtered_vy_ = 0.0;
   double filtered_wz_ = 0.0;
 
-  // Parameters
+
   double lowpass_alpha_ = 0.3;
   double vy_suppress_ = 0.03;
   double cmd_timeout_ = 0.5;

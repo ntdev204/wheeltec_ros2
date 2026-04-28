@@ -1,41 +1,5 @@
-/*********************************************************************
- *
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2008, 2013, Willow Garage, Inc.
- *  Copyright (c) 2019, Samsung Research America, Inc.
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- * Author: Eitan Marder-Eppstein
- *         David V. Lu!!
- *********************************************************************/
+
+
 #include "nav2_costmap_2d/costmap_2d_publisher.hpp"
 
 #include <string>
@@ -67,7 +31,7 @@ Costmap2DPublisher::Costmap2DPublisher(
 
   auto custom_qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable();
 
-  // TODO(bpwilcox): port onNewSubscription functionality for publisher
+
   costmap_pub_ = node->create_publisher<nav_msgs::msg::OccupancyGrid>(
     topic_name,
     custom_qos);
@@ -77,7 +41,7 @@ Costmap2DPublisher::Costmap2DPublisher(
   costmap_update_pub_ = node->create_publisher<map_msgs::msg::OccupancyGridUpdate>(
     topic_name + "_updates", custom_qos);
 
-  // Create a service that will use the callback function to handle requests.
+
   costmap_service_ = node->create_service<nav2_msgs::srv::GetCostmap>(
     "get_costmap", std::bind(
       &Costmap2DPublisher::costmap_service_callback,
@@ -87,14 +51,14 @@ Costmap2DPublisher::Costmap2DPublisher(
   if (cost_translation_table_ == NULL) {
     cost_translation_table_ = new char[256];
 
-    // special values:
-    cost_translation_table_[0] = 0;  // NO obstacle
-    cost_translation_table_[253] = 99;  // INSCRIBED obstacle
-    cost_translation_table_[254] = 100;  // LETHAL obstacle
-    cost_translation_table_[255] = -1;  // UNKNOWN
 
-    // regular cost values scale the range 1 to 252 (inclusive) to fit
-    // into 1 to 98 (inclusive).
+    cost_translation_table_[0] = 0;
+    cost_translation_table_[253] = 99;
+    cost_translation_table_[254] = 100;
+    cost_translation_table_[255] = -1;
+
+
+
     for (int i = 1; i < 253; i++) {
       cost_translation_table_[i] = static_cast<char>(1 + (97 * (i - 1)) / 251);
     }
@@ -107,15 +71,11 @@ Costmap2DPublisher::Costmap2DPublisher(
 
 Costmap2DPublisher::~Costmap2DPublisher() {}
 
-// TODO(bpwilcox): find equivalent/workaround to ros::SingleSubscriberPublishr
-/*
-void Costmap2DPublisher::onNewSubscription(const ros::SingleSubscriberPublisher& pub)
-{
-  prepareGrid();
-  pub.publish(grid_);
-} */
 
-// prepare grid_ message for publication.
+
+
+
+
 void Costmap2DPublisher::prepareGrid()
 {
   std::unique_lock<Costmap2D::mutex_t> lock(*(costmap_->getMutex()));
@@ -202,7 +162,7 @@ void Costmap2DPublisher::publishCostmap()
   } else if (x0_ < xn_) {
     if (costmap_update_pub_->get_subscription_count() > 0) {
       std::unique_lock<Costmap2D::mutex_t> lock(*(costmap_->getMutex()));
-      // Publish Just an Update
+
       auto update = std::make_unique<map_msgs::msg::OccupancyGridUpdate>();
       update->header.stamp = rclcpp::Time();
       update->header.frame_id = global_frame_;
@@ -229,13 +189,13 @@ void Costmap2DPublisher::publishCostmap()
 
 void
 Costmap2DPublisher::costmap_service_callback(
-  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
-  const std::shared_ptr<nav2_msgs::srv::GetCostmap::Request>/*request*/,
+  const std::shared_ptr<rmw_request_id_t>,
+  const std::shared_ptr<nav2_msgs::srv::GetCostmap::Request>,
   const std::shared_ptr<nav2_msgs::srv::GetCostmap::Response> response)
 {
   RCLCPP_DEBUG(logger_, "Received costmap service request");
 
-  // TODO(bpwilcox): Grab correct orientation information
+
   tf2::Quaternion quaternion;
   quaternion.setRPY(0.0, 0.0, 0.0);
 
@@ -261,4 +221,4 @@ Costmap2DPublisher::costmap_service_callback(
   response->map.data.assign(data, data + data_length);
 }
 
-}  // end namespace nav2_costmap_2d
+}

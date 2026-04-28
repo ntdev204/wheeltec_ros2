@@ -1,26 +1,4 @@
-# Copyright (c) 2021, Matthew Booker
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License. Reserved.
 
-"""
-This script is used visualize each trajectory individually.
-
-This helps to better understand how a single trajectory looks and
-to ensure that the x, y, and yaw values are correct. This is mainly
-used for debugging when making changes to parts of the code.
-However, if you would like to see how each trajectory in your
-ouput file looks then you can run this script.
-"""
 
 import json
 from pathlib import Path
@@ -31,7 +9,6 @@ import numpy as np
 
 
 def plot_arrow(x, y, yaw, length=1.0, fc='r', ec='k'):
-    """Plot arrow."""
     plt.arrow(x, y, length * np.cos(yaw), length *
               np.sin(yaw), width=0.05*length, length_includes_head=True)
     plt.plot(x, y)

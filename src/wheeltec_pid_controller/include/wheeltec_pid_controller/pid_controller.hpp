@@ -7,10 +7,8 @@
 namespace wheeltec_smoother
 {
 
-/**
- * Single-axis velocity smoother: low-pass filter + rate limiter.
- * NO feedback loop — does not fight with MPPI.
- */
+
+
 class AxisSmoother
 {
 public:
@@ -26,25 +24,21 @@ public:
 
   void reset() { current_ = 0.0; }
 
-  /**
-   * @brief Smooth a velocity command
-   * @param target  raw velocity from MPPI
-   * @param dt      time step in seconds
-   * @return smoothed velocity
-   */
+  
+
   double smooth(double target, double dt)
   {
     if (dt <= 0.0) return current_;
 
-    // Deadband: zero small commands
+
     if (std::fabs(target) < deadband_) {
       target = 0.0;
     }
 
-    // Velocity clamp
+
     target = std::clamp(target, -max_vel_, max_vel_);
 
-    // Rate limiting (acceleration/deceleration)
+
     double max_change = max_accel_ * dt;
     double diff = target - current_;
 
@@ -66,6 +60,6 @@ private:
   double current_ = 0.0;
 };
 
-}  // namespace wheeltec_smoother
+}
 
-#endif  // WHEELTEC_PID_CONTROLLER__VELOCITY_SMOOTHER_HPP_
+#endif

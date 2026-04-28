@@ -1,6 +1,3 @@
-"""
-Coverage route API endpoints.
-"""
 from fastapi import APIRouter, HTTPException
 
 from app.services.coverage_service import CoverageService
@@ -10,7 +7,6 @@ router = APIRouter(prefix="/api/robot/coverage", tags=["coverage"])
 
 @router.post("/generate")
 async def generate_coverage_route(data: dict):
-    """Generate full-map coverage route."""
     try:
         route = await CoverageService.generate_coverage_route(
             name=data.get("name"),
@@ -27,21 +23,18 @@ async def generate_coverage_route(data: dict):
 
 @router.get("/routes")
 async def get_coverage_routes(limit: int = 50):
-    """Get all coverage routes."""
     routes = await CoverageService.get_coverage_routes(limit=limit)
     return {"routes": routes}
 
 
 @router.get("/statistics")
 async def get_coverage_statistics():
-    """Get coverage route statistics."""
     stats = await CoverageService.get_coverage_statistics()
     return stats
 
 
 @router.post("/estimate")
 async def estimate_coverage_time(data: dict):
-    """Estimate time to complete coverage route."""
     waypoint_count = int(data.get("waypoint_count", 0))
     avg_speed = float(data.get("avg_speed", 0.3))
 

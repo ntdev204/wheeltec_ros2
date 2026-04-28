@@ -1,16 +1,16 @@
-// Copyright (c) 2021, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <math.h>
 #include <condition_variable>
@@ -49,7 +49,7 @@ TEST(WaypointFollowerTest, WaitAtWaypoint)
 
   auto start_time = node->now();
 
-  // should wait 50ms
+
   geometry_msgs::msg::PoseStamped pose;
   waw->processAtWaypoint(pose, 0);
 
@@ -61,7 +61,7 @@ TEST(WaypointFollowerTest, WaitAtWaypoint)
   node->set_parameter(rclcpp::Parameter("WAW.enabled", false));
   waw->initialize(node, std::string("WAW"));
 
-  // plugin is not enabled, should exit
+
   EXPECT_TRUE(waw->processAtWaypoint(pose, 0));
 }
 
@@ -86,7 +86,7 @@ TEST(WaypointFollowerTest, InputAtWaypoint)
 
   auto start_time = node->now();
 
-  // no input, should timeout
+
   geometry_msgs::msg::PoseStamped pose;
   EXPECT_FALSE(iaw->processAtWaypoint(pose, 0));
 
@@ -94,7 +94,7 @@ TEST(WaypointFollowerTest, InputAtWaypoint)
 
   EXPECT_NEAR((end_time - start_time).seconds(), 10.0, 0.1);
 
-  // has input now, should work
+
   std::thread t1(publish_message);
   EXPECT_TRUE(iaw->processAtWaypoint(pose, 0));
   t1.join();
@@ -103,7 +103,7 @@ TEST(WaypointFollowerTest, InputAtWaypoint)
   node->set_parameter(rclcpp::Parameter("IAW.enabled", false));
   iaw->initialize(node, std::string("IAW"));
 
-  // plugin is not enabled, should exit
+
   EXPECT_TRUE(iaw->processAtWaypoint(pose, 0));
 }
 
@@ -121,7 +121,7 @@ TEST(WaypointFollowerTest, PhotoAtWaypoint)
     {
       rclcpp::Rate(5).sleep();
       auto msg = std::make_unique<sensor_msgs::msg::Image>();
-      // fill image msg data.
+
       msg->encoding = "rgb8";
       msg->height = 240;
       msg->width = 320;
@@ -145,13 +145,13 @@ TEST(WaypointFollowerTest, PhotoAtWaypoint)
   );
   paw->initialize(node, std::string("PAW"));
 
-  // no images, throws because can't write
+
   geometry_msgs::msg::PoseStamped pose;
   EXPECT_FALSE(paw->processAtWaypoint(pose, 0));
 
   std::thread t1(publish_message);
   cv.wait(lck);
-  // has image now, since we force waiting until image is published
+
   EXPECT_TRUE(paw->processAtWaypoint(pose, 0));
   t1.join();
 
@@ -159,6 +159,6 @@ TEST(WaypointFollowerTest, PhotoAtWaypoint)
   node->set_parameter(rclcpp::Parameter("PAW.enabled", false));
   paw->initialize(node, std::string("PAW"));
 
-  // plugin is not enabled, should exit
+
   EXPECT_TRUE(paw->processAtWaypoint(pose, 0));
 }

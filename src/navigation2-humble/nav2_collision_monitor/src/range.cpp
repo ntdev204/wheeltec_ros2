@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung R&D Institute Russia
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_collision_monitor/range.hpp"
 
@@ -56,7 +56,7 @@ void Range::configure()
 
   getParameters(source_topic);
 
-  rclcpp::QoS range_qos = rclcpp::SensorDataQoS();  // set to default
+  rclcpp::QoS range_qos = rclcpp::SensorDataQoS();
   data_sub_ = node->create_subscription<sensor_msgs::msg::Range>(
     source_topic, range_qos,
     std::bind(&Range::dataCallback, this, std::placeholders::_1));
@@ -66,8 +66,8 @@ void Range::getData(
   const rclcpp::Time & curr_time,
   std::vector<Point> & data) const
 {
-  // Ignore data from the source if it is not being published yet or
-  // not being published for a long time
+
+
   if (data_ == nullptr) {
     return;
   }
@@ -75,7 +75,7 @@ void Range::getData(
     return;
   }
 
-  // Ignore data, if its range is out of scope of range sensor abilities
+
   if (data_->range < data_->min_range || data_->range > data_->max_range) {
     RCLCPP_WARN(
       logger_,
@@ -84,42 +84,42 @@ void Range::getData(
     return;
   }
 
-  // Obtaining the transform to get data from source frame and time where it was received
-  // to the base frame and current time
+
+
   tf2::Transform tf_transform;
   if (!getTransform(data_->header.frame_id, data_->header.stamp, curr_time, tf_transform)) {
     return;
   }
 
-  // Calculate poses and refill data array
+
   float angle;
   for (
     angle = -data_->field_of_view / 2;
     angle < data_->field_of_view / 2;
     angle += obstacles_angle_)
   {
-    // Transform point coordinates from source frame -> to base frame
+
     tf2::Vector3 p_v3_s(
       data_->range * std::cos(angle),
       data_->range * std::sin(angle),
       0.0);
     tf2::Vector3 p_v3_b = tf_transform * p_v3_s;
 
-    // Refill data array
+
     data.push_back({p_v3_b.x(), p_v3_b.y()});
   }
 
-  // Make sure that last (field_of_view / 2) point will be in the data array
+
   angle = data_->field_of_view / 2;
 
-  // Transform point coordinates from source frame -> to base frame
+
   tf2::Vector3 p_v3_s(
     data_->range * std::cos(angle),
     data_->range * std::sin(angle),
     0.0);
   tf2::Vector3 p_v3_b = tf_transform * p_v3_s;
 
-  // Refill data array
+
   data.push_back({p_v3_b.x(), p_v3_b.y()});
 }
 
@@ -142,4 +142,4 @@ void Range::dataCallback(sensor_msgs::msg::Range::ConstSharedPtr msg)
   data_ = msg;
 }
 
-}  // namespace nav2_collision_monitor
+}

@@ -1,17 +1,17 @@
-// Copyright (c) 2018 Intel Corporation
-// Copyright (c) 2021 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 #include <memory>
@@ -64,9 +64,9 @@ public:
 
     config_ = new BT::NodeConfiguration();
 
-    // Create the blackboard that will be shared by all of the nodes in the tree
+
     config_->blackboard = BT::Blackboard::create();
-    // Put items on the blackboard
+
     config_->blackboard->set<rclcpp::Node::SharedPtr>(
       "node",
       node_);
@@ -122,7 +122,7 @@ std::shared_ptr<BT::Tree> ComputePathThroughPosesActionTestFixture::tree_ = null
 
 TEST_F(ComputePathThroughPosesActionTestFixture, test_tick)
 {
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -133,36 +133,36 @@ TEST_F(ComputePathThroughPosesActionTestFixture, test_tick)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // create new goal and set it on blackboard
+
   std::vector<geometry_msgs::msg::PoseStamped> goals;
   goals.resize(1);
   goals[0].pose.position.x = 1.0;
   config_->blackboard->set("goals", goals);
 
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS) {
     tree_->rootNode()->executeTick();
   }
 
-  // the goal should have reached our server
+
   EXPECT_EQ(tree_->rootNode()->status(), BT::NodeStatus::SUCCESS);
   EXPECT_EQ(tree_->rootNode()->getInput<std::string>("planner_id"), std::string("GridBased"));
   EXPECT_EQ(action_server_->getCurrentGoal()->goals[0].pose.position.x, 1.0);
   EXPECT_FALSE(action_server_->getCurrentGoal()->use_start);
   EXPECT_EQ(action_server_->getCurrentGoal()->planner_id, std::string("GridBased"));
 
-  // check if returned path is correct
+
   nav_msgs::msg::Path path;
   config_->blackboard->get<nav_msgs::msg::Path>("path", path);
   EXPECT_EQ(path.poses.size(), 2u);
   EXPECT_EQ(path.poses[0].pose.position.x, 0.0);
   EXPECT_EQ(path.poses[1].pose.position.x, 1.0);
 
-  // halt node so another goal can be sent
+
   tree_->rootNode()->halt();
   EXPECT_EQ(tree_->rootNode()->status(), BT::NodeStatus::IDLE);
 
-  // set new goal
+
   goals[0].pose.position.x = -2.5;
   config_->blackboard->set("goals", goals);
 
@@ -181,7 +181,7 @@ TEST_F(ComputePathThroughPosesActionTestFixture, test_tick)
 
 TEST_F(ComputePathThroughPosesActionTestFixture, test_tick_use_start)
 {
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -192,24 +192,24 @@ TEST_F(ComputePathThroughPosesActionTestFixture, test_tick_use_start)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // create new start and set it on blackboard
+
   geometry_msgs::msg::PoseStamped start;
   start.header.stamp = node_->now();
   start.pose.position.x = 2.0;
   config_->blackboard->set("start", start);
 
-  // create new goal and set it on blackboard
+
   std::vector<geometry_msgs::msg::PoseStamped> goals;
   goals.resize(1);
   goals[0].pose.position.x = 1.0;
   config_->blackboard->set("goals", goals);
 
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS) {
     tree_->rootNode()->executeTick();
   }
 
-  // the goal should have reached our server
+
   EXPECT_EQ(tree_->rootNode()->status(), BT::NodeStatus::SUCCESS);
   EXPECT_EQ(tree_->rootNode()->getInput<std::string>("planner_id"), std::string("GridBased"));
   EXPECT_EQ(action_server_->getCurrentGoal()->goals[0].pose.position.x, 1.0);
@@ -217,18 +217,18 @@ TEST_F(ComputePathThroughPosesActionTestFixture, test_tick_use_start)
   EXPECT_TRUE(action_server_->getCurrentGoal()->use_start);
   EXPECT_EQ(action_server_->getCurrentGoal()->planner_id, std::string("GridBased"));
 
-  // check if returned path is correct
+
   nav_msgs::msg::Path path;
   config_->blackboard->get<nav_msgs::msg::Path>("path", path);
   EXPECT_EQ(path.poses.size(), 2u);
   EXPECT_EQ(path.poses[0].pose.position.x, 2.0);
   EXPECT_EQ(path.poses[1].pose.position.x, 1.0);
 
-  // halt node so another goal can be sent
+
   tree_->rootNode()->halt();
   EXPECT_EQ(tree_->rootNode()->status(), BT::NodeStatus::IDLE);
 
-  // set new goal and new start
+
   goals[0].pose.position.x = -2.5;
   start.pose.position.x = -1.5;
   config_->blackboard->set("goals", goals);
@@ -251,10 +251,10 @@ int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
 
-  // initialize ROS
+
   rclcpp::init(argc, argv);
 
-  // initialize action server and spin on new thread
+
   ComputePathThroughPosesActionTestFixture::action_server_ =
     std::make_shared<ComputePathThroughPosesActionServer>();
 
@@ -264,7 +264,7 @@ int main(int argc, char ** argv)
 
   int all_successful = RUN_ALL_TESTS();
 
-  // shutdown ROS
+
   rclcpp::shutdown();
   server_thread.join();
 

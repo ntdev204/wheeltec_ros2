@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef NAV2_BEHAVIOR_TREE__ROS_TOPIC_LOGGER_HPP_
 #define NAV2_BEHAVIOR_TREE__ROS_TOPIC_LOGGER_HPP_
@@ -28,17 +28,13 @@
 namespace nav2_behavior_tree
 {
 
-/**
- * @brief A class to publish BT logs on BT status change
- */
+
+
 class RosTopicLogger : public BT::StatusChangeLogger
 {
 public:
-  /**
-   * @brief A constructor for nav2_behavior_tree::RosTopicLogger
-   * @param ros_node Weak pointer to parent rclcpp::Node
-   * @param tree BT to monitor
-   */
+  
+
   RosTopicLogger(const rclcpp::Node::WeakPtr & ros_node, const BT::Tree & tree)
   : StatusChangeLogger(tree.rootNode())
   {
@@ -50,13 +46,8 @@ public:
       rclcpp::QoS(10));
   }
 
-  /**
-   * @brief Callback function which is called each time BT changes status
-   * @param timestamp Timestamp of BT status change
-   * @param node Node that changed status
-   * @param prev_status Previous status of the node
-   * @param status Current status of the node
-   */
+  
+
   void callback(
     BT::Duration timestamp,
     const BT::TreeNode & node,
@@ -65,8 +56,8 @@ public:
   {
     nav2_msgs::msg::BehaviorTreeStatusChange event;
 
-    // BT timestamps are a duration since the epoch. Need to convert to a time_point
-    // before converting to a msg.
+
+
     event.timestamp = tf2_ros::toMsg(tf2::TimePoint(timestamp));
     event.node_name = node.name();
     event.previous_status = toStr(prev_status, false);
@@ -81,9 +72,8 @@ public:
       toStr(status, true).c_str() );
   }
 
-  /**
-   * @brief Clear log buffer if any
-   */
+  
+
   void flush() override
   {
     if (!event_log_.empty()) {
@@ -102,6 +92,6 @@ protected:
   std::vector<nav2_msgs::msg::BehaviorTreeStatusChange> event_log_;
 };
 
-}   // namespace nav2_behavior_tree
+}
 
-#endif   // NAV2_BEHAVIOR_TREE__ROS_TOPIC_LOGGER_HPP_
+#endif

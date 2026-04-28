@@ -1,17 +1,17 @@
-// Copyright (c) 2018 Intel Corporation
-// Copyright (c) 2020 Sarthak Mittal
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <string>
 #include <memory>
@@ -59,8 +59,8 @@ SpeedController::SpeedController(
 inline BT::NodeStatus SpeedController::tick()
 {
   if (status() == BT::NodeStatus::IDLE) {
-    // Reset since we're starting a new iteration of
-    // the speed controller (moving from IDLE to RUNNING)
+
+
     config().blackboard->get<std::vector<geometry_msgs::msg::PoseStamped>>("goals", goals_);
     config().blackboard->get<geometry_msgs::msg::PoseStamped>("goal", goal_);
     period_ = 1.0 / max_rate_;
@@ -74,7 +74,7 @@ inline BT::NodeStatus SpeedController::tick()
   config().blackboard->get<geometry_msgs::msg::PoseStamped>("goal", current_goal);
 
   if (goal_ != current_goal || goals_ != current_goals) {
-    // Reset state and set period to max since we have a new goal
+
     period_ = 1.0 / max_rate_;
     start_ = node_->now();
     first_tick_ = true;
@@ -86,15 +86,15 @@ inline BT::NodeStatus SpeedController::tick()
 
   auto elapsed = node_->now() - start_;
 
-  // The child gets ticked the first time through and any time the period has
-  // expired. In addition, once the child begins to run, it is ticked each time
-  // 'til completion
+
+
+
   if (first_tick_ || (child_node_->status() == BT::NodeStatus::RUNNING) ||
     elapsed.seconds() >= period_)
   {
     first_tick_ = false;
 
-    // update period if the last period is exceeded
+
     if (elapsed.seconds() >= period_) {
       updatePeriod();
       start_ = node_->now();
@@ -118,7 +118,7 @@ inline BT::NodeStatus SpeedController::tick()
   return status();
 }
 
-}  // namespace nav2_behavior_tree
+}
 
 #include "behaviortree_cpp_v3/bt_factory.h"
 BT_REGISTER_NODES(factory)

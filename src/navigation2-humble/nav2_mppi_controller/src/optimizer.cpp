@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_mppi_controller/optimizer.hpp"
 
@@ -28,7 +28,7 @@
 namespace mppi
 {
 
-using namespace xt::placeholders;  // NOLINT
+using namespace xt::placeholders;
 using xt::evaluation_strategy::immediate;
 
 void Optimizer::initialize(
@@ -196,7 +196,7 @@ void Optimizer::prepare(
 
 void Optimizer::shiftControlSequence()
 {
-  using namespace xt::placeholders;  // NOLINT
+  using namespace xt::placeholders;
   control_sequence_.vx = xt::roll(control_sequence_.vx, -1);
   control_sequence_.wz = xt::roll(control_sequence_.wz, -1);
 
@@ -425,14 +425,14 @@ void Optimizer::setSpeedLimit(double speed_limit, bool percentage)
     s.constraints.wz = s.base_constraints.wz;
   } else {
     if (percentage) {
-      // Speed limit is expressed in % from maximum speed of robot
+
       double ratio = speed_limit / 100.0;
       s.constraints.vx_max = s.base_constraints.vx_max * ratio;
       s.constraints.vx_min = s.base_constraints.vx_min * ratio;
       s.constraints.vy = s.base_constraints.vy * ratio;
       s.constraints.wz = s.base_constraints.wz * ratio;
     } else {
-      // Speed limit is expressed in absolute value
+
       double ratio = speed_limit / s.base_constraints.vx_max;
       s.constraints.vx_max = s.base_constraints.vx_max * ratio;
       s.constraints.vx_min = s.base_constraints.vx_min * ratio;
@@ -447,4 +447,4 @@ models::Trajectories & Optimizer::getGeneratedTrajectories()
   return generated_trajectories_;
 }
 
-}  // namespace mppi
+}

@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef NAV2_RVIZ_PLUGINS__NAV2_PANEL_HPP_
 #define NAV2_RVIZ_PLUGINS__NAV2_PANEL_HPP_
@@ -42,7 +42,7 @@ namespace nav2_rviz_plugins
 
 class InitialThread;
 
-/// Panel to interface to the nav2 stack
+
 class Nav2Panel : public rviz_common::Panel
 {
   Q_OBJECT
@@ -53,7 +53,7 @@ public:
 
   void onInitialize() override;
 
-  /// Load and save configuration data
+
   void load(const rviz_common::Config & config) override;
   void save(rviz_common::Config config) const override;
 
@@ -76,7 +76,7 @@ private:
 
   int unique_id {0};
 
-  // Call to send NavigateToPose action request for goal poses
+
   void startWaypointFollowing(std::vector<geometry_msgs::msg::PoseStamped> poses);
   void startNavigation(geometry_msgs::msg::PoseStamped);
   void startNavThroughPoses(std::vector<geometry_msgs::msg::PoseStamped> poses);
@@ -87,23 +87,23 @@ private:
   using NavThroughPosesGoalHandle =
     rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateThroughPoses>;
 
-  // The (non-spinning) client node used to invoke the action client
+
   rclcpp::Node::SharedPtr client_node_;
 
-  // Timeout value when waiting for action servers to respnd
+
   std::chrono::milliseconds server_timeout_;
 
-  // A timer used to check on the completion status of the action
+
   QBasicTimer timer_;
 
-  // The NavigateToPose action client
+
   rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr navigation_action_client_;
   rclcpp_action::Client<nav2_msgs::action::FollowWaypoints>::SharedPtr
     waypoint_follower_action_client_;
   rclcpp_action::Client<nav2_msgs::action::NavigateThroughPoses>::SharedPtr
     nav_through_poses_action_client_;
 
-  // Navigation action feedback subscribers
+
   rclcpp::Subscription<nav2_msgs::action::NavigateToPose::Impl::FeedbackMessage>::SharedPtr
     navigation_feedback_sub_;
   rclcpp::Subscription<nav2_msgs::action::NavigateThroughPoses::Impl::FeedbackMessage>::SharedPtr
@@ -113,7 +113,7 @@ private:
   rclcpp::Subscription<nav2_msgs::action::NavigateThroughPoses::Impl::GoalStatusMessage>::SharedPtr
     nav_through_poses_goal_status_sub_;
 
-  // Goal-related state
+
   nav2_msgs::action::NavigateToPose::Goal navigation_goal_;
   nav2_msgs::action::FollowWaypoints::Goal waypoint_follower_goal_;
   nav2_msgs::action::NavigateThroughPoses::Goal nav_through_poses_goal_;
@@ -121,7 +121,7 @@ private:
   WaypointFollowerGoalHandle::SharedPtr waypoint_follower_goal_handle_;
   NavThroughPosesGoalHandle::SharedPtr nav_through_poses_goal_handle_;
 
-  // The client used to control the nav2 stack
+
   std::shared_ptr<nav2_lifecycle_manager::LifecycleManagerClient> client_nav_;
   std::shared_ptr<nav2_lifecycle_manager::LifecycleManagerClient> client_loc_;
 
@@ -143,33 +143,33 @@ private:
   QState * reset_{nullptr};
   QState * paused_{nullptr};
   QState * resumed_{nullptr};
-  // The following states are added to allow for the state of the button to only expose reset
-  // while the NavigateToPoses action is not active. While running, the user will be allowed to
-  // cancel the action. The ROSActionTransition allows for the state of the action to be detected
-  // and the button state to change automatically.
+
+
+
+
   QState * running_{nullptr};
   QState * canceled_{nullptr};
-  // The following states are added to allow to collect several poses to perform a waypoint-mode
-  // navigation or navigate through poses mode.
+
+
   QState * accumulating_{nullptr};
   QState * accumulated_wp_{nullptr};
   QState * accumulated_nav_through_poses_{nullptr};
 
   std::vector<geometry_msgs::msg::PoseStamped> acummulated_poses_;
 
-  // Publish the visual markers with the waypoints
+
   void updateWpNavigationMarkers();
 
-  // Create unique id numbers for markers
+
   int getUniqueId();
 
   void resetUniqueId();
 
-  // create label string from goal status msg
+
   static inline QString getGoalStatusLabel(
     int8_t status = action_msgs::msg::GoalStatus::STATUS_UNKNOWN);
 
-  // create label string from feedback msg
+
   static inline QString getNavToPoseFeedbackLabel(
     nav2_msgs::action::NavigateToPose::Feedback msg =
     nav2_msgs::action::NavigateToPose::Feedback());
@@ -179,10 +179,10 @@ private:
   template<typename T>
   static inline std::string toLabel(T & msg);
 
-  // round off double to the specified precision and convert to string
+
   static inline std::string toString(double val, int precision = 0);
 
-  // Waypoint navigation visual markers publisher
+
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr wp_navigation_markers_pub_;
 };
 
@@ -210,7 +210,7 @@ public:
       }
     }
 
-    // try to communicate twice, might not actually be up if in SLAM mode
+
     bool tried_loc_bringup_once = false;
     while (status_loc == SystemStatus::TIMEOUT) {
       status_loc = client_loc_->is_active(std::chrono::seconds(1));
@@ -244,6 +244,6 @@ private:
   std::shared_ptr<nav2_lifecycle_manager::LifecycleManagerClient> client_loc_;
 };
 
-}  // namespace nav2_rviz_plugins
+}
 
-#endif  //  NAV2_RVIZ_PLUGINS__NAV2_PANEL_HPP_
+#endif

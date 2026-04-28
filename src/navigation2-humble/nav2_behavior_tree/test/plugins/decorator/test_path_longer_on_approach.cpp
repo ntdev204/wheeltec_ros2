@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Neobotix GmbH
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 #include <chrono>
@@ -26,8 +26,8 @@
 #include "../../test_dummy_tree_node.hpp"
 #include "nav2_behavior_tree/plugins/decorator/path_longer_on_approach.hpp"
 
-using namespace std::chrono;  // NOLINT
-using namespace std::chrono_literals;  // NOLINT
+using namespace std::chrono;
+using namespace std::chrono_literals;
 
 class PathLongerOnApproachTestFixture : public ::testing::Test
 {
@@ -39,9 +39,9 @@ public:
 
     config_ = new BT::NodeConfiguration();
 
-    // Create the blackboard that will be shared by all of the nodes in the tree
+
     config_->blackboard = BT::Blackboard::create();
-    // Put items on the blackboard
+
     config_->blackboard->set<rclcpp::Node::SharedPtr>(
       "node",
       node_);
@@ -85,8 +85,8 @@ std::shared_ptr<BT::Tree> PathLongerOnApproachTestFixture::tree_ = nullptr;
 
 TEST_F(PathLongerOnApproachTestFixture, test_tick)
 {
-  // Success test
-  // create tree
+
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -99,11 +99,11 @@ TEST_F(PathLongerOnApproachTestFixture, test_tick)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // set new path on blackboard
+
   nav_msgs::msg::Path new_path;
   new_path.poses.resize(10);
   for (unsigned int i = 0; i < new_path.poses.size(); i++) {
-    // Assuming distance between waypoints to be 1.5m
+
     new_path.poses[i].pose.position.x = 1.5 * i;
   }
   config_->blackboard->set<nav_msgs::msg::Path>("path", new_path);
@@ -111,8 +111,8 @@ TEST_F(PathLongerOnApproachTestFixture, test_tick)
   tree_->rootNode()->executeTick();
   EXPECT_EQ(tree_->rootNode()->status(), BT::NodeStatus::SUCCESS);
 
-  // Failure test
-  // create tree
+
+
   xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -125,20 +125,20 @@ TEST_F(PathLongerOnApproachTestFixture, test_tick)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // set old path on blackboard
+
   nav_msgs::msg::Path old_path;
   old_path.poses.resize(5);
   for (unsigned int i = 1; i <= old_path.poses.size(); i++) {
-    // Assuming distance between waypoints to be 3.0m
+
     old_path.poses[i - 1].pose.position.x = 3.0 * i;
   }
   config_->blackboard->set<nav_msgs::msg::Path>("path", old_path);
   tree_->rootNode()->executeTick();
 
-  // set new path on blackboard
+
   new_path.poses.resize(11);
   for (unsigned int i = 0; i <= new_path.poses.size(); i++) {
-    // Assuming distance between waypoints to be 1.5m
+
     new_path.poses[i].pose.position.x = 1.5 * i;
   }
   config_->blackboard->set<nav_msgs::msg::Path>("path", new_path);
@@ -151,12 +151,12 @@ int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
 
-  // initialize ROS
+
   rclcpp::init(argc, argv);
 
   int all_successful = RUN_ALL_TESTS();
 
-  // shutdown ROS
+
   rclcpp::shutdown();
 
   return all_successful;

@@ -1,10 +1,5 @@
-/*
- *  RoboPeak Project
- *  HAL Layer - Socket Interface
- *  Copyright 2009 - 2013 RoboPeak Project
- *
- *  POXIS Implementation
- */
+
+
 
 
 #include "sdkcommon.h"
@@ -64,7 +59,7 @@ SocketAddress::SocketAddress(const char * addrString, int port, SocketAddress::a
     _platform_data = reinterpret_cast<void *>(new sockaddr_storage);
     memset(_platform_data, 0, sizeof(sockaddr_storage));
     
-    // default to ipv4 in case the following operation fails
+
     reinterpret_cast<sockaddr_storage *>(_platform_data)->ss_family = AF_INET;
 
     setAddressFromString(addrString, type);
@@ -199,7 +194,7 @@ size_t SocketAddress::LoopUpHostName(const char * hostname, const char * sevicen
     addresspool.clear();
 
     if (ans != 0) {
-        // hostname loopup failed
+
         return 0;
     }
 
@@ -313,7 +308,7 @@ void SocketAddress::setAnyAddress(SocketAddress::address_type_t type)
 
 
 
-///--------------------------------
+
 
 
 namespace rp { namespace arch { namespace net{ 
@@ -360,7 +355,7 @@ public:
 
     virtual u_result getLocalAddress(SocketAddress & localaddr)
     {
-        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>( const_cast<void *>(localaddr.getPlatformData())); //donnot do this at home...
+        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>( const_cast<void *>(localaddr.getPlatformData()));
         assert(addr);
 
         size_t actualsize =  sizeof(sockaddr_storage);
@@ -404,7 +399,7 @@ public:
                 return RESULT_OPERATION_NOT_SUPPORT;
 #if 0
             case EINPROGRESS:
-                return RESULT_OK; //treat async connection as good status
+                return RESULT_OK;
 #endif
             case ETIMEDOUT:
                 return RESULT_OPERATION_TIMEOUT;
@@ -506,7 +501,7 @@ public:
 
     virtual u_result getPeerAddress(SocketAddress & peerAddr)
     {
-        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>(const_cast<void *>(peerAddr.getPlatformData())); //donnot do this at home...
+        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>(const_cast<void *>(peerAddr.getPlatformData()));
         assert(addr);
         size_t actualsize =  sizeof(sockaddr_storage);
         int ans = ::getpeername(_socket_fd, addr, (socklen_t*)&actualsize);
@@ -563,13 +558,13 @@ public:
 
         switch (ans) {
             case 1:
-                // fired
+
                 return RESULT_OK;
             case 0:
-                // timeout
+
                 return RESULT_OPERATION_TIMEOUT;
             default:
-                delay(0); //relax cpu
+                delay(0);
                 return RESULT_OPERATION_FAIL;
         }
     }
@@ -587,13 +582,13 @@ public:
 
         switch (ans) {
             case 1:
-                // fired
+
                 return RESULT_OK;
             case 0:
-                // timeout
+
                 return RESULT_OPERATION_TIMEOUT;
             default:
-                delay(0); //relax cpu
+                delay(0);
                 return RESULT_OPERATION_FAIL;
         }
     }
@@ -643,7 +638,7 @@ public:
 
     virtual u_result getLocalAddress(SocketAddress & localaddr)
     {
-        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>(const_cast<void *>((localaddr.getPlatformData()))); //donnot do this at home...
+        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>(const_cast<void *>((localaddr.getPlatformData())));
         assert(addr);
 
         size_t actualsize =  sizeof(sockaddr_storage);
@@ -689,13 +684,13 @@ public:
 
         switch (ans) {
             case 1:
-                // fired
+
                 return RESULT_OK;
             case 0:
-                // timeout
+
                 return RESULT_OPERATION_TIMEOUT;
             default:
-                delay(0); //relax cpu
+                delay(0);
                 return RESULT_OPERATION_FAIL;
         }
     }
@@ -713,13 +708,13 @@ public:
 
         switch (ans) {
             case 1:
-                // fired
+
                 return RESULT_OK;
             case 0:
-                // timeout
+
                 return RESULT_OPERATION_TIMEOUT;
             default:
-                delay(0); //relax cpu
+                delay(0);
                 return RESULT_OPERATION_FAIL;
         }
     }
@@ -855,7 +850,7 @@ static inline int _socketHalFamilyToOSFamily(SocketBase::socket_family_t family)
             return AF_PACKET;
         default:
             assert(!"should not reach here");
-            return AF_INET; // force treating as IPv4 in release mode
+            return AF_INET;
     }
 
 }

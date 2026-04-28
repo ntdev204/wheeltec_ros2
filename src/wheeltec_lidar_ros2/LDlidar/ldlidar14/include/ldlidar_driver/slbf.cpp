@@ -1,35 +1,11 @@
-/**
- * @file slbf.cpp
- * @author LDRobot (marketing1@ldrobot.com)
- * @brief  LiDAR near-range filtering algorithm
- *         This code is only applicable to LDROBOT LiDAR LD00 LD03 LD08 LD14
- * products sold by Shenzhen LDROBOT Co., LTD
- * @version 0.1
- * @date 2021-11-09
- *
- * @copyright Copyright (c) 2021  SHENZHEN LDROBOT CO., LTD. All rights
- * reserved.
- * Licensed under the MIT License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License in the file LICENSE
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
+
 #include "slbf.h"
 
 namespace ldlidar {
 
-/*!
-        \brief      Set current speed
-        \param[in]
-          \arg  speed           Current lidar speed
-          \arg  strict_policy   The flag to enable very strict filtering
-        \param[out] none
-        \retval     none
-*/
+
+
 Slbf::Slbf(int speed, bool strict_policy) {
   curr_speed_ = speed;
   enable_strict_policy_ = strict_policy;
@@ -37,13 +13,8 @@ Slbf::Slbf(int speed, bool strict_policy) {
 
 Slbf::~Slbf() {}
 
-/*!
-        \brief        Filter within 1m to filter out unreasonable data points
-        \param[in]
-          \arg data   A circle of lidar data packed
-        \param[out]   none
-        \retval       Standard data
-*/
+
+
 Points2D Slbf::NearFilter(const Points2D &data) const {
   Points2D normal, pending, item;
   std::vector<Points2D> group;
@@ -157,7 +128,7 @@ Points2D Slbf::NearFilter(const Points2D &data) const {
         }
         normal.insert(normal.end(), n.begin(), n.end());
         continue;
-      } else if (dis_avg > 300 /*&& confidence_avg < kConfidenceHigh */ && n.size() < 2) {
+      } else if (dis_avg > 300  && n.size() < 2) {
         for (auto& point : n) {
           point.distance = 0;
           point.intensity = 0;
@@ -238,16 +209,10 @@ Points2D Slbf::NearFilter(const Points2D &data) const {
   return normal;
 }
 
-/*!
-        \brief           Enable strong filtering
-        \param[in]
-          \arg  enable : true ，false
-        \param[out] none
-        \retval
-*/
+
+
 void Slbf::EnableStrictPolicy(bool enable) { enable_strict_policy_ = enable; }
 
-} // namespace ldlidar
+}
 
-/********************* (C) COPYRIGHT SHENZHEN LDROBOT CO., LTD *******END OF
- * FILE ********/
+

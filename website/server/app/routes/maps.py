@@ -13,11 +13,9 @@ MAP_PATH_PGM = os.path.join(MAP_BASE, 'WHEELTEC.pgm')
 MAP_PATH_YAML = os.path.join(MAP_BASE, 'WHEELTEC.yaml')
 LIVE_MAP_PATH = os.path.join(MAP_BASE, 'live_map.png')
 
-# Shared cache - PNG bytes from ZMQ background listener
 live_map_cache = {"png": None}
 
 def update_live_map_png(png_bytes: bytes):
-    """Called from main.py background task when a map PNG arrives from ZMQ."""
     live_map_cache["png"] = png_bytes
     try:
         with open(LIVE_MAP_PATH, 'wb') as f:
@@ -51,7 +49,6 @@ async def get_live_map_image():
 
 @router.post("/live/trigger")
 async def trigger_map_resend():
-    """Gửi lệnh cho ROS2 node gửi lại map PNG qua ZMQ."""
     from app.zmq_client import zmq_client
     try:
         result = await zmq_client.send_command("resend_map", {})
@@ -61,7 +58,6 @@ async def trigger_map_resend():
 
 @router.get("/live/info")
 async def get_live_map_info():
-    """Fallback endpoint for frontend to get map dimensions if telemetry map_info is missing."""
     if not os.path.exists(MAP_PATH_YAML) or not os.path.exists(MAP_PATH_PGM):
         return Response(status_code=404, content="Map files not found")
         

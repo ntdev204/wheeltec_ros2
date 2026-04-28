@@ -1,25 +1,25 @@
-// Copyright (c) 2018 Intel Corporation
-// Copyright (c) 2018 Simbe Robotics
-// Copyright (c) 2019 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
-// Navigation Strategy based on:
-// Brock, O. and Oussama K. (1999). High-Speed Navigation Using
-// the Global Dynamic Window Approach. IEEE.
-// https://cs.stanford.edu/group/manips/publications/pdfs/Brock_1999_ICRA.pdf
 
-// #define BENCHMARK_TESTING
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_navfn_planner/navfn_planner.hpp"
 
@@ -39,7 +39,7 @@
 #include "nav2_costmap_2d/cost_values.hpp"
 
 using namespace std::chrono_literals;
-using namespace std::chrono;  // NOLINT
+using namespace std::chrono;
 using nav2_util::declare_parameter_if_not_declared;
 using rcl_interfaces::msg::ParameterType;
 using std::placeholders::_1;
@@ -79,8 +79,8 @@ NavfnPlanner::configure(
     logger_, "Configuring plugin %s of type NavfnPlanner",
     name_.c_str());
 
-  // Initialize parameters
-  // Declare this plugin's parameters
+
+
   declare_parameter_if_not_declared(node, name + ".tolerance", rclcpp::ParameterValue(0.5));
   node->get_parameter(name + ".tolerance", tolerance_);
   declare_parameter_if_not_declared(node, name + ".use_astar", rclcpp::ParameterValue(false));
@@ -91,7 +91,7 @@ NavfnPlanner::configure(
     node, name + ".use_final_approach_orientation", rclcpp::ParameterValue(false));
   node->get_parameter(name + ".use_final_approach_orientation", use_final_approach_orientation_);
 
-  // Create a planner based on the new costmap size
+
   planner_ = std::make_unique<NavFn>(
     costmap_->getSizeInCellsX(),
     costmap_->getSizeInCellsY());
@@ -103,7 +103,7 @@ NavfnPlanner::activate()
   RCLCPP_INFO(
     logger_, "Activating plugin %s of type NavfnPlanner",
     name_.c_str());
-  // Add callback for dynamic parameters
+
   auto node = node_.lock();
   dyn_params_handler_ = node->add_on_set_parameters_callback(
     std::bind(&NavfnPlanner::dynamicParametersCallback, this, _1));
@@ -135,7 +135,7 @@ nav_msgs::msg::Path NavfnPlanner::createPlan(
   steady_clock::time_point a = steady_clock::now();
 #endif
 
-  // Update planner based on the new costmap size
+
   if (isPlannerOutOfDate()) {
     planner_->setNavArr(
       costmap_->getSizeInCellsX(),
@@ -144,7 +144,7 @@ nav_msgs::msg::Path NavfnPlanner::createPlan(
 
   nav_msgs::msg::Path path;
 
-  // Corner case of the start(x,y) = goal(x,y)
+
   if (start.pose.position.x == goal.pose.position.x &&
     start.pose.position.y == goal.pose.position.y)
   {
@@ -161,9 +161,9 @@ nav_msgs::msg::Path NavfnPlanner::createPlan(
     pose.pose.position.z = 0.0;
 
     pose.pose = start.pose;
-    // if we have a different start and goal orientation, set the unique path pose to the goal
-    // orientation, unless use_final_approach_orientation=true where we need it to be the start
-    // orientation to avoid movement from the local planner
+
+
+
     if (start.pose.orientation != goal.pose.orientation && !use_final_approach_orientation_) {
       pose.pose.orientation = goal.pose.orientation;
     }
@@ -205,13 +205,13 @@ NavfnPlanner::makePlan(
   const geometry_msgs::msg::Pose & goal, double tolerance,
   nav_msgs::msg::Path & plan)
 {
-  // clear the plan, just in case
+
   plan.poses.clear();
 
   plan.header.stamp = clock_->now();
   plan.header.frame_id = global_frame_;
 
-  // TODO(orduno): add checks for start and goal reference frame -- should be in global frame
+
 
   double wx = start.position.x;
   double wy = start.position.y;
@@ -230,12 +230,12 @@ NavfnPlanner::makePlan(
     return false;
   }
 
-  // clear the starting cell within the costmap because we know it can't be an obstacle
+
   clearRobotCell(mx, my);
 
   std::unique_lock<nav2_costmap_2d::Costmap2D::mutex_t> lock(*(costmap_->getMutex()));
 
-  // make sure to resize the underlying array that Navfn uses
+
   planner_->setNavArr(
     costmap_->getSizeInCellsX(),
     costmap_->getSizeInCellsY());
@@ -263,8 +263,8 @@ NavfnPlanner::makePlan(
   map_goal[0] = mx;
   map_goal[1] = my;
 
-  // TODO(orduno): Explain why we are providing 'map_goal' to setStart().
-  //               Same for setGoal, seems reversed. Computing backwards?
+
+
 
   planner_->setStart(map_goal);
   planner_->setGoal(map_start);
@@ -282,12 +282,12 @@ NavfnPlanner::makePlan(
   p = goal;
   double potential = getPointPotential(p.position);
   if (potential < POT_HIGH) {
-    // Goal is reachable by itself
+
     best_pose = p;
     found_legal = true;
   } else {
-    // Goal is not reachable. Trying to find nearest to the goal
-    // reachable point within its tolerance region
+
+
     double best_sdist = std::numeric_limits<double>::max();
 
     p.position.y = goal.position.y - tolerance;
@@ -308,14 +308,14 @@ NavfnPlanner::makePlan(
   }
 
   if (found_legal) {
-    // extract the plan
+
     if (getPlanFromPotential(best_pose, plan)) {
       smoothApproachToGoal(best_pose, plan);
 
-      // If use_final_approach_orientation=true, interpolate the last pose orientation from the
-      // previous pose to set the orientation to the 'final approach' orientation of the robot so
-      // it does not rotate.
-      // And deal with corner case of plan of length 1
+
+
+
+
       if (use_final_approach_orientation_) {
         size_t plan_size = plan.poses.size();
         if (plan_size == 1) {
@@ -324,7 +324,7 @@ NavfnPlanner::makePlan(
           double dx, dy, theta;
           auto last_pose = plan.poses.back().pose.position;
           auto approach_pose = plan.poses[plan_size - 2].pose.position;
-          // Deal with the case of NavFn producing a path with two equal last poses
+
           if (std::abs(last_pose.x - approach_pose.x) < 0.0001 &&
             std::abs(last_pose.y - approach_pose.y) < 0.0001 && plan_size > 2)
           {
@@ -353,8 +353,8 @@ NavfnPlanner::smoothApproachToGoal(
   const geometry_msgs::msg::Pose & goal,
   nav_msgs::msg::Path & plan)
 {
-  // Replace the last pose of the computed path if it's actually further away
-  // to the second to last pose than the goal pose.
+
+
   if (plan.poses.size() >= 2) {
     auto second_to_last_pose = plan.poses.end()[-2];
     auto last_pose = plan.poses.back();
@@ -376,14 +376,14 @@ NavfnPlanner::getPlanFromPotential(
   const geometry_msgs::msg::Pose & goal,
   nav_msgs::msg::Path & plan)
 {
-  // clear the plan, just in case
+
   plan.poses.clear();
 
-  // Goal should be in global frame
+
   double wx = goal.position.x;
   double wy = goal.position.y;
 
-  // the potential has already been computed, so we won't update our copy of the costmap
+
   unsigned int mx, my;
   if (!worldToMap(wx, wy, mx, my)) {
     RCLCPP_WARN(
@@ -412,13 +412,13 @@ NavfnPlanner::getPlanFromPotential(
     logger_,
     "Path found, %d steps, %f cost\n", path_len, cost);
 
-  // extract the plan
+
   float * x = planner_->getPathX();
   float * y = planner_->getPathY();
   int len = planner_->getPathLen();
 
   for (int i = len - 1; i >= 0; --i) {
-    // convert the plan to world coordinates
+
     double world_x, world_y;
     mapToWorld(x[i], y[i], world_x, world_y);
 
@@ -448,42 +448,42 @@ NavfnPlanner::getPointPotential(const geometry_msgs::msg::Point & world_point)
   return planner_->potarr[index];
 }
 
-// bool
-// NavfnPlanner::validPointPotential(const geometry_msgs::msg::Point & world_point)
-// {
-//   return validPointPotential(world_point, tolerance_);
-// }
 
-// bool
-// NavfnPlanner::validPointPotential(
-//   const geometry_msgs::msg::Point & world_point, double tolerance)
-// {
-//   const double resolution = costmap_->getResolution();
 
-//   geometry_msgs::msg::Point p = world_point;
-//   double potential = getPointPotential(p);
-//   if (potential < POT_HIGH) {
-//     // world_point is reachable by itself
-//     return true;
-//   } else {
-//     // world_point, is not reachable. Trying to find any
-//     // reachable point within its tolerance region
-//     p.y = world_point.y - tolerance;
-//     while (p.y <= world_point.y + tolerance) {
-//       p.x = world_point.x - tolerance;
-//       while (p.x <= world_point.x + tolerance) {
-//         potential = getPointPotential(p);
-//         if (potential < POT_HIGH) {
-//           return true;
-//         }
-//         p.x += resolution;
-//       }
-//       p.y += resolution;
-//     }
-//   }
 
-//   return false;
-// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 bool
 NavfnPlanner::worldToMap(double wx, double wy, unsigned int & mx, unsigned int & my)
@@ -519,8 +519,8 @@ NavfnPlanner::mapToWorld(double mx, double my, double & wx, double & wy)
 void
 NavfnPlanner::clearRobotCell(unsigned int mx, unsigned int my)
 {
-  // TODO(orduno): check usage of this function, might instead be a request to
-  //               world_model / map server
+
+
   costmap_->setCost(mx, my, nav2_costmap_2d::FREE_SPACE);
 }
 
@@ -550,7 +550,7 @@ NavfnPlanner::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameter
   return result;
 }
 
-}  // namespace nav2_navfn_planner
+}
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(nav2_navfn_planner::NavfnPlanner, nav2_core::GlobalPlanner)

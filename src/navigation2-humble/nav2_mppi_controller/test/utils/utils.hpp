@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #pragma once
 
@@ -29,7 +29,7 @@
 #include "models.hpp"
 #include "factory.hpp"
 
-using namespace std::chrono_literals;  // NOLINT
+using namespace std::chrono_literals;
 
 void waitSome(const std::chrono::nanoseconds & duration, auto & node)
 {
@@ -61,15 +61,13 @@ void sendTf(
 
     tf_broadcaster->sendTransform(t);
 
-    // Allow tf_buffer_ to be filled by listener
+
     waitSome(10ms, node);
   }
 }
 
-/**
- * Print costmap to stdout.
- * @param costmap map to be printed.
- */
+
+
 void printMap(const nav2_costmap_2d::Costmap2D & costmap)
 {
   for (unsigned int i = 0; i < costmap.getSizeInCellsY(); i++) {
@@ -80,12 +78,8 @@ void printMap(const nav2_costmap_2d::Costmap2D & costmap)
   }
 }
 
-/**
- * Print costmap with trajectory and goal point to stdout.
- * @param costmap map to be printed.
- * @param trajectory trajectory container (xt::tensor) to be printed.
- * @param goal_point goal point to be printed.
- */
+
+
 void printMapWithTrajectoryAndGoal(
   nav2_costmap_2d::Costmap2D & costmap, const auto & trajectory,
   const geometry_msgs::msg::PoseStamped & goal)
@@ -96,15 +90,15 @@ void printMapWithTrajectoryAndGoal(
   std::cout << "Costmap: \n trajectory = " << trajectory_cost << "\n goal = " << goal_cost
             << "\n obsctacle = 255 \n";
 
-  // create new costmap
+
   nav2_costmap_2d::Costmap2D costmap2d(
     costmap.getSizeInCellsX(), costmap.getSizeInCellsY(), costmap.getResolution(),
     costmap.getOriginX(), costmap.getOriginY(), costmap.getDefaultValue());
 
-  // copy obstacles from original costmap
+
   costmap2d = costmap;
 
-  // add trajectory on map
+
   unsigned int point_mx = 0;
   unsigned int point_my = 0;
   for (size_t i = 0; i < trajectory.shape()[0]; ++i) {
@@ -120,16 +114,8 @@ void printMapWithTrajectoryAndGoal(
   printMap(costmap2d);
 }
 
-/**
- * Add a square obstacle to the costmap.
- * @param costmap map to be modified.
- * @param upper_left_corner_x obstacle upper left corner X coord (on the
- * costmap).
- * @param upper_left_corner_y obstacle upper left corner Y coord (on the
- * costmap).
- * @param size obstacle side size.
- * @param cost obstacle value on costmap.
- */
+
+
 void addObstacle(
   nav2_costmap_2d::Costmap2D * costmap, unsigned int upper_left_corner_x,
   unsigned int upper_left_corner_y, unsigned int size, unsigned char cost)
@@ -150,7 +136,7 @@ void printInfo(
     ss << str << " ";
   }
 
-  std::cout <<  //
+  std::cout <<
     "\n\n--------------------OPTIMIZER OPTIONS-----------------------------\n" <<
     "Critics: " << ss.str() << "\n" \
     "Motion model: " << os.motion_model << "\n"
@@ -167,13 +153,8 @@ void addObstacle(nav2_costmap_2d::Costmap2D * costmap, TestObstaclesSettings s)
   addObstacle(costmap, s.center_cells_x, s.center_cells_y, s.obstacle_size, s.obstacle_cost);
 }
 
-/**
- * Check the trajectory for collisions with obstacles on the map.
- * @param trajectory trajectory container (xt::tensor) to be checked.
- * @param costmap costmap with obstacles
- * @return true - if the trajectory crosses an obstacle on the map, false - if
- * not
- */
+
+
 bool inCollision(const auto & trajectory, const nav2_costmap_2d::Costmap2D & costmap)
 {
   unsigned int point_mx = 0;
@@ -231,7 +212,7 @@ bool isGoalReached(
       }
       return false;
     };
-  // clang-format on
+
 
   for (size_t i = 0; i < trajectory.shape(0); ++i) {
     costmap.worldToMap(trajectory(i, 0), trajectory(i, 1), trajectory_j, trajectory_i);

@@ -1,33 +1,7 @@
-/*
- *  Slamtec LIDAR SDK
- *
- *  Copyright (c) 2020 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- */
- /*
-  * Redistribution and use in source and binary forms, with or without
-  * modification, are permitted provided that the following conditions are met:
-  *
-  * 1. Redistributions of source code must retain the above copyright notice,
-  *    this list of conditions and the following disclaimer.
-  *
-  * 2. Redistributions in binary form must reproduce the above copyright notice,
-  *    this list of conditions and the following disclaimer in the documentation
-  *    and/or other materials provided with the distribution.
-  *
-  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-  * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
-  * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-  * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-  * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
-  */
+
+
+ 
+
 
 #pragma once
 #include "sl_lidar_driver.h"
@@ -84,7 +58,7 @@ namespace sl {
 			sl_result ascendScanData(sl_lidar_response_measurement_node_t * nodebuffer, size_t count);
 			sl_result ascendScanData(sl_lidar_response_measurement_node_hq_t * nodebuffer, size_t count);
 			sl_result getScanDataWithIntervalHq(sl_lidar_response_measurement_node_hq_t * nodebuffer, size_t & count);
-			sl_result setMotorSpeed(sl_u16 speed = DEFAULT_MOTOR_PWM);//
+			sl_result setMotorSpeed(sl_u16 speed = DEFAULT_MOTOR_PWM);
 			sl_result negotiateSerialBaudRate(sl_u32 requiredBaudRate, sl_u32* baudRateDetected = NULL);
 	
 	protected:
@@ -97,9 +71,9 @@ namespace sl {
 			sl_result getMaxDistance(float &maxDistance, sl_u16 scanModeID, sl_u32 timeoutInMs = DEFAULT_TIMEOUT);
 			sl_result getScanModeAnsType(sl_u8 &ansType, sl_u16 scanModeID, sl_u32 timeoutInMs = DEFAULT_TIMEOUT);
 			sl_result getScanModeName(char* modeName, sl_u16 scanModeID, sl_u32 timeoutInMs = DEFAULT_TIMEOUT);
-			//DEPRECATED(sl_result getSampleDuration_uS(sl_lidar_response_sample_rate_t & rateInfo, sl_u32 timeout = DEFAULT_TIMEOUT));
-			//DEPRECATED (sl_result checkExpressScanSupported(bool & support, sl_u32 timeout = DEFAULT_TIMEOUT));
-			//DEPRECATED(sl_result getFrequency(bool inExpressMode, size_t count, float & frequency, bool & is4kmode));
+
+
+
 		private:
 			sl_result  _sendCommand(sl_u16 cmd, const void * payload = NULL, size_t payloadsize = 0 );
 			sl_result _waitResponseHeader(sl_lidar_ans_header_t * header, sl_u32 timeout = DEFAULT_TIMEOUT);

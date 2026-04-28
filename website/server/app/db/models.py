@@ -15,8 +15,6 @@ async def init_db():
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 is_active BOOLEAN DEFAULT 0
             )
-        """)
-        await db.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -26,8 +24,6 @@ async def init_db():
                 avg_voltage REAL,
                 emergency_stops INTEGER DEFAULT 0
             )
-        """)
-        await db.execute("""
             CREATE TABLE IF NOT EXISTS event_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 session_id INTEGER REFERENCES sessions(id),
@@ -38,13 +34,6 @@ async def init_db():
                 message TEXT NOT NULL,
                 metadata TEXT
             )
-        """)
-        # Create indexes for Logs
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_logs_category ON event_logs(category)")
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON event_logs(timestamp)")
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_logs_session ON event_logs(session_id)")
-        
-        await db.execute("""
             CREATE TABLE IF NOT EXISTS telemetry_snapshots (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 session_id INTEGER REFERENCES sessions(id),
@@ -55,8 +44,6 @@ async def init_db():
                 imu_ax REAL, imu_ay REAL, imu_az REAL,
                 charging BOOLEAN DEFAULT 0
             )
-        """)
-        await db.execute("""
             CREATE TABLE IF NOT EXISTS home_position (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 x REAL NOT NULL,
@@ -64,8 +51,6 @@ async def init_db():
                 yaw REAL DEFAULT 0,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
-        """)
-        await db.execute("""
             CREATE TABLE IF NOT EXISTS nav_paths (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 session_id INTEGER REFERENCES sessions(id),
@@ -77,10 +62,6 @@ async def init_db():
                 real_path TEXT,
                 status TEXT DEFAULT 'active'
             )
-        """)
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_nav_paths_session ON nav_paths(session_id)")
-
-        await db.execute("""
             CREATE TABLE IF NOT EXISTS patrol_routes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
@@ -90,10 +71,6 @@ async def init_db():
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
-        """)
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_patrol_routes_active ON patrol_routes(is_active)")
-
-        await db.execute("""
             CREATE TABLE IF NOT EXISTS patrol_schedules (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 route_id INTEGER REFERENCES patrol_routes(id),
@@ -107,9 +84,6 @@ async def init_db():
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
-        """)
-
-        await db.execute("""
             CREATE TABLE IF NOT EXISTS patrol_runs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 schedule_id INTEGER REFERENCES patrol_schedules(id),
@@ -128,9 +102,3 @@ async def init_db():
                 ended_at_home BOOLEAN DEFAULT 0,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
-        """)
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_patrol_runs_status ON patrol_runs(status)")
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_patrol_runs_started_at ON patrol_runs(started_at)")
-
-        await db.commit()
-

@@ -27,7 +27,7 @@ def generate_launch_description():
         output='screen',
         parameters=[twist_mux_cfg],
         remappings=[
-            ('cmd_vel_out', '/cmd_vel'),  # direct to robot base, no safety relay
+            ('cmd_vel_out', '/cmd_vel'),
         ],
     )
 

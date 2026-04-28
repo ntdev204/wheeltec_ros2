@@ -4,15 +4,12 @@ extern volatile sig_atomic_t flag;
 namespace lslidar_driver
 {
     static const size_t packet_size_input = 400;
-    ////////////////////////////////////////////////////////////////////////
-    // Input base class implementation
-    ////////////////////////////////////////////////////////////////////////
 
-    /** @brief constructor
-     *
-     *  @param private_nh ROS private handle for calling node.
-     *  @param port UDP port number.
-     */
+
+
+
+    
+
     Input::Input(rclcpp::Node *private_nh, uint16_t port) : private_nh_(private_nh), port_(port) {
         npkt_update_flag_ = false;
         cur_rpm_ = 0;
@@ -44,11 +41,8 @@ namespace lslidar_driver
                         devip_str_.c_str(),port);
     }
 
-    /** @brief constructor
-     *
-     *  @param private_nh ROS private handle for calling node.
-     *  @param port UDP port number
-     */
+    
+
     InputSocket::InputSocket(rclcpp::Node *private_nh, uint16_t port) : Input(private_nh, port) {
         sockfd_ = -1;
 
@@ -60,7 +54,7 @@ namespace lslidar_driver
         RCLCPP_INFO(private_nh_->get_logger(), "[driver][socket] Opening UDP socket: port %d", port);
         sockfd_ = socket(PF_INET, SOCK_DGRAM, 0);
         if (sockfd_ == -1) {
-            perror("socket");  // TODO: ROS_ERROR errno
+            perror("socket");
             return;
         }
 
@@ -70,14 +64,14 @@ namespace lslidar_driver
             return;
         }
 
-        sockaddr_in my_addr;                   // my address information
-        memset(&my_addr, 0, sizeof(my_addr));  // initialize to zeros
-        my_addr.sin_family = AF_INET;          // host byte order
-        my_addr.sin_port = htons(port);        // port in network byte order
-        my_addr.sin_addr.s_addr = INADDR_ANY;  // automatically fill in my IP
+        sockaddr_in my_addr;
+        memset(&my_addr, 0, sizeof(my_addr));
+        my_addr.sin_family = AF_INET;
+        my_addr.sin_port = htons(port);
+        my_addr.sin_addr.s_addr = INADDR_ANY;
 
         if (bind(sockfd_, (sockaddr * ) & my_addr, sizeof(sockaddr)) == -1) {
-            perror("bind");  // TODO: ROS_ERROR errno
+            perror("bind");
             return;
         }
 
@@ -99,7 +93,7 @@ namespace lslidar_driver
         }
     }
 
-    /** @brief destructor */
+    
     InputSocket::~InputSocket(void) {
         (void) close(sockfd_);
     }
@@ -107,7 +101,7 @@ namespace lslidar_driver
     void Input::UDP_difop()
     {
         sockaddr_in server_sai;
-        server_sai.sin_family = AF_INET; // IPV4 协议族
+        server_sai.sin_family = AF_INET;
         server_sai.sin_port = htons(UDP_PORT_NUMBER_DIFOP);
         server_sai.sin_addr.s_addr = inet_addr(devip_str_.c_str());
         for (int k = 0; k < 10; k++)
@@ -131,7 +125,7 @@ namespace lslidar_driver
     {
         int i = msg.data;
         sockaddr_in server_sai;
-        server_sai.sin_family = AF_INET; // IPV4 协议族
+        server_sai.sin_family = AF_INET;
         server_sai.sin_port = htons(UDP_PORT_NUMBER_DIFOP);
         server_sai.sin_addr.s_addr = inet_addr(devip_str_.c_str());
         int rtn = 0;
@@ -144,26 +138,26 @@ namespace lslidar_driver
             data[186] = 0xFA;
             data[187] = 0xFB;  
             if(lidar_name == "M10" || lidar_name == "M10_GPS" || lidar_name == "M10_P"){
-                if (i <= 1){				    //雷达启停
+                if (i <= 1){
                     data[184] = 0x01;
                     data[185] = char(i);
                 }
-                else if (i == 2){			    //雷达点云不滤波
+                else if (i == 2){
                     data[181] = 0x0A;
                     data[184] = 0x06;
                     data[185] = 0x01;
                 }
-                else if (i == 3){				//雷达点云正常滤波
+                else if (i == 3){
                     data[181] = 0x0B;
                     data[184] = 0x06;
                     data[185] = 0x01;
                 }
-                else if (i == 4){				//雷达近距离滤波
+                else if (i == 4){
                     data[181] = 0x0C;
                     data[184] = 0x06;
                     data[185] = 0x01;
                 }    
-                else if (i == 100){				//接收设备包
+                else if (i == 100){
                     data[184] = 0x08;
                     data[185] = 0x01;
                 }      
@@ -204,7 +198,7 @@ namespace lslidar_driver
                 data[184] = 0x01;
                 data[185] = char(i);
                 }
-                else if(i == 100) {				//接收设备包
+                else if(i == 100) {
                     data[184] = 0x08;
                     data[185] = 0x01;
                 }      
@@ -245,39 +239,39 @@ namespace lslidar_driver
         struct pollfd fds[1];
         fds[0].fd = sockfd_;
         fds[0].events = POLLIN;
-        static const int POLL_TIMEOUT = 2000; // one second (in msec)
+        static const int POLL_TIMEOUT = 2000;
 
         sockaddr_in sender_address{};
         socklen_t sender_address_len = sizeof(sender_address);
         while (flag == 1)
         {
-            // poll() until input available
+
             do {
                 int retval = poll(fds, 1, POLL_TIMEOUT);
-                if (retval < 0)  // poll() error?
+                if (retval < 0)
                 {
                     if (errno != EINTR)
                         RCLCPP_ERROR(private_nh_->get_logger(), "[driver][socket] poll() error: %s", strerror(errno));
                     return 0;
                 }
-                if (retval == 0) // poll() timeout?
+                if (retval == 0)
                 {
                     RCLCPP_WARN(private_nh_->get_logger(), "lslidar poll() timeout, port: %d",port_);
                     return 0;
                 }
-                if ((fds[0].revents & POLLERR) || (fds[0].revents & POLLHUP) || (fds[0].revents & POLLNVAL)) // device error?
+                if ((fds[0].revents & POLLERR) || (fds[0].revents & POLLHUP) || (fds[0].revents & POLLNVAL))
                 {
                     RCLCPP_ERROR(private_nh_->get_logger(),"poll() reports lslidar error");
                     return 0;
                 }
             } while ((fds[0].revents & POLLIN) == 0);
 
-            // Receive packets that should now be available from the
-            // socket using a blocking read.
+
+
             ssize_t nbytes = recvfrom(sockfd_, &packet->data[0], packet_size_input, 0,
                                       (sockaddr *)&sender_address, &sender_address_len);
-            //        ROS_DEBUG_STREAM("incomplete lslidar packet read: "
-            //                         << nbytes << " bytes");
+
+
             q = (int)nbytes;
             if (nbytes < 0)
             {
@@ -291,13 +285,13 @@ namespace lslidar_driver
             else if ((size_t)nbytes <= packet_size_input || (size_t)nbytes >= 50)
             {
 
-                // read successful,
-                // if packet is not from the lidar scanner we selected by IP,
-                // continue otherwise we are done
+
+
+
                 if (devip_str_ != "" && sender_address.sin_addr.s_addr != devip_.s_addr)
                     continue;
                 else
-                    break; // done
+                    break;
             }
             
         }
@@ -357,7 +351,7 @@ namespace lslidar_driver
             int res;
             if ((res = pcap_next_ex(pcap_, &header, &pkt_data)) >= 0)
             {
-                // skip packets not for the correct port and from the selected IP address
+
                 if (!devip_str_.empty() && (0 == pcap_offline_filter(&pcap_packet_filter_, header, pkt_data)))
                     continue;
 
@@ -395,4 +389,4 @@ namespace lslidar_driver
         return 0;
     }
 
-} // namespace
+}

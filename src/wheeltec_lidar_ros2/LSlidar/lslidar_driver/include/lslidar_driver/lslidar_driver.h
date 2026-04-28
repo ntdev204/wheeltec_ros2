@@ -1,19 +1,5 @@
-/*
- * This file is part of lslidar driver.
- *
- * The driver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * The driver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with the driver.  If not, see <http://www.gnu.org/licenses/>.
- */
+
+
 
 #ifndef LSLIDAR_DRIVER_H
 #define LSLIDAR_DRIVER_H
@@ -47,7 +33,7 @@ struct PointXYZIT {
     PCL_ADD_POINT4D;
     uint8_t intensity;
     double timestamp;
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // make sure our new allocators are aligned
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 } EIGEN_ALIGN16;
  
 typedef struct {
@@ -138,7 +124,7 @@ private:
     rclcpp::Time time_;
     std::vector<ScanPoint> scan_points_;
     std::vector<ScanPoint> scan_points_bak_;
-    // Diagnostics updater
+
     diagnostic_updater::Updater diagnostics;
     std::shared_ptr<diagnostic_updater::TopicDiagnostic> diag_topic;
     double diag_min_freq;
@@ -151,9 +137,9 @@ private:
 typedef PointXYZIT VPoint;
 typedef pcl::PointCloud<VPoint> VPointCloud;
 
-} // namespace lslidar_driver
+}
 POINT_CLOUD_REGISTER_POINT_STRUCT(lslidar_driver::PointXYZIT,
                                   (float, x, x)(float, y, y)(float, z, z)(
                                           std::uint8_t, intensity,
                                           intensity)(double, timestamp, timestamp))
-#endif // _LSLIDAR_DRIVER_H_
+#endif

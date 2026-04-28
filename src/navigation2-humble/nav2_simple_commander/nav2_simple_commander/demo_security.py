@@ -1,17 +1,3 @@
-#! /usr/bin/env python3
-# Copyright 2021 Samsung Research America
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 from copy import deepcopy
 
@@ -22,11 +8,6 @@ import rclpy
 from rclpy.duration import Duration
 
 
-"""
-Basic security route patrol demo. In this demonstration, the expectation
-is that there are security cameras mounted on the robots recording or being
-watched live by security staff.
-"""
 
 
 def main():
@@ -34,8 +15,6 @@ def main():
 
     navigator = BasicNavigator()
 
-    # Security route, probably read in from a file for a real application
-    # from either a map or drive and repeat.
     security_route = [
         [1.792, 2.144],
         [1.792, -5.44],
@@ -45,7 +24,6 @@ def main():
         [-3.665, 2.330],
         [-3.665, 9.283]]
 
-    # Set our demo's initial pose
     initial_pose = PoseStamped()
     initial_pose.header.frame_id = 'map'
     initial_pose.header.stamp = navigator.get_clock().now().to_msg()
@@ -55,12 +33,9 @@ def main():
     initial_pose.pose.orientation.w = 0.0
     navigator.setInitialPose(initial_pose)
 
-    # Wait for navigation to fully activate
     navigator.waitUntilNav2Active()
 
-    # Do security route until dead
     while rclpy.ok():
-        # Send our route
         route_poses = []
         pose = PoseStamped()
         pose.header.frame_id = 'map'
@@ -72,8 +47,6 @@ def main():
             route_poses.append(deepcopy(pose))
         navigator.goThroughPoses(route_poses)
 
-        # Do something during our route (e.x. AI detection on camera images for anomalies)
-        # Simply print ETA for the demonstation
         i = 0
         while not navigator.isTaskComplete():
             i += 1
@@ -83,12 +56,10 @@ def main():
                       Duration.from_msg(feedback.estimated_time_remaining).nanoseconds / 1e9)
                       + ' seconds.')
 
-                # Some failure mode, must stop since the robot is clearly stuck
                 if Duration.from_msg(feedback.navigation_time) > Duration(seconds=180.0):
                     print('Navigation has exceeded timeout of 180s, canceling request.')
                     navigator.cancelTask()
 
-        # If at end of route, reverse the route to restart
         security_route.reverse()
 
         result = navigator.getResult()

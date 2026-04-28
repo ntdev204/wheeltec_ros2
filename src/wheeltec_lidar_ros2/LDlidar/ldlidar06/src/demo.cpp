@@ -1,23 +1,5 @@
-/**
- * @file main.cpp
- * @author LDRobot (support@ldrobot.com)
- * @brief  main process App
- *         This code is only applicable to LDROBOT LiDAR LD06 products 
- * sold by Shenzhen LDROBOT Co., LTD    
- * @version 0.1
- * @date 2021-10-28
- *
- * @copyright Copyright (c) 2021  SHENZHEN LDROBOT CO., LTD. All rights
- * reserved.
- * Licensed under the MIT License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License in the file LICENSE
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
+
 
 #include "ros2_api.h"
 #include "lipkg.h"
@@ -28,7 +10,7 @@ void  ToLaserscanMessagePublish(ldlidar::Points2D& src, ldlidar::LiPkg* commpkg,
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<rclcpp::Node>("ldlidar_published"); // create a ROS2 Node
+  auto node = std::make_shared<rclcpp::Node>("ldlidar_published");
 
   std::string product_name;
 	std::string topic_name;
@@ -40,7 +22,7 @@ int main(int argc, char **argv) {
   setting.angle_crop_min = 0.0;
   setting.angle_crop_max = 0.0;
   
-  // declare ros2 param
+
   node->declare_parameter<std::string>("product_name", product_name);
   node->declare_parameter<std::string>("topic_name", topic_name);
   node->declare_parameter<std::string>("port_name", port_name);
@@ -50,7 +32,7 @@ int main(int argc, char **argv) {
   node->declare_parameter<double>("angle_crop_min", setting.angle_crop_min);
   node->declare_parameter<double>("angle_crop_max", setting.angle_crop_max);
 
-  // get ros2 param
+
   node->get_parameter("product_name", product_name);
   node->get_parameter("topic_name", topic_name);
   node->get_parameter("port_name", port_name);
@@ -63,12 +45,12 @@ int main(int argc, char **argv) {
   ldlidar::LiPkg *lidar_pkg = new ldlidar::LiPkg();
   ldlidar::CmdInterfaceLinux *cmd_port = new ldlidar::CmdInterfaceLinux();
 
-  //RCLCPP_INFO_STREAM(node->get_logger(), " [ldrobot] SDK Pack Version is " << lidar_pkg->GetSdkPackVersionNum());
- // RCLCPP_INFO(node->get_logger(), " [ldrobot] <product_name>: %s ,<topic_name>: %s ,<port_name>: %s ,<frame_id>: %s", 
- //             product_name.c_str(), topic_name.c_str(), port_name.c_str(), setting.frame_id.c_str());
 
-  //RCLCPP_INFO(node->get_logger(), "[ldrobot] <laser_scan_dir>: %s,<enable_angle_crop_func>: %s,<angle_crop_min>: %f,<angle_crop_max>: %f",
-   //(setting.laser_scan_dir?"Counterclockwise":"Clockwise"), (setting.enable_angle_crop_func?"true":"false"), setting.angle_crop_min, setting.angle_crop_max);
+
+
+
+
+
 
   if (port_name.empty()) {
     RCLCPP_ERROR(node->get_logger(), " [ldrobot] input <port_name> param is null");
@@ -84,10 +66,10 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
 
-  // create ldlidar data topic and publisher
+
   rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr publisher = node->create_publisher<sensor_msgs::msg::LaserScan>(topic_name, 10);
   
-  rclcpp::WallRate r(10); //10hz
+  rclcpp::WallRate r(10);
 
   auto last_time = std::chrono::steady_clock::now();
 
@@ -130,7 +112,7 @@ void  ToLaserscanMessagePublish(ldlidar::Points2D& src, ldlidar::LiPkg* commpkg,
   start_scan_time = node->now();
   scan_time = (start_scan_time.seconds() - end_scan_time.seconds());
 
-  // Adjust the parameters according to the demand
+
   angle_min = ANGLE_TO_RADIAN(src.front().angle);
   angle_max = ANGLE_TO_RADIAN(src.back().angle);
   range_min = 0.02;
@@ -138,7 +120,7 @@ void  ToLaserscanMessagePublish(ldlidar::Points2D& src, ldlidar::LiPkg* commpkg,
   float spin_speed = static_cast<float>(commpkg->GetSpeedOrigin());
   float scan_freq = static_cast<float>(commpkg->kPointFrequence);
   angle_increment = ANGLE_TO_RADIAN(spin_speed / scan_freq);
-  // Calculate the number of scanning points
+
   if (commpkg->GetSpeedOrigin() > 0) {
     int beam_size = static_cast<int>(ceil((angle_max - angle_min) / angle_increment));
     if (beam_size < 0) {
@@ -158,28 +140,28 @@ void  ToLaserscanMessagePublish(ldlidar::Points2D& src, ldlidar::LiPkg* commpkg,
       output.time_increment = static_cast<float>(scan_time / (double)(beam_size - 1));
     }
     output.scan_time = scan_time;
-    // First fill all the data with Nan
+
     output.ranges.assign(beam_size, std::numeric_limits<float>::quiet_NaN());
     output.intensities.assign(beam_size, std::numeric_limits<float>::quiet_NaN());
 
     for (auto point : src) {
-      float range = point.distance / 1000.f;  // distance unit transform to meters
-      float intensity = point.intensity;      // laser receive intensity 
+      float range = point.distance / 1000.f;
+      float intensity = point.intensity;
       float dir_angle = point.angle;
 
-      if ((point.distance == 0) && (point.intensity == 0)) { // filter is handled to  0, Nan will be assigned variable.
+      if ((point.distance == 0) && (point.intensity == 0)) {
         range = std::numeric_limits<float>::quiet_NaN(); 
         intensity = std::numeric_limits<float>::quiet_NaN();
       }
 
-      if (setting.enable_angle_crop_func) { // Angle crop setting, Mask data within the set angle range
+      if (setting.enable_angle_crop_func) {
         if ((dir_angle >= setting.angle_crop_min) && (dir_angle <= setting.angle_crop_max)) {
           range = std::numeric_limits<float>::quiet_NaN();
           intensity = std::numeric_limits<float>::quiet_NaN();
         }
       }
 
-      float angle = ANGLE_TO_RADIAN(dir_angle); // Lidar angle unit form degree transform to radian
+      float angle = ANGLE_TO_RADIAN(dir_angle);
       int index = static_cast<int>((angle - output.angle_min) / output.angle_increment);
       if (index < beam_size) {
         if (index < 0) {
@@ -189,22 +171,22 @@ void  ToLaserscanMessagePublish(ldlidar::Points2D& src, ldlidar::LiPkg* commpkg,
 
         if (setting.laser_scan_dir) {
           int index_anticlockwise = beam_size - index - 1;
-          // If the current content is Nan, it is assigned directly
+
           if (std::isnan(output.ranges[index_anticlockwise])) {
             output.ranges[index_anticlockwise] = range;
-          } else { // Otherwise, only when the distance is less than the current
-                    //   value, it can be re assigned
+          } else {
+
             if (range < output.ranges[index_anticlockwise]) {
                 output.ranges[index_anticlockwise] = range;
             }
           }
           output.intensities[index_anticlockwise] = intensity;
         } else {
-          // If the current content is Nan, it is assigned directly
+
           if (std::isnan(output.ranges[index])) {
             output.ranges[index] = range;
-          } else { // Otherwise, only when the distance is less than the current
-                  //   value, it can be re assigned
+          } else {
+
             if (range < output.ranges[index]) {
               output.ranges[index] = range;
             }
@@ -220,5 +202,5 @@ void  ToLaserscanMessagePublish(ldlidar::Points2D& src, ldlidar::LiPkg* commpkg,
 }
 
 
-/********************* (C) COPYRIGHT SHENZHEN LDROBOT CO., LTD *******END OF
- * FILE ********/
+
+

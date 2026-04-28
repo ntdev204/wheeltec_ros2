@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_controller/plugins/simple_progress_checker.hpp"
 #include <cmath>
@@ -44,21 +44,21 @@ void SimpleProgressChecker::initialize(
     node, plugin_name + ".required_movement_radius", rclcpp::ParameterValue(0.5));
   nav2_util::declare_parameter_if_not_declared(
     node, plugin_name + ".movement_time_allowance", rclcpp::ParameterValue(10.0));
-  // Scale is set to 0 by default, so if it was not set otherwise, set to 0
+
   node->get_parameter_or(plugin_name + ".required_movement_radius", radius_, 0.5);
   double time_allowance_param = 0.0;
   node->get_parameter_or(plugin_name + ".movement_time_allowance", time_allowance_param, 10.0);
   time_allowance_ = rclcpp::Duration::from_seconds(time_allowance_param);
 
-  // Add callback for dynamic parameters
+
   dyn_params_handler_ = node->add_on_set_parameters_callback(
     std::bind(&SimpleProgressChecker::dynamicParametersCallback, this, _1));
 }
 
 bool SimpleProgressChecker::check(geometry_msgs::msg::PoseStamped & current_pose)
 {
-  // relies on short circuit evaluation to not call is_robot_moved_enough if
-  // baseline_pose is not set.
+
+
   geometry_msgs::msg::Pose2D current_pose2d;
   current_pose2d = nav_2d_utils::poseToPose2D(current_pose.pose);
 
@@ -116,6 +116,6 @@ SimpleProgressChecker::dynamicParametersCallback(std::vector<rclcpp::Parameter> 
   return result;
 }
 
-}  // namespace nav2_controller
+}
 
 PLUGINLIB_EXPORT_CLASS(nav2_controller::SimpleProgressChecker, nav2_core::ProgressChecker)

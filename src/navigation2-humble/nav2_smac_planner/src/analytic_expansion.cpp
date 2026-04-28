@@ -1,16 +1,16 @@
-// Copyright (c) 2021, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <ompl/base/ScopedState.h>
 #include <ompl/base/spaces/DubinsStateSpace.h>
@@ -52,11 +52,11 @@ typename AnalyticExpansion<NodeT>::NodePtr AnalyticExpansion<NodeT>::tryAnalytic
   const NodeGetter & getter, int & analytic_iterations,
   int & closest_distance)
 {
-  // This must be a valid motion model for analytic expansion to be attempted
+
   if (_motion_model == MotionModel::DUBIN || _motion_model == MotionModel::REEDS_SHEPP ||
     _motion_model == MotionModel::STATE_LATTICE)
   {
-    // See if we are closer and should be expanding more often
+
     auto costmap = _collision_checker->getCostmap();
     const Coordinates node_coords =
       NodeT::getCoords(current_node->getIndex(), costmap->getSizeInCellsX(), _dim_3_size);
@@ -64,31 +64,31 @@ typename AnalyticExpansion<NodeT>::NodePtr AnalyticExpansion<NodeT>::tryAnalytic
       closest_distance,
       static_cast<int>(NodeT::getHeuristicCost(node_coords, goal_node->pose, costmap)));
 
-    // We want to expand at a rate of d/expansion_ratio,
-    // but check to see if we are so close that we would be expanding every iteration
-    // If so, limit it to the expansion ratio (rounded up)
+
+
+
     int desired_iterations = std::max(
       static_cast<int>(closest_distance / _search_info.analytic_expansion_ratio),
       static_cast<int>(std::ceil(_search_info.analytic_expansion_ratio)));
 
-    // If we are closer now, we should update the target number of iterations to go
+
     analytic_iterations =
       std::min(analytic_iterations, desired_iterations);
 
-    // Always run the expansion on the first run in case there is a
-    // trivial path to be found
+
+
     if (analytic_iterations <= 0) {
-      // Reset the counter and try the analytic path expansion
+
       analytic_iterations = desired_iterations;
       AnalyticExpansionNodes analytic_nodes = getAnalyticPath(current_node, goal_node, getter);
       if (!analytic_nodes.empty()) {
-        // If we have a valid path, attempt to refine it
+
         NodePtr node = current_node;
         NodePtr test_node = current_node;
         AnalyticExpansionNodes refined_analytic_nodes;
         for (int i = 0; i < 8; i++) {
-          // Attempt to create better paths in 5 node increments, need to make sure
-          // they exist for each in order to do so (maximum of 40 points back).
+
+
           if (test_node->parent && test_node->parent->parent && test_node->parent->parent->parent &&
             test_node->parent->parent->parent->parent &&
             test_node->parent->parent->parent->parent->parent)
@@ -112,7 +112,7 @@ typename AnalyticExpansion<NodeT>::NodePtr AnalyticExpansion<NodeT>::tryAnalytic
     analytic_iterations--;
   }
 
-  // No valid motion model - return nullptr
+
   return NodePtr(nullptr);
 }
 
@@ -133,26 +133,26 @@ typename AnalyticExpansion<NodeT>::AnalyticExpansionNodes AnalyticExpansion<Node
 
   float d = node->motion_table.state_space->distance(from(), to());
 
-  // If the length is too far, exit. This prevents unsafe shortcutting of paths
-  // into higher cost areas far out from the goal itself, let search to the work of getting
-  // close before the analytic expansion brings it home. This should never be smaller than
-  // 4-5x the minimum turning radius being used, or planning times will begin to spike.
+
+
+
+
   if (d > _search_info.analytic_expansion_max_length) {
     return AnalyticExpansionNodes();
   }
 
-  // A move of sqrt(2) is guaranteed to be in a new cell
+
   static const float sqrt_2 = std::sqrt(2.);
   unsigned int num_intervals = std::floor(d / sqrt_2);
 
   AnalyticExpansionNodes possible_nodes;
-  // When "from" and "to" are zero or one cell away,
-  // num_intervals == 0
-  possible_nodes.reserve(num_intervals);  // We won't store this node or the goal
+
+
+  possible_nodes.reserve(num_intervals);
   std::vector<double> reals;
   double theta;
 
-  // Pre-allocate
+
   NodePtr prev(node);
   unsigned int index = 0;
   NodePtr next(nullptr);
@@ -160,43 +160,43 @@ typename AnalyticExpansion<NodeT>::AnalyticExpansionNodes AnalyticExpansion<Node
   Coordinates proposed_coordinates;
   bool failure = false;
 
-  // Check intermediary poses (non-goal, non-start)
+
   for (float i = 1; i < num_intervals; i++) {
     node->motion_table.state_space->interpolate(from(), to(), i / num_intervals, s());
     reals = s.reals();
-    // Make sure in range [0, 2PI)
+
     theta = (reals[2] < 0.0) ? (reals[2] + 2.0 * M_PI) : reals[2];
     theta = (theta > 2.0 * M_PI) ? (theta - 2.0 * M_PI) : theta;
     angle = node->motion_table.getClosestAngularBin(theta);
 
-    // Turn the pose into a node, and check if it is valid
+
     index = NodeT::getIndex(
       static_cast<unsigned int>(reals[0]),
       static_cast<unsigned int>(reals[1]),
       static_cast<unsigned int>(angle));
-    // Get the node from the graph
+
     if (node_getter(index, next)) {
       Coordinates initial_node_coords = next->pose;
       proposed_coordinates = {static_cast<float>(reals[0]), static_cast<float>(reals[1]), angle};
       next->setPose(proposed_coordinates);
       if (next->isNodeValid(_traverse_unknown, _collision_checker) && next != prev) {
-        // Save the node, and its previous coordinates in case we need to abort
+
         possible_nodes.emplace_back(next, initial_node_coords, proposed_coordinates);
         prev = next;
       } else {
-        // Abort
+
         next->setPose(initial_node_coords);
         failure = true;
         break;
       }
     } else {
-      // Abort
+
       failure = true;
       break;
     }
   }
 
-  // Reset to initial poses to not impact future searches
+
   for (const auto & node_pose : possible_nodes) {
     const auto & n = node_pose.node;
     n->setPose(node_pose.initial_coords);
@@ -216,7 +216,7 @@ typename AnalyticExpansion<NodeT>::NodePtr AnalyticExpansion<NodeT>::setAnalytic
   const AnalyticExpansionNodes & expanded_nodes)
 {
   _detached_nodes.clear();
-  // Legitimate final path - set the parent relationships, states, and poses
+
   NodePtr prev = node;
   for (const auto & node_pose : expanded_nodes) {
     auto n = node_pose.node;
@@ -247,7 +247,7 @@ void AnalyticExpansion<NodeLattice>::cleanNode(const NodePtr & node)
 }
 
 template<typename NodeT>
-void AnalyticExpansion<NodeT>::cleanNode(const NodePtr & /*expanded_nodes*/)
+void AnalyticExpansion<NodeT>::cleanNode(const NodePtr & )
 {
 }
 
@@ -283,4 +283,4 @@ template class AnalyticExpansion<Node2D>;
 template class AnalyticExpansion<NodeHybrid>;
 template class AnalyticExpansion<NodeLattice>;
 
-}  // namespace nav2_smac_planner
+}

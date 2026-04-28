@@ -1,18 +1,3 @@
-#! /usr/bin/env python3
-# Copyright (c) 2022 Samsung R&D Institute Russia
-# Copyright (c) 2022 Joshua Wallace
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator
@@ -30,7 +15,6 @@ from random import uniform
 from transforms3d.euler import euler2quat
 
 
-# Note: Map origin is assumed to be (0,0)
 
 def getPlannerResults(navigator, initial_pose, goal_pose, planner):
     return navigator._getPathImpl(initial_pose, goal_pose, planner, use_start=True)
@@ -101,11 +85,9 @@ def main():
 
     navigator = BasicNavigator()
 
-    # Wait for planner and smoother to fully activate
     print("Waiting for planner and smoother servers to activate")
     navigator.waitUntilNav2Active('smoother_server', 'planner_server')
 
-    # Get the costmap for start/goal validation
     costmap_msg = navigator.getGlobalCostmap()
     costmap = np.asarray(costmap_msg.data)
     costmap.resize(costmap_msg.metadata.size_y, costmap_msg.metadata.size_x)

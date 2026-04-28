@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <chrono>
 #include <vector>
@@ -60,11 +60,11 @@ ControllerServer::ControllerServer(const rclcpp::NodeOptions & options)
 
   declare_parameter("failure_tolerance", rclcpp::ParameterValue(0.0));
 
-  // The costmap node is used in the implementation of the controller
+
   costmap_ros_ = std::make_shared<nav2_costmap_2d::Costmap2DROS>(
     "local_costmap", std::string{get_namespace()}, "local_costmap");
 
-  // Launch a thread to run the costmap node
+
   costmap_thread_ = std::make_unique<nav2_util::NodeThread>(costmap_ros_);
 }
 
@@ -77,7 +77,7 @@ ControllerServer::~ControllerServer()
 }
 
 nav2_util::CallbackReturn
-ControllerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
+ControllerServer::on_configure(const rclcpp_lifecycle::State & )
 {
   auto node = shared_from_this();
 
@@ -195,7 +195,7 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
   odom_sub_ = std::make_unique<nav_2d_utils::OdomSubscriber>(node);
   vel_publisher_ = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 1);
 
-  // Create the action server that we implement with our followPath method
+
   action_server_ = std::make_unique<ActionServer>(
     shared_from_this(),
     "follow_path",
@@ -204,7 +204,7 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
     std::chrono::milliseconds(500),
     true);
 
-  // Set subscribtion to the speed limiting topic
+
   speed_limit_sub_ = create_subscription<nav2_msgs::msg::SpeedLimit>(
     speed_limit_topic, rclcpp::QoS(10),
     std::bind(&ControllerServer::speedLimitCallback, this, std::placeholders::_1));
@@ -213,7 +213,7 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
 }
 
 nav2_util::CallbackReturn
-ControllerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
+ControllerServer::on_activate(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Activating");
 
@@ -226,18 +226,18 @@ ControllerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
   action_server_->activate();
 
   auto node = shared_from_this();
-  // Add callback for dynamic parameters
+
   dyn_params_handler_ = node->add_on_set_parameters_callback(
     std::bind(&ControllerServer::dynamicParametersCallback, this, _1));
 
-  // create bond connection
+
   createBond();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn
-ControllerServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
+ControllerServer::on_deactivate(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Deactivating");
 
@@ -252,18 +252,18 @@ ControllerServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
   vel_publisher_->on_deactivate();
   dyn_params_handler_.reset();
 
-  // destroy bond connection
+
   destroyBond();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn
-ControllerServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
+ControllerServer::on_cleanup(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Cleaning up");
 
-  // Cleanup the helper classes
+
   ControllerMap::iterator it;
   for (it = controllers_.begin(); it != controllers_.end(); ++it) {
     it->second->cleanup();
@@ -273,7 +273,7 @@ ControllerServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
   goal_checkers_.clear();
   costmap_ros_->cleanup();
 
-  // Release any allocated resources
+
   action_server_.reset();
   odom_sub_.reset();
   vel_publisher_.reset();
@@ -384,7 +384,7 @@ void ControllerServer::computeControl()
         return;
       }
 
-      // Don't compute a trajectory until costmap is valid (after clear costmap)
+
       rclcpp::Rate r(100);
       while (!costmap_ros_->isCurrent()) {
         r.sleep();
@@ -422,7 +422,7 @@ void ControllerServer::computeControl()
 
   publishZeroVelocity();
 
-  // TODO(orduno) #861 Handle a pending preemption and set controller name
+
   action_server_->succeeded_current();
 }
 
@@ -494,7 +494,7 @@ void ControllerServer::computeAndPublishVelocity()
   std::shared_ptr<Action::Feedback> feedback = std::make_shared<Action::Feedback>();
   feedback->speed = std::hypot(cmd_vel_2d.twist.linear.x, cmd_vel_2d.twist.linear.y);
 
-  // Find the closest pose to current pose on global path
+
   nav_msgs::msg::Path & current_path = current_path_;
   auto find_closest_pose_idx =
     [&pose, &current_path]() {
@@ -619,8 +619,8 @@ ControllerServer::dynamicParametersCallback(std::vector<rclcpp::Parameter> param
     const auto & type = parameter.get_type();
     const auto & name = parameter.get_name();
 
-    // If we are trying to change the parameter of a plugin we can just skip it at this point
-    // as they handle parameter changes themselves and don't need to lock the mutex
+
+
     if (name.find('.') != std::string::npos) {
       continue;
     }
@@ -656,11 +656,11 @@ ControllerServer::dynamicParametersCallback(std::vector<rclcpp::Parameter> param
   return result;
 }
 
-}  // namespace nav2_controller
+}
 
 #include "rclcpp_components/register_node_macro.hpp"
 
-// Register the component with class_loader.
-// This acts as a sort of entry point, allowing the component to be discoverable when its library
-// is being loaded into a running process.
+
+
+
 RCLCPP_COMPONENTS_REGISTER_NODE(nav2_controller::ControllerServer)

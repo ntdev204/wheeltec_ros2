@@ -1,16 +1,16 @@
-// Copyright (c) 2021 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <algorithm>
 #include <string>
@@ -50,7 +50,7 @@ void RotationShimController::configure(
   std::string primary_controller;
   double control_frequency;
   nav2_util::declare_parameter_if_not_declared(
-    node, plugin_name_ + ".angular_dist_threshold", rclcpp::ParameterValue(0.785));  // 45 deg
+    node, plugin_name_ + ".angular_dist_threshold", rclcpp::ParameterValue(0.785));
   nav2_util::declare_parameter_if_not_declared(
     node, plugin_name_ + ".forward_sampling_distance", rclcpp::ParameterValue(0.5));
   nav2_util::declare_parameter_if_not_declared(
@@ -88,7 +88,7 @@ void RotationShimController::configure(
 
   primary_controller_->configure(parent, name, tf, costmap_ros);
 
-  // initialize collision checker and set costmap
+
   collision_checker_ = std::make_unique<nav2_costmap_2d::
       FootprintCollisionChecker<nav2_costmap_2d::Costmap2D *>>(costmap_ros->getCostmap());
 }
@@ -168,7 +168,7 @@ geometry_msgs::msg::TwistStamped RotationShimController::computeVelocityCommands
     }
   }
 
-  // If at this point, use the primary controller to path track
+
   return primary_controller_->computeVelocityCommands(pose, velocity, goal_checker);
 }
 
@@ -182,13 +182,13 @@ geometry_msgs::msg::PoseStamped RotationShimController::getSampledPathPt()
   geometry_msgs::msg::Pose start = current_path_.poses.front().pose;
   double dx, dy;
 
-  // Find the first point at least sampling distance away
+
   for (unsigned int i = 1; i != current_path_.poses.size(); i++) {
     dx = current_path_.poses[i].pose.position.x - start.position.x;
     dy = current_path_.poses[i].pose.position.y - start.position.y;
     if (hypot(dx, dy) >= forward_sampling_distance_) {
       current_path_.poses[i].header.frame_id = current_path_.header.frame_id;
-      current_path_.poses[i].header.stamp = clock_->now();  // Get current time transformation
+      current_path_.poses[i].header.stamp = clock_->now();
       return current_path_.poses[i];
     }
   }
@@ -234,7 +234,7 @@ void RotationShimController::isCollisionFree(
   const double & angular_distance_to_heading,
   const geometry_msgs::msg::PoseStamped & pose)
 {
-  // Simulate rotation ahead by time in control frequency increments
+
   double simulated_time = 0.0;
   double initial_yaw = tf2::getYaw(pose.pose.orientation);
   double yaw = 0.0;
@@ -246,12 +246,12 @@ void RotationShimController::isCollisionFree(
     simulated_time += control_duration_;
     yaw = initial_yaw + cmd_vel.twist.angular.z * simulated_time;
 
-    // Stop simulating past the point it would be passed onto the primary controller
+
     if (angles::shortest_angular_distance(yaw, initial_yaw) >= remaining_rotation_before_thresh) {
       break;
     }
 
-    using namespace nav2_costmap_2d;  // NOLINT
+    using namespace nav2_costmap_2d;
     footprint_cost = collision_checker_->footprintCostAtPose(
       pose.pose.position.x, pose.pose.position.y,
       yaw, costmap_ros_->getRobotFootprint());
@@ -309,9 +309,9 @@ RotationShimController::dynamicParametersCallback(std::vector<rclcpp::Parameter>
   return result;
 }
 
-}  // namespace nav2_rotation_shim_controller
+}
 
-// Register this controller as a nav2_core plugin
+
 PLUGINLIB_EXPORT_CLASS(
   nav2_rotation_shim_controller::RotationShimController,
   nav2_core::Controller)

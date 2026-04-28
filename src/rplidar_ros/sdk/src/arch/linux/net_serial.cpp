@@ -1,36 +1,7 @@
-/*
- *  RPLIDAR SDK
- *
- *  Copyright (c) 2009 - 2014 RoboPeak Team
- *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2018 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- *
- */
-/*
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- */
+
+
+
+
 
 #include "arch/linux/arch_linux.h"
 #include <stdio.h>
@@ -38,7 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
-// linux specific
+
 
 #include <errno.h>
 #include <fcntl.h>
@@ -49,15 +20,15 @@
 #include <sys/select.h>
 
 #include <algorithm>
-//__GNUC__
+
 #if defined(__GNUC__)
-// for Linux extension
+
 #include <asm/ioctls.h>
 #include <asm/termbits.h>
 #include <sys/ioctl.h>
 extern "C" int tcflush(int fildes, int queue_selector);
 #else
-// for other standard UNIX
+
 #include <termios.h>
 #include <sys/ioctl.h>
 
@@ -105,12 +76,12 @@ bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
     
 
 #if !defined(__GNUC__)
-    // for standard UNIX
+
     struct termios options, oldopt;
     tcgetattr(serial_fd, &oldopt);
     bzero(&options,sizeof(struct termios));
 
-    // enable rx and tx
+
     options.c_cflag |= (CLOCAL | CREAD);
 
     _u32 termbaud = getTermBaudBitmap(baudrate);
@@ -122,22 +93,22 @@ bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
     cfsetispeed(&options, termbaud);
     cfsetospeed(&options, termbaud);
 
-    options.c_cflag &= ~PARENB; //no checkbit
-    options.c_cflag &= ~CSTOPB; //1bit stop bit
-    options.c_cflag &= ~CRTSCTS; //no flow control
+    options.c_cflag &= ~PARENB;
+    options.c_cflag &= ~CSTOPB;
+    options.c_cflag &= ~CRTSCTS;
 
     options.c_cflag &= ~CSIZE;
-    options.c_cflag |= CS8; /* Select 8 data bits */
+    options.c_cflag |= CS8; 
 
 #ifdef CNEW_RTSCTS
-    options.c_cflag &= ~CNEW_RTSCTS; // no hw flow control
+    options.c_cflag &= ~CNEW_RTSCTS;
 #endif
 
-    options.c_iflag &= ~(IXON | IXOFF | IXANY); // no sw flow control
+    options.c_iflag &= ~(IXON | IXOFF | IXANY);
 
-    // raw input mode   
+
     options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-    // raw output mode   
+
     options.c_oflag &= ~OPOST;
 
 
@@ -150,31 +121,31 @@ bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
 
 #else
 
-    // using Linux extension ...
+
     struct termios2 tio;
 
     ioctl(serial_fd, TCGETS2, &tio);
     bzero(&tio, sizeof(struct termios2));
 
     tio.c_cflag = BOTHER;
-    tio.c_cflag |= (CLOCAL | CREAD | CS8); //8 bit no hardware handshake
+    tio.c_cflag |= (CLOCAL | CREAD | CS8);
 
-    tio.c_cflag &= ~CSTOPB;   //1 stop bit
-    tio.c_cflag &= ~CRTSCTS;  //No CTS
-    tio.c_cflag &= ~PARENB;   //No Parity
+    tio.c_cflag &= ~CSTOPB;
+    tio.c_cflag &= ~CRTSCTS;
+    tio.c_cflag &= ~PARENB;
 
 #ifdef CNEW_RTSCTS
-    tio.c_cflag &= ~CNEW_RTSCTS; // no hw flow control
+    tio.c_cflag &= ~CNEW_RTSCTS;
 #endif
 
-    tio.c_iflag &= ~(IXON | IXOFF | IXANY); // no sw flow control
+    tio.c_iflag &= ~(IXON | IXOFF | IXANY);
 
 
-    tio.c_cc[VMIN] = 0;         //min chars to read
-    tio.c_cc[VTIME] = 0;        //time in 1/10th sec wait
+    tio.c_cc[VMIN] = 0;
+    tio.c_cc[VTIME] = 0;
 
     tio.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-    // raw output mode   
+
     tio.c_oflag &= ~OPOST;
 
     tio.c_ispeed = baudrate;
@@ -198,17 +169,17 @@ bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
     _is_serial_opened = true;
     _operation_aborted = false;
 
-    //Clear the DTR bit to let the motor spin
+
     clearDTR();
     do {
-        // create self pipeline for wait cancellation
+
         if (pipe(_selfpipe) == -1) break;
 
         int flags = fcntl(_selfpipe[0], F_GETFL);
         if (flags == -1)
             break;
 
-        flags |= O_NONBLOCK;                /* Make read end nonblocking */
+        flags |= O_NONBLOCK;                
         if (fcntl(_selfpipe[0], F_SETFL, flags) == -1)
             break;
 
@@ -216,7 +187,7 @@ bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
         if (flags == -1)
             break;
 
-        flags |= O_NONBLOCK;                /* Make write end nonblocking */
+        flags |= O_NONBLOCK;                
         if (fcntl(_selfpipe[1], F_SETFL, flags) == -1)
             break;
 
@@ -245,7 +216,7 @@ void raw_serial::close()
 
 int raw_serial::senddata(const unsigned char * data, size_t size)
 {
-// FIXME: non-block io should be used
+
     if (!isOpened()) return 0;
 
     if (data == NULL || size ==0) return 0;
@@ -307,7 +278,7 @@ int raw_serial::waitfordata(size_t data_count, _u32 timeout, size_t * returned_s
     fd_set input_set;
     struct timeval timeout_val;
 
-    /* Initialize the input set */
+    
     FD_ZERO(&input_set);
     FD_SET(serial_fd, &input_set);
 
@@ -316,7 +287,7 @@ int raw_serial::waitfordata(size_t data_count, _u32 timeout, size_t * returned_s
 
     max_fd =  std::max<int>(serial_fd, _selfpipe[0]) + 1;
 
-    /* Initialize the timeout structure */
+    
     timeout_val.tv_sec = timeout / 1000;
     timeout_val.tv_usec = (timeout % 1000) * 1000;
 
@@ -336,25 +307,25 @@ int raw_serial::waitfordata(size_t data_count, _u32 timeout, size_t * returned_s
 
     while ( isOpened() )
     {
-        /* Do the select */
+        
         int n = ::select(max_fd, &input_set, NULL, NULL, &timeout_val);
 
         if (n < 0)
         {
-            // select error
+
             *returned_size =  0;
             return ANS_DEV_ERR;
         }
         else if (n == 0)
         {
-            // time out
+
             *returned_size =0;
             return ANS_TIMEOUT;
         }
         else
         {
             if (FD_ISSET(_selfpipe[0], &input_set)) {   
-                // require aborting the current operation
+
                 int ch;
                 for (;;) {                    
                     if (::read(_selfpipe[0], &ch, 1) == -1) {
@@ -363,12 +334,12 @@ int raw_serial::waitfordata(size_t data_count, _u32 timeout, size_t * returned_s
                     
                 }
 
-                // treat as  timeout
+
                 *returned_size = 0;
                 return ANS_TIMEOUT;
             }
 
-            // data avaliable
+
             assert (FD_ISSET(serial_fd, &input_set));
 
 
@@ -457,9 +428,9 @@ switch (baud) {
     return -1;
 }
 
-}}} //end rp::arch::net
+}}}
 
-//begin rp::hal
+
 namespace rp{ namespace hal{
 
 serial_rxtx * serial_rxtx::CreateRxTx()
@@ -472,4 +443,4 @@ void serial_rxtx::ReleaseRxTx(serial_rxtx *rxtx)
     delete rxtx;
 }
 
-}} //end rp::hal
+}}

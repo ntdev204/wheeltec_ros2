@@ -1,40 +1,5 @@
-/*********************************************************************
- *
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2008, 2013, Willow Garage, Inc.
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- * Author: Eitan Marder-Eppstein
- *         David V. Lu!!
- *********************************************************************/
+
+
 #include "nav2_costmap_2d/inflation_layer.hpp"
 
 #include <limits>
@@ -130,7 +95,7 @@ InflationLayer::matchSize()
 
 void
 InflationLayer::updateBounds(
-  double /*robot_x*/, double /*robot_y*/, double /*robot_yaw*/, double * min_x,
+  double , double , double , double * min_x,
   double * min_y, double * max_x, double * max_y)
 {
   std::lock_guard<Costmap2D::mutex_t> guard(*getMutex());
@@ -187,7 +152,7 @@ InflationLayer::updateCosts(
     return;
   }
 
-  // make sure the inflation list is empty at the beginning of the cycle (should always be true)
+
   for (auto & dist : inflation_cells_) {
     RCLCPP_FATAL_EXPRESSION(
       logger_,
@@ -205,10 +170,10 @@ InflationLayer::updateCosts(
 
   std::fill(begin(seen_), end(seen_), false);
 
-  // We need to include in the inflation cells outside the bounding
-  // box min_i...max_j, by the amount cell_inflation_radius_.  Cells
-  // up to that distance outside the box can still influence the costs
-  // stored in cells inside the box.
+
+
+
+
   const int base_min_i = min_i;
   const int base_min_j = min_j;
   const int base_max_i = max_i;
@@ -223,12 +188,12 @@ InflationLayer::updateCosts(
   max_i = std::min(static_cast<int>(size_x), max_i);
   max_j = std::min(static_cast<int>(size_y), max_j);
 
-  // Inflation list; we append cells to visit in a list associated with
-  // its distance to the nearest obstacle
-  // We use a map<distance, list> to emulate the priority queue used before,
-  // with a notable performance boost
 
-  // Start with lethal obstacles: by definition distance is 0.0
+
+
+
+
+
   auto & obs_bin = inflation_cells_[0];
   for (int j = min_j; j < max_j; j++) {
     for (int i = min_i; i < max_i; i++) {
@@ -240,17 +205,17 @@ InflationLayer::updateCosts(
     }
   }
 
-  // Process cells by increasing distance; new cells are appended to the
-  // corresponding distance bin, so they
-  // can overtake previously inserted but farther away cells
+
+
+
   for (const auto & dist_bin : inflation_cells_) {
     for (std::size_t i = 0; i < dist_bin.size(); ++i) {
-      // Do not use iterator or for-range based loops to
-      // iterate though dist_bin, since it's size might
-      // change when a new cell is enqueued, invalidating all iterators
+
+
+
       unsigned int index = dist_bin[i].index_;
 
-      // ignore if already visited
+
       if (seen_[index]) {
         continue;
       }
@@ -262,12 +227,12 @@ InflationLayer::updateCosts(
       unsigned int sx = dist_bin[i].src_x_;
       unsigned int sy = dist_bin[i].src_y_;
 
-      // assign the cost associated with the distance from an obstacle to the cell
+
       unsigned char cost = costLookup(mx, my, sx, sy);
       unsigned char old_cost = master_array[index];
-      // In order to avoid artifacts appeared out of boundary areas
-      // when some layer is going after inflation_layer,
-      // we need to apply inflation_layer only to inside of given bounds
+
+
+
       if (static_cast<int>(mx) >= base_min_i &&
         static_cast<int>(my) >= base_min_j &&
         static_cast<int>(mx) < base_max_i &&
@@ -282,7 +247,7 @@ InflationLayer::updateCosts(
         }
       }
 
-      // attempt to put the neighbors of the current cell onto the inflation list
+
       if (mx > 0) {
         enqueue(index - 1, mx - 1, my, sx, sy);
       }
@@ -306,34 +271,27 @@ InflationLayer::updateCosts(
   current_ = true;
 }
 
-/**
- * @brief  Given an index of a cell in the costmap, place it into a list pending for obstacle inflation
- * @param  grid The costmap
- * @param  index The index of the cell
- * @param  mx The x coordinate of the cell (can be computed from the index, but saves time to store it)
- * @param  my The y coordinate of the cell (can be computed from the index, but saves time to store it)
- * @param  src_x The x index of the obstacle point inflation started at
- * @param  src_y The y index of the obstacle point inflation started at
- */
+
+
 void
 InflationLayer::enqueue(
   unsigned int index, unsigned int mx, unsigned int my,
   unsigned int src_x, unsigned int src_y)
 {
   if (!seen_[index]) {
-    // we compute our distance table one cell further than the
-    // inflation radius dictates so we can make the check below
+
+
     double distance = distanceLookup(mx, my, src_x, src_y);
 
-    // we only want to put the cell in the list if it is within
-    // the inflation radius of the obstacle point
+
+
     if (distance > cell_inflation_radius_) {
       return;
     }
 
     const unsigned int r = cell_inflation_radius_ + 2;
 
-    // push the cell data onto the inflation list and mark
+
     inflation_cells_[distance_matrix_[mx - src_x + r][my - src_y + r]].emplace_back(
       index, mx, my, src_x, src_y);
   }
@@ -349,7 +307,7 @@ InflationLayer::computeCaches()
 
   cache_length_ = cell_inflation_radius_ + 2;
 
-  // based on the inflation radius... compute distance and cost caches
+
   if (cell_inflation_radius_ != cached_cell_inflation_radius_) {
     cached_costs_.resize(cache_length_ * cache_length_);
     cached_distances_.resize(cache_length_ * cache_length_);
@@ -417,10 +375,8 @@ InflationLayer::generateIntegerDistances()
   return level;
 }
 
-/**
-  * @brief Callback executed when a parameter change is detected
-  * @param event ParameterEvent message
-  */
+
+
 rcl_interfaces::msg::SetParametersResult
 InflationLayer::dynamicParametersCallback(
   std::vector<rclcpp::Parameter> parameters)
@@ -441,7 +397,7 @@ InflationLayer::dynamicParametersCallback(
         inflation_radius_ = parameter.as_double();
         need_reinflation_ = true;
         need_cache_recompute = true;
-      } else if (param_name == name_ + "." + "cost_scaling_factor" && // NOLINT
+      } else if (param_name == name_ + "." + "cost_scaling_factor" &&
         cost_scaling_factor_ != parameter.as_double())
       {
         cost_scaling_factor_ = parameter.as_double();
@@ -453,12 +409,12 @@ InflationLayer::dynamicParametersCallback(
         enabled_ = parameter.as_bool();
         need_reinflation_ = true;
         current_ = false;
-      } else if (param_name == name_ + "." + "inflate_unknown" && // NOLINT
+      } else if (param_name == name_ + "." + "inflate_unknown" &&
         inflate_unknown_ != parameter.as_bool())
       {
         inflate_unknown_ = parameter.as_bool();
         need_reinflation_ = true;
-      } else if (param_name == name_ + "." + "inflate_around_unknown" && // NOLINT
+      } else if (param_name == name_ + "." + "inflate_around_unknown" &&
         inflate_around_unknown_ != parameter.as_bool())
       {
         inflate_around_unknown_ = parameter.as_bool();
@@ -475,4 +431,4 @@ InflationLayer::dynamicParametersCallback(
   return result;
 }
 
-}  // namespace nav2_costmap_2d
+}

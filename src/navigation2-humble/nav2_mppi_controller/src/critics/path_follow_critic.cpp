@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_mppi_controller/critics/path_follow_critic.hpp"
 
@@ -47,8 +47,8 @@ void PathFollowCritic::score(CriticData & data)
   auto offseted_idx = std::min(
     *data.furthest_reached_path_point + offset_from_furthest_, path_size);
 
-  // Drive to the first valid path point, in case of dynamic obstacles on path
-  // we want to drive past it, not through it
+
+
   bool valid = false;
   while (!valid && offseted_idx < path_size - 1) {
     valid = (*data.path_pts_valid)[offseted_idx];
@@ -70,7 +70,7 @@ void PathFollowCritic::score(CriticData & data)
   data.costs += xt::pow(weight_ * std::move(dists), power_);
 }
 
-}  // namespace mppi::critics
+}
 
 #include <pluginlib/class_list_macros.hpp>
 

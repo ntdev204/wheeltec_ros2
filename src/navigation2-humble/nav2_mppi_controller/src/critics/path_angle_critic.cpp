@@ -1,17 +1,17 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-// Copyright (c) 2023 Open Navigation LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_mppi_controller/critics/path_angle_critic.hpp"
 
@@ -25,9 +25,9 @@ void PathAngleCritic::initialize()
   auto getParentParam = parameters_handler_->getParamGetter(parent_name_);
   float vx_min;
   getParentParam(vx_min, "vx_min", -0.35);
-  if (fabs(vx_min) < 1e-6) {  // zero
+  if (fabs(vx_min) < 1e-6) {
     reversing_allowed_ = false;
-  } else if (vx_min < 0.0) {   // reversing possible
+  } else if (vx_min < 0.0) {
     reversing_allowed_ = true;
   }
 
@@ -98,7 +98,7 @@ void PathAngleCritic::score(CriticData & data)
   }
 }
 
-}  // namespace mppi::critics
+}
 
 #include <pluginlib/class_list_macros.hpp>
 

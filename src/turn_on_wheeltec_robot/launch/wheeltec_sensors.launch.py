@@ -8,7 +8,6 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 import launch_ros.actions
 
-#def launch(launch_descriptor, argv):
 def generate_launch_description():
     bringup_dir = get_package_share_directory('turn_on_wheeltec_robot')
     launch_dir = os.path.join(bringup_dir, 'launch')

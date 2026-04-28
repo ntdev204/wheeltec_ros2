@@ -1,16 +1,16 @@
-// Copyright (c) 2020 Samsung Research Russia
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 
@@ -144,11 +144,11 @@ TEST_F(InfoServerTester, testCostmapFilterInfoPublish)
   while (!isReceived()) {
     rclcpp::spin_some(info_server_->get_node_base_interface());
     std::this_thread::sleep_for(100ms);
-    // Waiting no more than 5 seconds
+
     ASSERT_TRUE((info_server_->now() - start_time) <= rclcpp::Duration(5000ms));
   }
 
-  // Checking received CostmapFilterInfo for consistency
+
   EXPECT_EQ(info_->type, TYPE);
   EXPECT_EQ(info_->filter_mask_topic, MASK_TOPIC);
   EXPECT_NEAR(info_->base, BASE, EPSILON);
@@ -165,11 +165,11 @@ TEST_F(InfoServerTester, testCostmapFilterInfoDeactivateActivate)
   while (!isReceived()) {
     rclcpp::spin_some(info_server_->get_node_base_interface());
     std::this_thread::sleep_for(100ms);
-    // Waiting no more than 5 seconds
+
     ASSERT_TRUE((info_server_->now() - start_time) <= rclcpp::Duration(5000ms));
   }
 
-  // Checking received CostmapFilterInfo for consistency
+
   EXPECT_EQ(info_->type, TYPE);
   EXPECT_EQ(info_->filter_mask_topic, MASK_TOPIC);
   EXPECT_NEAR(info_->base, BASE, EPSILON);

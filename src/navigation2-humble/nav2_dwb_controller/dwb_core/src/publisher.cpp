@@ -1,36 +1,5 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2017, Locus Robotics
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of the copyright holder nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- */
+
+
 
 #include "dwb_core/publisher.hpp"
 
@@ -273,7 +242,7 @@ DWBPublisher::publishCostGrid(
     unsigned int channel_index = cost_channels.size();
     critic->addCriticVisualization(cost_channels);
     if (channel_index == cost_channels.size()) {
-      // No channels were added, so skip to next critic
+
       continue;
     }
     double scale = critic->getScale();
@@ -286,7 +255,7 @@ DWBPublisher::publishCostGrid(
 
   cost_grid_pc->width = size_x * size_y;
   cost_grid_pc->height = 1;
-  cost_grid_pc->fields.resize(3 + cost_channels.size());  // x,y,z, + cost channels
+  cost_grid_pc->fields.resize(3 + cost_channels.size());
   cost_grid_pc->is_dense = true;
   cost_grid_pc->is_bigendian = false;
 
@@ -321,7 +290,7 @@ DWBPublisher::publishCostGrid(
       costmap->mapToWorld(cx, cy, x_coord, y_coord);
       *cost_grid_pc_iter[0] = x_coord;
       *cost_grid_pc_iter[1] = y_coord;
-      *cost_grid_pc_iter[2] = 0.0;   // z value
+      *cost_grid_pc_iter[2] = 0.0;
 
       for (size_t i = 3; i < cost_grid_pc_iter.size(); ++i) {
         *cost_grid_pc_iter[i] = cost_channels[i - 3].second[j];
@@ -366,4 +335,4 @@ DWBPublisher::publishGenericPlan(
   pub.publish(std::move(path));
 }
 
-}  // namespace dwb_core
+}

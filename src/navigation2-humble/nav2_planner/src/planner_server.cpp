@@ -1,17 +1,17 @@
-// Copyright (c) 2018 Intel Corporation
-// Copyright (c) 2019 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <chrono>
 #include <cmath>
@@ -48,7 +48,7 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions & options)
 {
   RCLCPP_INFO(get_logger(), "Creating");
 
-  // Declare this node's parameters
+
   declare_parameter("planner_plugins", default_ids_);
   declare_parameter("expected_planner_frequency", 1.0);
 
@@ -59,11 +59,11 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions & options)
     }
   }
 
-  // Setup the global costmap
+
   costmap_ros_ = std::make_shared<nav2_costmap_2d::Costmap2DROS>(
     "global_costmap", std::string{get_namespace()}, "global_costmap");
 
-  // Launch a thread to run the costmap node
+
   costmap_thread_ = std::make_unique<nav2_util::NodeThread>(costmap_ros_);
 }
 
@@ -74,7 +74,7 @@ PlannerServer::~PlannerServer()
 }
 
 nav2_util::CallbackReturn
-PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
+PlannerServer::on_configure(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Configuring");
 
@@ -130,10 +130,10 @@ PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
     max_planner_duration_ = 0.0;
   }
 
-  // Initialize pubs & subs
+
   plan_publisher_ = create_publisher<nav_msgs::msg::Path>("plan", 1);
 
-  // Create the action servers for path planning to a pose and through poses
+
   action_server_pose_ = std::make_unique<ActionServerToPose>(
     shared_from_this(),
     "compute_path_to_pose",
@@ -154,7 +154,7 @@ PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
 }
 
 nav2_util::CallbackReturn
-PlannerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
+PlannerServer::on_activate(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Activating");
 
@@ -176,18 +176,18 @@ PlannerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
       &PlannerServer::isPathValid, this,
       std::placeholders::_1, std::placeholders::_2));
 
-  // Add callback for dynamic parameters
+
   dyn_params_handler_ = node->add_on_set_parameters_callback(
     std::bind(&PlannerServer::dynamicParametersCallback, this, _1));
 
-  // create bond connection
+
   createBond();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn
-PlannerServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
+PlannerServer::on_deactivate(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Deactivating");
 
@@ -203,14 +203,14 @@ PlannerServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
 
   dyn_params_handler_.reset();
 
-  // destroy bond connection
+
   destroyBond();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn
-PlannerServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
+PlannerServer::on_cleanup(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Cleaning up");
 
@@ -250,7 +250,7 @@ bool PlannerServer::isServerInactive(
 
 void PlannerServer::waitForCostmap()
 {
-  // Don't compute a plan until costmap is valid (after clear costmap)
+
   rclcpp::Rate r(100);
   while (!costmap_ros_->isCurrent()) {
     r.sleep();
@@ -346,7 +346,7 @@ PlannerServer::computePlanThroughPoses()
 
   auto start_time = steady_clock_.now();
 
-  // Initialize the ComputePathToPose goal and result
+
   auto goal = action_server_poses_->get_current_goal();
   auto result = std::make_shared<ActionThroughPoses::Result>();
   nav_msgs::msg::Path concat_path;
@@ -367,17 +367,17 @@ PlannerServer::computePlanThroughPoses()
       action_server_poses_->terminate_current();
     }
 
-    // Use start pose if provided otherwise use current robot pose
+
     geometry_msgs::msg::PoseStamped start;
     if (!getStartPose(action_server_poses_, goal, start)) {
       return;
     }
 
-    // Get consecutive paths through these points
+
     std::vector<geometry_msgs::msg::PoseStamped>::iterator goal_iter;
     geometry_msgs::msg::PoseStamped curr_start, curr_goal;
     for (unsigned int i = 0; i != goal->goals.size(); i++) {
-      // Get starting point
+
       if (i == 0) {
         curr_start = start;
       } else {
@@ -385,26 +385,26 @@ PlannerServer::computePlanThroughPoses()
       }
       curr_goal = goal->goals[i];
 
-      // Transform them into the global frame
+
       if (!transformPosesToGlobalFrame(action_server_poses_, curr_start, curr_goal)) {
         return;
       }
 
-      // Get plan from start -> goal
+
       nav_msgs::msg::Path curr_path = getPlan(curr_start, curr_goal, goal->planner_id);
 
-      // check path for validity
+
       if (!validatePath(action_server_poses_, curr_goal, curr_path, goal->planner_id)) {
         return;
       }
 
-      // Concatenate paths together
+
       concat_path.poses.insert(
         concat_path.poses.end(), curr_path.poses.begin(), curr_path.poses.end());
       concat_path.header = curr_path.header;
     }
 
-    // Publish the plan for visualization purposes
+
     result->path = concat_path;
     publishPlan(result->path);
 
@@ -436,7 +436,7 @@ PlannerServer::computePlan()
 
   auto start_time = steady_clock_.now();
 
-  // Initialize the ComputePathToPose goal and result
+
   auto goal = action_server_pose_->get_current_goal();
   auto result = std::make_shared<ActionToPose::Result>();
 
@@ -449,13 +449,13 @@ PlannerServer::computePlan()
 
     getPreemptedGoalIfRequested(action_server_pose_, goal);
 
-    // Use start pose if provided otherwise use current robot pose
+
     geometry_msgs::msg::PoseStamped start;
     if (!getStartPose(action_server_pose_, goal, start)) {
       return;
     }
 
-    // Transform them into the global frame
+
     geometry_msgs::msg::PoseStamped goal_pose = goal->goal;
     if (!transformPosesToGlobalFrame(action_server_pose_, start, goal_pose)) {
       return;
@@ -467,7 +467,7 @@ PlannerServer::computePlan()
       return;
     }
 
-    // Publish the plan for visualization purposes
+
     publishPlan(result->path);
 
     auto cycle_duration = steady_clock_.now() - start_time;
@@ -560,10 +560,8 @@ void PlannerServer::isPathValid(
       }
     }
 
-    /**
-     * The lethal check starts at the closest point to avoid points that have already been passed
-     * and may have become occupied
-     */
+    
+
     unsigned int mx = 0;
     unsigned int my = 0;
     for (unsigned int i = closest_point_index; i < request->path.poses.size(); ++i) {
@@ -610,11 +608,11 @@ PlannerServer::dynamicParametersCallback(std::vector<rclcpp::Parameter> paramete
   return result;
 }
 
-}  // namespace nav2_planner
+}
 
 #include "rclcpp_components/register_node_macro.hpp"
 
-// Register the component with class_loader.
-// This acts as a sort of entry point, allowing the component to be discoverable when its library
-// is being loaded into a running process.
+
+
+
 RCLCPP_COMPONENTS_REGISTER_NODE(nav2_planner::PlannerServer)

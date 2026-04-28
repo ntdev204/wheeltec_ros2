@@ -1,17 +1,17 @@
-// Copyright (c) 2018 Intel Corporation
-// Copyright (c) 2021 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 #include <memory>
@@ -40,9 +40,9 @@ public:
     config_ = new BT::NodeConfiguration();
     transform_handler_ = std::make_shared<nav2_behavior_tree::TransformHandler>(node_);
 
-    // Create the blackboard that will be shared by all of the nodes in the tree
+
     config_->blackboard = BT::Blackboard::create();
-    // Put items on the blackboard
+
     config_->blackboard->set<rclcpp::Node::SharedPtr>(
       "node",
       node_);
@@ -102,7 +102,7 @@ TEST_F(RemovePassedGoalsTestFixture, test_tick)
   transform_handler_->waitForTransform();
   transform_handler_->updateRobotPose(pose);
 
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -113,7 +113,7 @@ TEST_F(RemovePassedGoalsTestFixture, test_tick)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // create new goal and set it on blackboard
+
   std::vector<geometry_msgs::msg::PoseStamped> poses;
   poses.resize(4);
   poses[0].pose.position.x = 0.0;
@@ -130,12 +130,12 @@ TEST_F(RemovePassedGoalsTestFixture, test_tick)
 
   config_->blackboard->set("goals", poses);
 
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS) {
     tree_->rootNode()->executeTick();
   }
 
-  // check that it removed the point in range
+
   std::vector<geometry_msgs::msg::PoseStamped> output_poses;
   config_->blackboard->get("goals", output_poses);
 
@@ -148,12 +148,12 @@ int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
 
-  // initialize ROS
+
   rclcpp::init(argc, argv);
 
   int all_successful = RUN_ALL_TESTS();
 
-  // shutdown ROS
+
   rclcpp::shutdown();
 
   return all_successful;

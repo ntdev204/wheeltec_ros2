@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung R&D Institute Russia
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 
@@ -28,7 +28,7 @@ static const char FILTER_NAME[]{"costmap_filter"};
 class CostmapFilterWrapper : public nav2_costmap_2d::CostmapFilter
 {
 public:
-  // Dummy implementations of virtual methods
+
   void initializeFilter(
     const std::string &) {}
 
@@ -39,7 +39,7 @@ public:
 
   void resetFilter() {}
 
-  // Actual testing methods
+
   void setName(const std::string & name)
   {
     name_ = name;
@@ -61,15 +61,15 @@ class TestNode : public ::testing::Test
 public:
   TestNode()
   {
-    // Create new LifecycleNode
+
     node_ = std::make_shared<nav2_util::LifecycleNode>("test_node");
 
-    // Create new CostmapFilter
+
     costmap_filter_ = std::make_shared<CostmapFilterWrapper>();
     costmap_filter_->setNode(node_);
     costmap_filter_->setName(FILTER_NAME);
 
-    // Set CostmapFilter ROS-parameters
+
     node_->declare_parameter(
       std::string(FILTER_NAME) + ".filter_info_topic", rclcpp::ParameterValue("filter_info"));
     node_->set_parameter(
@@ -90,7 +90,7 @@ public:
   {
     auto result = client->async_send_request(request);
 
-    // Wait for the result
+
     if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
       return result.get();
     } else {
@@ -115,7 +115,7 @@ TEST_F(TestNode, testEnableService)
   RCLCPP_INFO(node_->get_logger(), "Waiting for enabling service");
   ASSERT_TRUE(client->wait_for_service());
 
-  // Set costmap filter enabled
+
   req->data = true;
   auto resp = send_request<std_srvs::srv::SetBool>(node_, client, req);
 
@@ -124,7 +124,7 @@ TEST_F(TestNode, testEnableService)
   ASSERT_EQ(resp->message, "Enabled");
   ASSERT_TRUE(costmap_filter_->getEnabled());
 
-  // Set costmap filter disabled
+
   req->data = false;
   resp = send_request<std_srvs::srv::SetBool>(node_, client, req);
 
@@ -136,14 +136,14 @@ TEST_F(TestNode, testEnableService)
 
 int main(int argc, char ** argv)
 {
-  // Initialize the system
+
   testing::InitGoogleTest(&argc, argv);
   rclcpp::init(argc, argv);
 
-  // Actual testing
+
   bool test_result = RUN_ALL_TESTS();
 
-  // Shutdown
+
   rclcpp::shutdown();
 
   return test_result;

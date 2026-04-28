@@ -1,40 +1,11 @@
-/*
- *  Slamtec LIDAR SDK
- *
- *  Copyright (c) 2014 - 2023 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- *
- */
 
- /*
-  *  Sample Data Unpacker System
-  *  Capsule Style Sample Node Handlers
-  */
 
-  /*
-	* Redistribution and use in source and binary forms, with or without
-	* modification, are permitted provided that the following conditions are met:
-	*
-	* 1. Redistributions of source code must retain the above copyright notice,
-	*    this list of conditions and the following disclaimer.
-	*
-	* 2. Redistributions in binary form must reproduce the above copyright notice,
-	*    this list of conditions and the following disclaimer in the documentation
-	*    and/or other materials provided with the distribution.
-	*
-	* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-	* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-	* THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-	* PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
-	* CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-	* EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-	* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-	* OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-	* WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-	* OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	*/
+
+ 
+
+
+  
+
 
 #include "../dataunnpacker_commondef.h"
 #include "../dataunpacker.h"
@@ -49,24 +20,24 @@ BEGIN_DATAUNPACKER_NS()
 namespace unpacker{
 
 
-// UnpackerHandler_CapsuleNode
-///////////////////////////////////////////////////////////////////////////////////
+
+
 
 static _u64 _getSampleDelayOffsetInExpressMode(const SlamtecLidarTimingDesc& timing, int sampleIdx)
 {
-    // FIXME: to eval
-    // 
-    // guess channel baudrate by LIDAR model ....
+
+
+
     const _u64 channelBaudRate = timing.native_baudrate? timing.native_baudrate:115200;
 
     _u64 tranmissionDelay = 1000000ULL * sizeof(rplidar_response_capsule_measurement_nodes_t) * 10 / channelBaudRate;
 
     if (timing.native_interface_type == LIDARInterfaceType::LIDAR_INTERFACE_ETHERNET)
     {
-        tranmissionDelay = 100; //dummy value
+        tranmissionDelay = 100;
     }
 
-    // center of the sample duration
+
     const _u64 sampleDelay = (timing.sample_duration_uS >> 1);
     const _u64 sampleFilterDelay = timing.sample_duration_uS;
     const _u64 groupingDelay = (31 - sampleIdx) * timing.sample_duration_uS;
@@ -109,11 +80,11 @@ void UnpackerHandler_CapsuleNode::onData(LIDARSampleDataUnpackerInner* engine, c
     for (size_t pos = 0; pos < cnt; ++pos) {
         _u8 current_data = data[pos];
         switch (_cached_scan_node_buf_pos) {
-        case 0: // expect the sync bit 1
+        case 0:
         {
             _u8 tmp = (current_data >> 4);
             if (tmp == RPLIDAR_RESP_MEASUREMENT_EXP_SYNC_1) {
-                // pass
+
             }
             else {
                 _is_previous_capsuledataRdy = false;
@@ -122,11 +93,11 @@ void UnpackerHandler_CapsuleNode::onData(LIDARSampleDataUnpackerInner* engine, c
 
         }
         break;
-        case 1: // expect the sync bit 2
+        case 1:
         {
             _u8 tmp = (current_data >> 4);
             if (tmp == RPLIDAR_RESP_MEASUREMENT_EXP_SYNC_2) {
-                // pass
+
             }
             else {
                 _cached_scan_node_buf_pos = 0;
@@ -136,14 +107,14 @@ void UnpackerHandler_CapsuleNode::onData(LIDARSampleDataUnpackerInner* engine, c
         }
         break;
 
-        case sizeof(rplidar_response_capsule_measurement_nodes_t) - 1: // new data ready
+        case sizeof(rplidar_response_capsule_measurement_nodes_t) - 1:
         {
             _cached_scan_node_buf[sizeof(rplidar_response_capsule_measurement_nodes_t) - 1] = current_data;
             _cached_scan_node_buf_pos = 0;
 
             rplidar_response_capsule_measurement_nodes_t* node = reinterpret_cast<rplidar_response_capsule_measurement_nodes_t*>(&_cached_scan_node_buf[0]);
 
-            // calc the checksum ...
+
             _u8 checksum = 0;
             _u8 recvChecksum = ((node->s_checksum_1 & 0xF) | (node->s_checksum_2 << 4));
             for (size_t cpos = offsetof(rplidar_response_capsule_measurement_nodes_t, start_angle_sync_q6);
@@ -154,9 +125,9 @@ void UnpackerHandler_CapsuleNode::onData(LIDARSampleDataUnpackerInner* engine, c
 
             if (recvChecksum == checksum)
             {
-                // only consider vaild if the checksum matches...
 
-                // perform data endianess convertion if necessary
+
+
 #ifdef _CPU_ENDIAN_BIG
                 node->start_angle_sync_q6 = le16_to_cpu(node->start_angle_sync_q6);
                 for (size_t cpos = 0; cpos < _countof(node->cabins); ++cpos) {
@@ -170,7 +141,7 @@ void UnpackerHandler_CapsuleNode::onData(LIDARSampleDataUnpackerInner* engine, c
                         engine->publishDecodingErrorMsg(LIDARSampleDataUnpacker::ERR_EVENT_ON_EXP_ENCODER_RESET
                             , RPLIDAR_ANS_TYPE_MEASUREMENT_CAPSULED, node, sizeof(*node));
                     }
-                    // this is the first capsule frame in logic, discard the previous cached data...
+
                     _is_previous_capsuledataRdy = false;
                     engine->publishNewScanReset();
 
@@ -266,24 +237,24 @@ void UnpackerHandler_CapsuleNode::_onScanNodeCapsuleData(rplidar_response_capsul
 }
 
 
-// UnpackerHandler_UltraCapsuleNode
-///////////////////////////////////////////////////////////////////////////////////
+
+
 
 static _u64 _getSampleDelayOffsetInUltraBoostMode(const SlamtecLidarTimingDesc& timing, int sampleIdx)
 {
-    // FIXME: to eval
-    // 
-    // guess channel baudrate by LIDAR model ....
+
+
+
     const _u64 channelBaudRate = timing.native_baudrate ? timing.native_baudrate : 256000;
 
     _u64 tranmissionDelay = 1000000ULL * sizeof(rplidar_response_ultra_capsule_measurement_nodes_t) * 10 / channelBaudRate;
 
     if (timing.native_interface_type == LIDARInterfaceType::LIDAR_INTERFACE_ETHERNET)
     {
-        tranmissionDelay = 100; //dummy value
+        tranmissionDelay = 100;
     }
 
-    // center of the sample duration
+
     const _u64 sampleDelay = (timing.sample_duration_uS >> 1);
     const _u64 sampleFilterDelay = timing.sample_duration_uS;
     const _u64 groupingDelay = ((32 * 3 - 1) - sampleIdx) * timing.sample_duration_uS;
@@ -327,11 +298,11 @@ void UnpackerHandler_UltraCapsuleNode::onData(LIDARSampleDataUnpackerInner* engi
     for (size_t pos = 0; pos < cnt; ++pos) {
         _u8 current_data = data[pos];
         switch (_cached_scan_node_buf_pos) {
-        case 0: // expect the sync bit 1
+        case 0:
         {
             _u8 tmp = (current_data >> 4);
             if (tmp == RPLIDAR_RESP_MEASUREMENT_EXP_SYNC_1) {
-                // pass
+
             }
             else {
                 _is_previous_capsuledataRdy = false;
@@ -340,11 +311,11 @@ void UnpackerHandler_UltraCapsuleNode::onData(LIDARSampleDataUnpackerInner* engi
 
         }
         break;
-        case 1: // expect the sync bit 2
+        case 1:
         {
             _u8 tmp = (current_data >> 4);
             if (tmp == RPLIDAR_RESP_MEASUREMENT_EXP_SYNC_2) {
-                // pass
+
             }
             else {
                 _cached_scan_node_buf_pos = 0;
@@ -354,14 +325,14 @@ void UnpackerHandler_UltraCapsuleNode::onData(LIDARSampleDataUnpackerInner* engi
         }
         break;
 
-        case sizeof(rplidar_response_ultra_capsule_measurement_nodes_t) - 1: // new data ready
+        case sizeof(rplidar_response_ultra_capsule_measurement_nodes_t) - 1:
         {
             _cached_scan_node_buf[sizeof(rplidar_response_ultra_capsule_measurement_nodes_t) - 1] = current_data;
             _cached_scan_node_buf_pos = 0;
 
             rplidar_response_ultra_capsule_measurement_nodes_t* node = reinterpret_cast<rplidar_response_ultra_capsule_measurement_nodes_t*>(&_cached_scan_node_buf[0]);
 
-            // calc the checksum ...
+
             _u8 checksum = 0;
             _u8 recvChecksum = ((node->s_checksum_1 & 0xF) | (node->s_checksum_2 << 4));
             for (size_t cpos = offsetof(rplidar_response_ultra_capsule_measurement_nodes_t, start_angle_sync_q6);
@@ -372,9 +343,9 @@ void UnpackerHandler_UltraCapsuleNode::onData(LIDARSampleDataUnpackerInner* engi
 
             if (recvChecksum == checksum)
             {
-                // only consider vaild if the checksum matches...
 
-                // perform data endianess convertion if necessary
+
+
 #ifdef _CPU_ENDIAN_BIG
                 node->start_angle_sync_q6 = le16_to_cpu(node->start_angle_sync_q6);
                 for (size_t cpos = 0; cpos < _countof(node->ultra_cabins); ++cpos) {
@@ -388,7 +359,7 @@ void UnpackerHandler_UltraCapsuleNode::onData(LIDARSampleDataUnpackerInner* engi
                             , RPLIDAR_ANS_TYPE_MEASUREMENT_CAPSULED_ULTRA, node, sizeof(*node));
 
                     }
-                    // this is the first capsule frame in logic, discard the previous cached data...
+
                     _is_previous_capsuledataRdy = false;
 
                     engine->publishNewScanReset();
@@ -481,11 +452,11 @@ void UnpackerHandler_UltraCapsuleNode::_onScanNodeUltraCapsuleData(rplidar_respo
 
             _u32 combined_x3 = _cached_previous_ultracapsuledata.ultra_cabins[pos].combined_x3;
 
-            // unpack ...
+
             int dist_major = (combined_x3 & 0xFFF);
 
-            // signed partical integer, using the magic shift here
-            // DO NOT TOUCH
+
+
 
             int dist_predict1 = (((int)(combined_x3 << 10)) >> 22);
             int dist_predict2 = (((int)combined_x3) >> 22);
@@ -494,7 +465,7 @@ void UnpackerHandler_UltraCapsuleNode::_onScanNodeUltraCapsuleData(rplidar_respo
 
             _u32 scalelvl1=0, scalelvl2 = 0;
 
-            // prefetch next ...
+
             if (pos == _countof(_cached_previous_ultracapsuledata.ultra_cabins) - 1)
             {
                 dist_major2 = (capsule.ultra_cabins[0].combined_x3 & 0xFFF);
@@ -503,7 +474,7 @@ void UnpackerHandler_UltraCapsuleNode::_onScanNodeUltraCapsuleData(rplidar_respo
                 dist_major2 = (_cached_previous_ultracapsuledata.ultra_cabins[pos + 1].combined_x3 & 0xFFF);
             }
 
-            // decode with the var bit scale ...
+
             dist_major = _varbitscale_decode(dist_major, scalelvl1);
             dist_major2 = _varbitscale_decode(dist_major2, scalelvl2);
 
@@ -580,24 +551,24 @@ void UnpackerHandler_UltraCapsuleNode::_onScanNodeUltraCapsuleData(rplidar_respo
 }
 
 
-// UnpackerHandler_DenseCapsuleNode
-///////////////////////////////////////////////////////////////////////////////////
+
+
 
 static _u64 _getSampleDelayOffsetInDenseMode(const SlamtecLidarTimingDesc& timing, int sampleIdx)
 {
-    // FIXME: to eval
-    // 
-    // guess channel baudrate by LIDAR model ....
+
+
+
     const _u64 channelBaudRate = timing.native_baudrate ? timing.native_baudrate : 256000;
 
     _u64 tranmissionDelay = 1000000ULL * sizeof(rplidar_response_dense_capsule_measurement_nodes_t) * 10 / channelBaudRate;
 
     if (timing.native_interface_type == LIDARInterfaceType::LIDAR_INTERFACE_ETHERNET)
     {
-        tranmissionDelay = 100; //dummy value
+        tranmissionDelay = 100;
     }
 
-    // center of the sample duration
+
     const _u64 sampleDelay = (timing.sample_duration_uS >> 1);
     const _u64 sampleFilterDelay = timing.sample_duration_uS;
     const _u64 groupingDelay = (39 - sampleIdx) * timing.sample_duration_uS;
@@ -642,11 +613,11 @@ void UnpackerHandler_DenseCapsuleNode::onData(LIDARSampleDataUnpackerInner* engi
     for (size_t pos = 0; pos < cnt; ++pos) {
         _u8 current_data = data[pos];
         switch (_cached_scan_node_buf_pos) {
-        case 0: // expect the sync bit 1
+        case 0:
         {
             _u8 tmp = (current_data >> 4);
             if (tmp == RPLIDAR_RESP_MEASUREMENT_EXP_SYNC_1) {
-                // pass
+
             }
             else {
                 _is_previous_capsuledataRdy = false;
@@ -655,11 +626,11 @@ void UnpackerHandler_DenseCapsuleNode::onData(LIDARSampleDataUnpackerInner* engi
 
         }
         break;
-        case 1: // expect the sync bit 2
+        case 1:
         {
             _u8 tmp = (current_data >> 4);
             if (tmp == RPLIDAR_RESP_MEASUREMENT_EXP_SYNC_2) {
-                // pass
+
             }
             else {
                 _cached_scan_node_buf_pos = 0;
@@ -669,14 +640,14 @@ void UnpackerHandler_DenseCapsuleNode::onData(LIDARSampleDataUnpackerInner* engi
         }
         break;
 
-        case sizeof(rplidar_response_dense_capsule_measurement_nodes_t) - 1: // new data ready
+        case sizeof(rplidar_response_dense_capsule_measurement_nodes_t) - 1:
         {
             _cached_scan_node_buf[sizeof(rplidar_response_dense_capsule_measurement_nodes_t) - 1] = current_data;
             _cached_scan_node_buf_pos = 0;
 
             rplidar_response_dense_capsule_measurement_nodes_t* node = reinterpret_cast<rplidar_response_dense_capsule_measurement_nodes_t*>(&_cached_scan_node_buf[0]);
 
-            // calc the checksum ...
+
             _u8 checksum = 0;
             _u8 recvChecksum = ((node->s_checksum_1 & 0xF) | (node->s_checksum_2 << 4));
             for (size_t cpos = offsetof(rplidar_response_dense_capsule_measurement_nodes_t, start_angle_sync_q6);
@@ -687,9 +658,9 @@ void UnpackerHandler_DenseCapsuleNode::onData(LIDARSampleDataUnpackerInner* engi
 
             if (recvChecksum == checksum)
             {
-                // only consider vaild if the checksum matches...
 
-                // perform data endianess convertion if necessary
+
+
 #ifdef _CPU_ENDIAN_BIG
                 node->start_angle_sync_q6 = le16_to_cpu(node->start_angle_sync_q6);
                 for (size_t cpos = 0; cpos < _countof(node->cabins); ++cpos) {
@@ -703,7 +674,7 @@ void UnpackerHandler_DenseCapsuleNode::onData(LIDARSampleDataUnpackerInner* engi
                         engine->publishDecodingErrorMsg(LIDARSampleDataUnpacker::ERR_EVENT_ON_EXP_ENCODER_RESET
                             , RPLIDAR_ANS_TYPE_MEASUREMENT_DENSE_CAPSULED, node, sizeof(*node));
                     }
-                    // this is the first capsule frame in logic, discard the previous cached data...
+
                     _is_previous_capsuledataRdy = false;
                     engine->publishNewScanReset();
 
@@ -747,8 +718,8 @@ void UnpackerHandler_DenseCapsuleNode::_onScanNodeDenseCapsuleData(rplidar_respo
         if (prevStartAngle_q8 > currentStartAngle_q8) {
             diffAngle_q8 += (360 << 8);
         }
-        int maxDiffAngleThreshold_q8 = (360/* 360 degree */ * 100 /*100Hz*/ * _countof(dense_capsule.cabins) /*40 points per capsule*/ / (1000000 / _cachedTimingDesc.sample_duration_uS)) << 8;
-        if (diffAngle_q8 > maxDiffAngleThreshold_q8) {//discard
+        int maxDiffAngleThreshold_q8 = (360 * 100  * _countof(dense_capsule.cabins)  / (1000000 / _cachedTimingDesc.sample_duration_uS)) << 8;
+        if (diffAngle_q8 > maxDiffAngleThreshold_q8) {
             _cached_previous_dense_capsuledata = dense_capsule;
             return;
         }
@@ -764,7 +735,7 @@ void UnpackerHandler_DenseCapsuleNode::_onScanNodeDenseCapsuleData(rplidar_respo
             dist_q2 = dist << 2;
             angle_q6 = (currentAngle_raw_q16 >> 10);
             syncBit = (((currentAngle_raw_q16 + angleInc_q16) % (360 << 16)) < (angleInc_q16 << 1)) ? 1 : 0;
-            syncBit = (syncBit ^ lastNodeSyncBit) & syncBit;//Ensure that syncBit is exactly detected
+            syncBit = (syncBit ^ lastNodeSyncBit) & syncBit;
 
             currentAngle_raw_q16 += angleInc_q16;
 
@@ -790,24 +761,24 @@ void UnpackerHandler_DenseCapsuleNode::_onScanNodeDenseCapsuleData(rplidar_respo
 
 }
 
-// UnpackerHandler_UltraDenseCapsuleNode
-///////////////////////////////////////////////////////////////////////////////////
+
+
 
 static _u64 _getSampleDelayOffsetInUltraDenseMode(const SlamtecLidarTimingDesc& timing, int sampleIdx)
 {
-    // FIXME: to eval
-    // 
-    // guess channel baudrate by LIDAR model ....
+
+
+
     const _u64 channelBaudRate = timing.native_baudrate ? timing.native_baudrate : 1000000;
 
     _u64 tranmissionDelay = 1000000ULL * sizeof(sl_lidar_response_ultra_dense_capsule_measurement_nodes_t) * 10 / channelBaudRate;
 
     if (timing.native_interface_type == LIDARInterfaceType::LIDAR_INTERFACE_ETHERNET)
     {
-        tranmissionDelay = 100; //dummy value
+        tranmissionDelay = 100;
     }
 
-    // center of the sample duration
+
     const _u64 sampleDelay = (timing.sample_duration_uS >> 1);
     const _u64 sampleFilterDelay = timing.sample_duration_uS;
     const _u64 groupingDelay = ((32 * 2 - 1) - sampleIdx) * timing.sample_duration_uS;
@@ -854,11 +825,11 @@ void UnpackerHandler_UltraDenseCapsuleNode::onData(LIDARSampleDataUnpackerInner*
     for (size_t pos = 0; pos < cnt; ++pos) {
         _u8 current_data = data[pos];
         switch (_cached_scan_node_buf_pos) {
-        case 0: // expect the sync bit 1
+        case 0:
         {
             _u8 tmp = (current_data >> 4);
             if (tmp == RPLIDAR_RESP_MEASUREMENT_EXP_SYNC_1) {
-                // pass
+
             }
             else {
                 _is_previous_capsuledataRdy = false;
@@ -867,11 +838,11 @@ void UnpackerHandler_UltraDenseCapsuleNode::onData(LIDARSampleDataUnpackerInner*
 
         }
         break;
-        case 1: // expect the sync bit 2
+        case 1:
         {
             _u8 tmp = (current_data >> 4);
             if (tmp == RPLIDAR_RESP_MEASUREMENT_EXP_SYNC_2) {
-                // pass
+
             }
             else {
                 _cached_scan_node_buf_pos = 0;
@@ -881,14 +852,14 @@ void UnpackerHandler_UltraDenseCapsuleNode::onData(LIDARSampleDataUnpackerInner*
         }
         break;
 
-        case sizeof(rplidar_response_ultra_dense_capsule_measurement_nodes_t) - 1: // new data ready
+        case sizeof(rplidar_response_ultra_dense_capsule_measurement_nodes_t) - 1:
         {
             _cached_scan_node_buf[sizeof(rplidar_response_ultra_dense_capsule_measurement_nodes_t) - 1] = current_data;
             _cached_scan_node_buf_pos = 0;
 
             rplidar_response_ultra_dense_capsule_measurement_nodes_t* node = reinterpret_cast<rplidar_response_ultra_dense_capsule_measurement_nodes_t*>(&_cached_scan_node_buf[0]);
 
-            // calc the checksum ...
+
             _u8 checksum = 0;
             _u8 recvChecksum = ((node->s_checksum_1 & 0xF) | (node->s_checksum_2 << 4));
             for (size_t cpos = offsetof(rplidar_response_ultra_dense_capsule_measurement_nodes_t, time_stamp);
@@ -899,9 +870,9 @@ void UnpackerHandler_UltraDenseCapsuleNode::onData(LIDARSampleDataUnpackerInner*
 
             if (recvChecksum == checksum)
             {
-                // only consider vaild if the checksum matches...
 
-                // perform data endianess convertion if necessary
+
+
 #ifdef _CPU_ENDIAN_BIG
                 node->start_angle_sync_q6 = le16_to_cpu(node->start_angle_sync_q6);
                 for (size_t cpos = 0; cpos < _countof(node->cabins); ++cpos) {
@@ -916,7 +887,7 @@ void UnpackerHandler_UltraDenseCapsuleNode::onData(LIDARSampleDataUnpackerInner*
                             , RPLIDAR_ANS_TYPE_MEASUREMENT_ULTRA_DENSE_CAPSULED, node, sizeof(*node));
 
                     }
-                    // this is the first capsule frame in logic, discard the previous cached data...
+
                     _is_previous_capsuledataRdy = false;
                     engine->publishNewScanReset();
 
@@ -965,14 +936,14 @@ void UnpackerHandler_UltraDenseCapsuleNode::_onScanNodeUltraDenseCapsuleData(rpl
             diffAngle_q8 += (360 << 8);
         }
 
-        int maxDiffAngleThreshold_q8 = (360/* 360 degree */ * 100 /*100Hz*/ * _countof(ultra_dense_capsule->cabins) /*64 points per capsule*/ / (1000000 / _cachedTimingDesc.sample_duration_uS)) << 8;
-        if (diffAngle_q8 > maxDiffAngleThreshold_q8) {//discard
+        int maxDiffAngleThreshold_q8 = (360 * 100  * _countof(ultra_dense_capsule->cabins)  / (1000000 / _cachedTimingDesc.sample_duration_uS)) << 8;
+        if (diffAngle_q8 > maxDiffAngleThreshold_q8) {
             _cached_previous_ultra_dense_capsuledata = *ultra_dense_capsule;
             return;
         }
-#define DISTANCE_THRESHOLD_TO_SCALE_1 2046  // (2^10 - 1)*2 mm
-#define DISTANCE_THRESHOLD_TO_SCALE_2 8187  // (2^11 - 1)*3 + 2046 mm
-#define DISTANCE_THRESHOLD_TO_SCALE_3 24567 // (2^12 - 1)*4 + 8187 mm
+#define DISTANCE_THRESHOLD_TO_SCALE_1 2046
+#define DISTANCE_THRESHOLD_TO_SCALE_2 8187
+#define DISTANCE_THRESHOLD_TO_SCALE_3 24567
         int angleInc_q16 = (diffAngle_q8 << 8) / 64;
         int currentAngle_raw_q16 = (prevStartAngle_q8 << 8);
         for (int pos = 0; pos < (int)_countof(_cached_previous_ultra_dense_capsuledata.cabins) * 2; ++pos)
@@ -997,7 +968,7 @@ void UnpackerHandler_UltraDenseCapsuleNode::_onScanNodeUltraDenseCapsuleData(rpl
                 quality = quality_dist_scale >> 12;
                 dist_q2 = (quality_dist_scale & 0xFFC) * 2;
                 if (_last_dist_q2) {
-                    if (abs(dist_q2 - _last_dist_q2) <= 8/*2mm *2*/) {
+                    if (abs(dist_q2 - _last_dist_q2) <= 8) {
                         dist_q2 = (dist_q2 + _last_dist_q2) >> 1;
                     }
                 }
@@ -1018,7 +989,7 @@ void UnpackerHandler_UltraDenseCapsuleNode::_onScanNodeUltraDenseCapsuleData(rpl
             _last_dist_q2 = dist_q2;
             angle_q6 = (currentAngle_raw_q16 >> 10);
             syncBit = (((currentAngle_raw_q16 + angleInc_q16) % (360 << 16)) < (angleInc_q16 << 1)) ? 1 : 0;
-            syncBit = (syncBit ^ _last_node_sync_bit) & syncBit;//Ensure that syncBit is exactly detected
+            syncBit = (syncBit ^ _last_node_sync_bit) & syncBit;
 
             currentAngle_raw_q16 += angleInc_q16;
 

@@ -1,18 +1,18 @@
-// Copyright (c) 2019 RoboTech Vision
-// Copyright (c) 2019 Intel Corporation
-// Copyright (c) 2022 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <chrono>
 #include <limits>
@@ -103,10 +103,10 @@ SmootherServer::on_configure(const rclcpp_lifecycle::State &)
     return nav2_util::CallbackReturn::FAILURE;
   }
 
-  // Initialize pubs & subs
+
   plan_publisher_ = create_publisher<nav_msgs::msg::Path>("plan_smoothed", 1);
 
-  // Create the action server that we implement with our smoothPath method
+
   action_server_ = std::make_unique<ActionServer>(
     shared_from_this(),
     "smooth_path",
@@ -168,7 +168,7 @@ SmootherServer::on_activate(const rclcpp_lifecycle::State &)
   }
   action_server_->activate();
 
-  // create bond connection
+
   createBond();
 
   return nav2_util::CallbackReturn::SUCCESS;
@@ -186,7 +186,7 @@ SmootherServer::on_deactivate(const rclcpp_lifecycle::State &)
   }
   plan_publisher_->on_deactivate();
 
-  // destroy bond connection
+
   destroyBond();
 
   return nav2_util::CallbackReturn::SUCCESS;
@@ -197,14 +197,14 @@ SmootherServer::on_cleanup(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(get_logger(), "Cleaning up");
 
-  // Cleanup the helper classes
+
   SmootherMap::iterator it;
   for (it = smoothers_.begin(); it != smoothers_.end(); ++it) {
     it->second->cleanup();
   }
   smoothers_.clear();
 
-  // Release any allocated resources
+
   action_server_.reset();
   plan_publisher_.reset();
   transform_listener_.reset();
@@ -269,7 +269,7 @@ void SmootherServer::smoothPlan()
       return;
     }
 
-    // Perform smoothing
+
     auto goal = action_server_->get_current_goal();
     result->path = goal->path;
     result->was_completed = smoothers_[current_smoother_]->smooth(
@@ -287,7 +287,7 @@ void SmootherServer::smoothPlan()
     }
     plan_publisher_->publish(result->path);
 
-    // Check for collisions
+
     if (goal->check_for_collisions) {
       geometry_msgs::msg::Pose2D pose2d;
       bool fetch_data = true;
@@ -324,11 +324,11 @@ void SmootherServer::smoothPlan()
   }
 }
 
-}  // namespace nav2_smoother
+}
 
 #include "rclcpp_components/register_node_macro.hpp"
 
-// Register the component with class_loader.
-// This acts as a sort of entry point, allowing the component to be discoverable when its library
-// is being loaded into a running process.
+
+
+
 RCLCPP_COMPONENTS_REGISTER_NODE(nav2_smoother::SmootherServer)

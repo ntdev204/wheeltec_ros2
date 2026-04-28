@@ -1,25 +1,9 @@
-/**
- * @file cmd_interface_linux.cpp
- * @author LDRobot (contact@ldrobot.com)
- * @brief  linux serial port App
- * @version 0.1
- * @date 2021-10-28
- *
- * @copyright Copyright (c) 2021  SHENZHEN LDROBOT CO., LTD. All rights
- * reserved.
- * Licensed under the MIT License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License in the file LICENSE
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
+
 
 #include "cmd_interface_linux.h"
 
-int ioctl(int d, int request, ...);  //...
+int ioctl(int d, int request, ...);
 
 namespace ldlidar {
 
@@ -54,7 +38,7 @@ bool CmdInterfaceLinux::Open(std::string &port_name, uint32_t com_baudrate) {
   options.c_cflag |= (tcflag_t)(CLOCAL | CREAD | CS8);
   options.c_cflag &= (tcflag_t) ~(CSTOPB | PARENB);
   options.c_lflag &= (tcflag_t) ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL |
-                                  ISIG | IEXTEN);  //|ECHOPRT
+                                  ISIG | IEXTEN);
   options.c_oflag &= (tcflag_t) ~(OPOST);
   options.c_iflag &= (tcflag_t) ~(IXON | IXOFF | INLCR | IGNCR | ICRNL | IGNBRK);
 
@@ -123,11 +107,11 @@ bool CmdInterfaceLinux::ReadFromIO(uint8_t *rx_buf, uint32_t rx_buf_len,
     FD_SET(com_handle_, &read_fds);
     int r = pselect(com_handle_ + 1, &read_fds, NULL, NULL, &timeout, NULL);
     if (r < 0) {
-      // Select was interrupted
+
       if (errno == EINTR) {
         return false;
       }
-    } else if (r == 0) {  // timeout
+    } else if (r == 0) {
       return false;
     }
 
@@ -171,6 +155,5 @@ void CmdInterfaceLinux::RxThreadProc(void *param) {
   delete[] rx_buf;
 }
 
-} // namespace ldlidar
-/********************* (C) COPYRIGHT SHENZHEN LDROBOT CO., LTD *******END OF
- * FILE ********/
+}
+

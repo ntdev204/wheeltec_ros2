@@ -1,16 +1,16 @@
-// Copyright (c) 2018 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <vector>
 #include <string>
@@ -62,9 +62,9 @@ ClearCostmapService::ClearCostmapService(
 }
 
 void ClearCostmapService::clearExceptRegionCallback(
-  const shared_ptr<rmw_request_id_t>/*request_header*/,
+  const shared_ptr<rmw_request_id_t>,
   const shared_ptr<ClearExceptRegion::Request> request,
-  const shared_ptr<ClearExceptRegion::Response>/*response*/)
+  const shared_ptr<ClearExceptRegion::Response>)
 {
   RCLCPP_INFO(
     logger_,
@@ -74,17 +74,17 @@ void ClearCostmapService::clearExceptRegionCallback(
 }
 
 void ClearCostmapService::clearAroundRobotCallback(
-  const shared_ptr<rmw_request_id_t>/*request_header*/,
+  const shared_ptr<rmw_request_id_t>,
   const shared_ptr<ClearAroundRobot::Request> request,
-  const shared_ptr<ClearAroundRobot::Response>/*response*/)
+  const shared_ptr<ClearAroundRobot::Response>)
 {
   clearRegion(request->reset_distance, false);
 }
 
 void ClearCostmapService::clearEntireCallback(
-  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
-  const std::shared_ptr<ClearEntirely::Request>/*request*/,
-  const std::shared_ptr<ClearEntirely::Response>/*response*/)
+  const std::shared_ptr<rmw_request_id_t>,
+  const std::shared_ptr<ClearEntirely::Request>,
+  const std::shared_ptr<ClearEntirely::Response>)
 {
   RCLCPP_INFO(
     logger_,
@@ -113,8 +113,8 @@ void ClearCostmapService::clearRegion(const double reset_distance, bool invert)
     }
   }
 
-  // AlexeyMerzlyakov: No need to clear layer region for costmap filters
-  // as they are always supposed to be not clearable.
+
+
 }
 
 void ClearCostmapService::clearLayerRegion(
@@ -158,4 +158,4 @@ bool ClearCostmapService::getPosition(double & x, double & y) const
   return true;
 }
 
-}  // namespace nav2_costmap_2d
+}

@@ -1,16 +1,16 @@
-// Copyright (c) 2020 Samsung Research Russia
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 
@@ -60,7 +60,7 @@ private:
 
 void TestNode::createMaps()
 {
-  // Create occ_grid_ map
+
   occ_grid_ = std::make_shared<nav_msgs::msg::OccupancyGrid>();
 
   const unsigned int width = 4;
@@ -88,18 +88,18 @@ void TestNode::createMaps()
     }
   }
 
-  // Create costmap_ (convert OccupancyGrid -> to Costmap2D)
+
   costmap_ = std::make_shared<nav2_costmap_2d::Costmap2D>(*occ_grid_);
 }
 
 void TestNode::verifyCostmap()
 {
-  // Verify Costmap2D info
+
   EXPECT_NEAR(costmap_->getResolution(), RESOLUTION, EPSILON);
   EXPECT_NEAR(costmap_->getOriginX(), ORIGIN_X, EPSILON);
   EXPECT_NEAR(costmap_->getOriginY(), ORIGIN_Y, EPSILON);
 
-  // Verify Costmap2D data
+
   unsigned int it;
   unsigned char data, data_ref;
   for (it = 0; it < (costmap_->getSizeInCellsX() * costmap_->getSizeInCellsY() - 1); it++) {

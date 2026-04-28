@@ -1,16 +1,16 @@
-// Copyright (c) 2021 Wyca Robotics
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <memory>
 #include <vector>
@@ -42,7 +42,7 @@ TEST(DynParamTestNode, testDynParamsSet)
   auto costmap = std::make_shared<nav2_costmap_2d::Costmap2DROS>("test_costmap");
   costmap->on_configure(rclcpp_lifecycle::State());
 
-  // Set tf between default global_frame and robot_base_frame in order not to block in on_activate
+
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_ =
     std::make_unique<tf2_ros::TransformBroadcaster>(node);
   geometry_msgs::msg::TransformStamped t;
@@ -77,7 +77,7 @@ TEST(DynParamTestNode, testDynParamsSet)
     rclcpp::Parameter("robot_base_frame", "test_frame"),
   });
 
-  // Try setting robot_base_frame to an invalid frame, should be rejected
+
   auto results2 = parameter_client->set_parameters_atomically(
   {
     rclcpp::Parameter("robot_base_frame", "wrong_test_frame"),

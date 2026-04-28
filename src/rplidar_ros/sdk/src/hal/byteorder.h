@@ -1,16 +1,11 @@
-/*
- *  RoboPeak Project
- *  Copyright 2009 - 2013
- *  
- *  RPOS - Endianness Helper
- *
- */
+
+
 
 #pragma once
 
 
 #if !defined(_CPU_ENDIAN_BIG) && !defined(_CPU_ENDIAN_SMALL)
-// CPU Endianness is not specified, assume little endian.
+
 #define _CPU_ENDIAN_SMALL
 #endif
 
@@ -23,7 +18,7 @@
 #if defined(_CPU_ENDIAN_SMALL)
 
 
-// we don't want to conflict with the Linux kernel...
+
 #ifndef __KERNEL__ 
 #define constant_cpu_to_le64(x) ((_u64)(x))
 #define constant_le64_to_cpu(x) ((_u64)(x))
@@ -66,7 +61,7 @@
 
 #else
 
-// we don't want to conflict with the Linux kernel...
+
 #ifndef __KERNEL__ 
 #define constant_cpu_to_le64(x) (__static_byteswap_64((x)))
 #define constant_le64_to_cpu(x) __static_byteswap_64((_u64)(x))

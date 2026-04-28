@@ -1,16 +1,16 @@
-// Copyright (c) 2021 Samsung Research
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <vector>
 #include <string>
@@ -42,7 +42,7 @@ NavigateThroughPosesNavigator::configure(
 
   path_blackboard_id_ = node->get_parameter("path_blackboard_id").as_string();
 
-  // Odometry smoother object for getting current speed
+
   odom_smoother_ = odom_smoother;
 
   return true;
@@ -88,18 +88,18 @@ NavigateThroughPosesNavigator::goalReceived(ActionT::Goal::ConstSharedPtr goal)
 
 void
 NavigateThroughPosesNavigator::goalCompleted(
-  typename ActionT::Result::SharedPtr /*result*/,
-  const nav2_behavior_tree::BtStatus /*final_bt_status*/)
+  typename ActionT::Result::SharedPtr ,
+  const nav2_behavior_tree::BtStatus )
 {
 }
 
 void
 NavigateThroughPosesNavigator::onLoop()
 {
-  using namespace nav2_util::geometry_utils;  // NOLINT
+  using namespace nav2_util::geometry_utils;
 
-  // action server feedback (pose, duration of task,
-  // number of recoveries, and distance remaining to goal, etc)
+
+
   auto feedback_msg = std::make_shared<ActionT::Feedback>();
 
   auto blackboard = bt_action_server_->getBlackboard();
@@ -119,11 +119,11 @@ NavigateThroughPosesNavigator::onLoop()
     feedback_utils_.transform_tolerance);
 
   try {
-    // Get current path points
+
     nav_msgs::msg::Path current_path;
     blackboard->get<nav_msgs::msg::Path>(path_blackboard_id_, current_path);
 
-    // Find the closest pose to current pose on global path
+
     auto find_closest_pose_idx =
       [&current_pose, &current_path]() {
         size_t closest_pose_idx = 0;
@@ -139,19 +139,19 @@ NavigateThroughPosesNavigator::onLoop()
         return closest_pose_idx;
       };
 
-    // Calculate distance on the path
+
     double distance_remaining =
       nav2_util::geometry_utils::calculate_path_length(current_path, find_closest_pose_idx());
 
-    // Default value for time remaining
+
     rclcpp::Duration estimated_time_remaining = rclcpp::Duration::from_seconds(0.0);
 
-    // Get current speed
+
     geometry_msgs::msg::Twist current_odom = odom_smoother_->getTwist();
     double current_linear_speed = std::hypot(current_odom.linear.x, current_odom.linear.y);
 
-    // Calculate estimated time taken to goal if speed is higher than 1cm/s
-    // and at least 10cm to go
+
+
     if ((std::abs(current_linear_speed) > 0.01) && (distance_remaining > 0.1)) {
       estimated_time_remaining =
         rclcpp::Duration::from_seconds(distance_remaining / std::abs(current_linear_speed));
@@ -160,7 +160,7 @@ NavigateThroughPosesNavigator::onLoop()
     feedback_msg->distance_remaining = distance_remaining;
     feedback_msg->estimated_time_remaining = estimated_time_remaining;
   } catch (...) {
-    // Ignore
+
   }
 
   int recovery_count = 0;
@@ -182,9 +182,9 @@ NavigateThroughPosesNavigator::onPreempt(ActionT::Goal::ConstSharedPtr goal)
     (goal->behavior_tree.empty() &&
     bt_action_server_->getCurrentBTFilename() == bt_action_server_->getDefaultBTFilename()))
   {
-    // if pending goal requests the same BT as the current goal, accept the pending goal
-    // if pending goal has an empty behavior_tree field, it requests the default BT file
-    // accept the pending goal if the current goal is running the default BT file
+
+
+
     initializeGoalPoses(bt_action_server_->acceptPendingGoal());
   } else {
     RCLCPP_WARN(
@@ -207,13 +207,13 @@ NavigateThroughPosesNavigator::initializeGoalPoses(ActionT::Goal::ConstSharedPtr
       goal->poses.size(), goal->poses.back().pose.position.x, goal->poses.back().pose.position.y);
   }
 
-  // Reset state for new action feedback
+
   start_time_ = clock_->now();
   auto blackboard = bt_action_server_->getBlackboard();
-  blackboard->set<int>("number_recoveries", 0);  // NOLINT
+  blackboard->set<int>("number_recoveries", 0);
 
-  // Update the goal pose on the blackboard
+
   blackboard->set<Goals>(goals_blackboard_id_, goal->poses);
 }
 
-}  // namespace nav2_bt_navigator
+}

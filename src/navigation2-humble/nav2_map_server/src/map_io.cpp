@@ -1,33 +1,5 @@
-/* Copyright 2019 Rover Robotics
- * Copyright 2010 Brian Gerkey
- * Copyright (c) 2008, Willow Garage, Inc.
- *
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <ORGANIZATION> nor the names of its
- *       contributors may be used to endorse or promote products derived from
- *       this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+
+
 
 #include "nav2_map_server/map_io.hpp"
 
@@ -49,7 +21,7 @@
 #include "nav2_util/occ_grid_values.hpp"
 
 #ifdef _WIN32
-// https://github.com/rtv/Stage/blob/master/replace/dirname.c
+
 static
 char * dirname(char * path)
 {
@@ -60,32 +32,31 @@ char * dirname(char * path)
     return path;
   }
 
-  /* Replace all "\" with "/" */
+  
   char * c = path;
   while (*c != '\0') {
     if (*c == '\\') {*c = '/';}
     ++c;
   }
 
-  /* Find last '/'.  */
+  
   last_slash = path != NULL ? strrchr(path, '/') : NULL;
 
   if (last_slash != NULL && last_slash == path) {
-    /* The last slash is the first character in the string.  We have to
-       return "/".  */
+    
+
     ++last_slash;
   } else if (last_slash != NULL && last_slash[1] == '\0') {
-    /* The '/' is the last character, we have to look further.  */
+    
     last_slash = reinterpret_cast<char *>(memchr(path, last_slash - path, '/'));
   }
 
   if (last_slash != NULL) {
-    /* Terminate the path.  */
+    
     last_slash[0] = '\0';
   } else {
-    /* This assignment is ill-designed but the XPG specs require to
-       return a string containing "." in any case no directory part is
-       found and so a static and constant string is required.  */
+    
+
     path = reinterpret_cast<char *>(dot);
   }
 
@@ -97,12 +68,12 @@ namespace nav2_map_server
 {
 using nav2_util::geometry_utils::orientationAroundZAxis;
 
-// === Map input part ===
 
-/// Get the given subnode value.
-/// The only reason this function exists is to wrap the exceptions in slightly nicer error messages,
-/// including the name of the failed key
-/// @throw YAML::Exception
+
+
+
+
+
 template<typename T>
 T yaml_get_value(const YAML::Node & node, const std::string & key)
 {
@@ -125,7 +96,7 @@ LoadParameters loadMapYaml(const std::string & yaml_filename)
     throw YAML::Exception(doc["image"].Mark(), "The image tag was empty.");
   }
   if (image_file_name[0] != '/') {
-    // dirname takes a mutable char *, so we copy into a vector
+
     std::vector<char> fname_copy(yaml_filename.begin(), yaml_filename.end());
     fname_copy.push_back('\0');
     image_file_name = std::string(dirname(fname_copy.data())) + '/' + image_file_name;
@@ -164,7 +135,7 @@ LoadParameters loadMapYaml(const std::string & yaml_filename)
   std::cout << "[DEBUG] [map_io]: occupied_thresh: " << load_parameters.occupied_thresh <<
     std::endl;
   std::cout << "[DEBUG] [map_io]: mode: " << map_mode_to_string(load_parameters.mode) << std::endl;
-  std::cout << "[DEBUG] [map_io]: negate: " << load_parameters.negate << std::endl;  //NOLINT
+  std::cout << "[DEBUG] [map_io]: negate: " << load_parameters.negate << std::endl;
 
   return load_parameters;
 }
@@ -180,7 +151,7 @@ void loadMapFromFile(
     load_parameters.image_file_name << std::endl;
   Magick::Image img(load_parameters.image_file_name);
 
-  // Copy the image data into the map structure
+
   msg.info.width = img.size().width();
   msg.info.height = img.size().height();
 
@@ -190,10 +161,10 @@ void loadMapFromFile(
   msg.info.origin.position.z = 0.0;
   msg.info.origin.orientation = orientationAroundZAxis(load_parameters.origin[2]);
 
-  // Allocate space to hold the data
+
   msg.data.resize(msg.info.width * msg.info.height);
 
-  // Copy pixel data into the map structure
+
   for (size_t y = 0; y < msg.info.height; y++) {
     for (size_t x = 0; x < msg.info.width; x++) {
       auto pixel = img.pixelColor(x, y);
@@ -201,20 +172,20 @@ void loadMapFromFile(
       std::vector<Magick::Quantum> channels = {pixel.redQuantum(), pixel.greenQuantum(),
         pixel.blueQuantum()};
       if (load_parameters.mode == MapMode::Trinary && img.matte()) {
-        // To preserve existing behavior, average in alpha with color channels in Trinary mode.
-        // CAREFUL. alpha is inverted from what you might expect. High = transparent, low = opaque
+
+
         channels.push_back(MaxRGB - pixel.alphaQuantum());
       }
       double sum = 0;
       for (auto c : channels) {
         sum += c;
       }
-      /// on a scale from 0.0 to 1.0 how bright is the pixel?
+
       double shade = Magick::ColorGray::scaleQuantumToDouble(sum / channels.size());
 
-      // If negate is true, we consider blacker pixels free, and whiter
-      // pixels occupied. Otherwise, it's vice versa.
-      /// on a scale from 0.0 to 1.0, how occupied is the map cell (before thresholding)?
+
+
+
       double occ = (load_parameters.negate ? shade : 1.0 - shade);
 
       int8_t map_cell;
@@ -259,7 +230,7 @@ void loadMapFromFile(
     }
   }
 
-  // Since loadMapFromFile() does not belong to any node, publishing in a system time.
+
   rclcpp::Clock clock(RCL_SYSTEM_TIME);
   msg.info.map_load_time = clock.now();
   msg.header.frame_id = "map";
@@ -308,20 +279,16 @@ LOAD_MAP_STATUS loadMapFromYaml(
   return LOAD_MAP_SUCCESS;
 }
 
-// === Map output part ===
 
-/**
- * @brief Checks map saving parameters for consistency
- * @param save_parameters Map saving parameters.
- * NOTE: save_parameters could be updated during function execution.
- * @throw std::exception in case of inconsistent parameters
- */
+
+
+
 void checkSaveParameters(SaveParameters & save_parameters)
 {
-  // Magick must me initialized before any activity with images
+
   Magick::InitializeMagick(nullptr);
 
-  // Checking map file name
+
   if (save_parameters.map_file_name == "") {
     rclcpp::Clock clock(RCL_SYSTEM_TIME);
     save_parameters.map_file_name = "map_" +
@@ -330,7 +297,7 @@ void checkSaveParameters(SaveParameters & save_parameters)
       save_parameters.map_file_name << " file" << std::endl;
   }
 
-  // Checking thresholds
+
   if (save_parameters.occupied_thresh == 0.0) {
     save_parameters.occupied_thresh = 0.65;
     std::cout << "[WARN] [map_io]: Occupied threshold unspecified. Setting it to default value: " <<
@@ -355,7 +322,7 @@ void checkSaveParameters(SaveParameters & save_parameters)
     throw std::runtime_error("Incorrect thresholds");
   }
 
-  // Checking image format
+
   if (save_parameters.image_format == "") {
     save_parameters.image_format = save_parameters.mode == MapMode::Scale ? "png" : "pgm";
     std::cout << "[WARN] [map_io]: Image format unspecified. Setting it to: " <<
@@ -403,7 +370,7 @@ void checkSaveParameters(SaveParameters & save_parameters)
     save_parameters.image_format = FALLBACK_FORMAT;
   }
 
-  // Checking map mode
+
   if (
     save_parameters.mode == MapMode::Scale &&
     (save_parameters.image_format == "pgm" ||
@@ -417,12 +384,8 @@ void checkSaveParameters(SaveParameters & save_parameters)
   }
 }
 
-/**
- * @brief Tries to write map data into a file
- * @param map Occupancy grid data
- * @param save_parameters Map saving parameters
- * @throw std::expection in case of problem
- */
+
+
 void tryWriteMapToFile(
   const nav_msgs::msg::OccupancyGrid & map,
   const SaveParameters & save_parameters)
@@ -433,17 +396,17 @@ void tryWriteMapToFile(
 
   std::string mapdatafile = save_parameters.map_file_name + "." + save_parameters.image_format;
   {
-    // should never see this color, so the initialization value is just for debugging
+
     Magick::Image image({map.info.width, map.info.height}, "red");
 
-    // In scale mode, we need the alpha (matte) channel. Else, we don't.
-    // NOTE: GraphicsMagick seems to have trouble loading the alpha channel when saved with
-    // Magick::GreyscaleMatte, so we use TrueColorMatte instead.
+
+
+
     image.type(
       save_parameters.mode == MapMode::Scale ?
       Magick::TrueColorMatteType : Magick::GrayscaleType);
 
-    // Since we only need to support 100 different pixel levels, 8 bits is fine
+
     image.depth(8);
 
     int free_thresh_int = std::rint(save_parameters.free_thresh * 100.0);
@@ -536,11 +499,11 @@ bool saveMapToFile(
   const nav_msgs::msg::OccupancyGrid & map,
   const SaveParameters & save_parameters)
 {
-  // Local copy of SaveParameters that might be modified by checkSaveParameters()
+
   SaveParameters save_parameters_loc = save_parameters;
 
   try {
-    // Checking map parameters for consistency
+
     checkSaveParameters(save_parameters_loc);
 
     tryWriteMapToFile(map, save_parameters_loc);
@@ -551,4 +514,4 @@ bool saveMapToFile(
   return true;
 }
 
-}  // namespace nav2_map_server
+}

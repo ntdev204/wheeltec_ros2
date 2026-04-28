@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <cmath>
 #include "nav2_mppi_controller/critics/obstacles_critic.hpp"
@@ -55,7 +55,7 @@ double ObstaclesCritic::findCircumscribedCost(
 {
   double result = -1.0;
   bool inflation_layer_found = false;
-  // check if the costmap has an inflation layer
+
   for (auto layer = costmap->getLayeredCostmap()->getPlugins()->begin();
     layer != costmap->getLayeredCostmap()->getPlugins()->end();
     ++layer)
@@ -93,8 +93,8 @@ float ObstaclesCritic::distanceToObstacle(const CollisionCost & cost)
   const float min_radius = costmap_ros_->getLayeredCostmap()->getInscribedRadius();
   float dist_to_obj = (scale_factor * min_radius - log(cost.cost) + log(253.0f)) / scale_factor;
 
-  // If not footprint collision checking, the cost is using the center point cost and
-  // needs the radius subtracted to obtain the closest distance to the object
+
+
   if (!cost.using_footprint) {
     dist_to_obj -= min_radius;
   }
@@ -109,7 +109,7 @@ void ObstaclesCritic::score(CriticData & data)
     return;
   }
 
-  // If near the goal, don't apply the preferential term since the goal is near obstacles
+
   bool near_goal = false;
   if (utils::withinPositionGoalTolerance(near_goal_distance_, data.state.pose.pose, data.path)) {
     near_goal = true;
@@ -130,24 +130,24 @@ void ObstaclesCritic::score(CriticData & data)
 
     for (size_t j = 0; j < traj_len; j++) {
       pose_cost = costAtPose(traj.x(i, j), traj.y(i, j), traj.yaws(i, j));
-      if (pose_cost.cost < 1) {continue;}  // In free space
+      if (pose_cost.cost < 1) {continue;}
 
       if (inCollision(pose_cost.cost)) {
         trajectory_collide = true;
         break;
       }
 
-      // Cannot process repulsion if inflation layer does not exist
+
       if (inflation_radius_ == 0 || inflation_scale_factor_ == 0) {
         continue;
       }
 
       const float dist_to_obj = distanceToObstacle(pose_cost);
 
-      // Let near-collision trajectory points be punished severely
+
       if (dist_to_obj < collision_margin_distance_) {
         traj_cost += (collision_margin_distance_ - dist_to_obj);
-      } else if (!near_goal) {  // Generally prefer trajectories further from obstacles
+      } else if (!near_goal) {
         repulsive_cost[i] += (inflation_radius_ - dist_to_obj);
       }
     }
@@ -163,18 +163,15 @@ void ObstaclesCritic::score(CriticData & data)
   data.fail_flag = all_trajectories_collide;
 }
 
-/**
-  * @brief Checks if cost represents a collision
-  * @param cost Costmap cost
-  * @return bool if in collision
-  */
+
+
 bool ObstaclesCritic::inCollision(float cost) const
 {
   bool is_tracking_unknown =
     costmap_ros_->getLayeredCostmap()->isTrackingUnknown();
 
   switch (static_cast<unsigned char>(cost)) {
-    using namespace nav2_costmap_2d; // NOLINT
+    using namespace nav2_costmap_2d;
     case (LETHAL_OBSTACLE):
       return true;
     case (INSCRIBED_INFLATED_OBSTACLE):
@@ -207,7 +204,7 @@ CollisionCost ObstaclesCritic::costAtPose(float x, float y, float theta)
   return collision_cost;
 }
 
-}  // namespace mppi::critics
+}
 
 #include <pluginlib/class_list_macros.hpp>
 

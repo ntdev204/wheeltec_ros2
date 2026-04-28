@@ -21,12 +21,6 @@ def generate_launch_description():
         map_default = os.path.join(wheeltec_nav_dir, 'map', 'WHEELTEC.yaml')
     map_file = LaunchConfiguration('map', default=map_default)
 
-    #Modify the model parameter file, the options are:
-    #param_mini_akm.yaml/param_mini_4wd.yaml/param_mini_diff.yaml/
-    #param_mini_mec.yaml/param_mini_omni.yaml/param_mini_tank.yaml/
-    #param_senior_akm.yaml/param_senior_diff.yaml/param_senior_mec_bs.yaml
-    #param_senior_mec_dl.yaml/param_top_4wd_bs.yaml/param_top_4wd_dl.yaml
-    #param_top_akm_dl.yaml/param_four_wheel_diff_dl.yaml/param_four_wheel_diff_bs.yaml
 
     param_dir = os.path.join(wheeltec_nav_dir, 'param','wheeltec_params')
     param_file = LaunchConfiguration('params', default=os.path.join(

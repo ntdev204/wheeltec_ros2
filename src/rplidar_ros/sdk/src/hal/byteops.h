@@ -1,14 +1,9 @@
-/*
- *  RoboPeak Project
- *  Copyright 2009 - 2013
- *  
- *  RPOS - Byte Operations
- *
- */
+
+
 
 #pragma once
 
-// byte swapping operations for compiling time
+
 
 #define __static_byteswap_16(x)  ((_u16)(				\
 	(((_u16)(x) & (_u16)0x00FFU) << 8) |			\

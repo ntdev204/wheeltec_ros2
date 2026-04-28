@@ -18,8 +18,8 @@ router = APIRouter()
 context = zmq.asyncio.Context()
 
 _last_cmd_log = 0
-MIN_REAL_PATH_DIST = 0.05  # meters between real path points
-REAL_PATH_INTERVAL = 1.0   # seconds between DB writes
+MIN_REAL_PATH_DIST = 0.05
+REAL_PATH_INTERVAL = 1.0
 
 
 @router.websocket("/ws")
@@ -39,11 +39,10 @@ async def scada_websocket(websocket: WebSocket):
     camera_socket.connect(f"tcp://{settings.robot_ip}:{settings.zmq_camera_port}")
     camera_socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
-    # Shared mutable state between receive_ws and forward_telemetry
     shared = {
         "home": await HomeService.get_home(),
-        "path_id": None,           # Current active nav_path DB id
-        "last_global_plan": None,  # Cache to detect plan changes
+        "path_id": None,
+        "last_global_plan": None,
     }
 
     async def receive_ws():
@@ -66,12 +65,10 @@ async def scada_websocket(websocket: WebSocket):
                     gy = payload.get("y", 0)
                     await zmq_client.send_command("nav_goal", payload)
 
-                    # Create new path record in DB (completes any previous active path)
                     path_id = await PathService.create_path(session_id, gx, gy, [])
                     shared["path_id"] = path_id
                     shared["last_global_plan"] = None
 
-                    # Notify frontend to clear actual path display
                     await websocket.send_json({"type": "path_started", "payload": {"path_id": path_id, "goal_x": gx, "goal_y": gy}})
                     await LogService.log_event("NAVIGATION", "nav_goal_sent", f"Nav goal ({gx:.2f}, {gy:.2f}), path_id={path_id}", metadata=payload, session_id=session_id)
 
@@ -88,7 +85,6 @@ async def scada_websocket(websocket: WebSocket):
                     home = await HomeService.get_home()
                     if home:
                         await zmq_client.send_command("nav_goal", {"x": home["x"], "y": home["y"]})
-                        # Also create path record for go_home
                         path_id = await PathService.create_path(session_id, home["x"], home["y"], [])
                         shared["path_id"] = path_id
                         shared["last_global_plan"] = None
@@ -130,7 +126,6 @@ async def scada_websocket(websocket: WebSocket):
                 is_charging = msg.get("charging", False)
                 battery_pct = voltage_to_percent(voltage)
 
-                # Voltage threshold logging (calibrated for 24V 6S LiPo)
                 if voltage > 0 and _last_voltage is not None:
                     if battery_pct <= 10 and voltage_to_percent(_last_voltage) > 10:
                         await LogService.log_event("POWER", "voltage_critical", f"Critical: {battery_pct:.0f}% ({voltage:.1f}V)", severity="CRITICAL", session_id=session_id)
@@ -138,7 +133,6 @@ async def scada_websocket(websocket: WebSocket):
                         await LogService.log_event("POWER", "voltage_low", f"Low: {battery_pct:.0f}% ({voltage:.1f}V)", severity="WARNING", session_id=session_id)
                 _last_voltage = voltage
 
-                # --- AUTO-RETURN at 10% ---
                 if battery_pct <= 10 and not is_charging and not _return_triggered and voltage > 0:
                     home = shared["home"]
                     if home:
@@ -150,7 +144,6 @@ async def scada_websocket(websocket: WebSocket):
                         except Exception as e:
                             print(f"[AutoReturn] Failed: {e}")
 
-                # --- WARNING at 20% ---
                 if 10 < battery_pct <= WARN_THRESHOLD and not _warning_sent and voltage > 0:
                     _warning_sent = True
                     await websocket.send_json({"type": "battery_warning", "payload": {"percent": round(battery_pct, 1), "voltage": round(voltage, 2)}})
@@ -161,23 +154,19 @@ async def scada_websocket(websocket: WebSocket):
                 if is_charging:
                     _return_triggered = False
 
-                # --- PATH TRACKING ---
                 path_id = shared.get("path_id")
                 if path_id:
                     now = time.time()
 
-                    # Save global plan (only when it changes)
                     plan = msg.get("plan", [])
                     if plan and plan != shared.get("last_global_plan"):
                         shared["last_global_plan"] = plan
                         await PathService.update_global_plan(path_id, plan)
 
-                    # Save local plan (overwrite on each change)
                     local_plan = msg.get("local_plan", [])
                     if local_plan:
                         await PathService.update_local_plan(path_id, local_plan)
 
-                    # Append real path (rate limited, distance gated)
                     map_pose = msg.get("map_pose")
                     if map_pose and now - _last_real_save >= REAL_PATH_INTERVAL:
                         rx, ry = map_pose["x"], map_pose["y"]
@@ -192,7 +181,6 @@ async def scada_websocket(websocket: WebSocket):
                             _last_real_pos = (rx, ry)
                             _last_real_save = now
 
-                # Inject enriched data
                 msg["battery_pct"] = round(battery_pct, 1)
                 if shared["home"]:
                     msg["home_position"] = shared["home"]
@@ -203,7 +191,6 @@ async def scada_websocket(websocket: WebSocket):
                 await websocket.send_json({"type": "telemetry", "payload": msg})
                 await websocket.send_json({"type": "patrol_status", "payload": patrol_status})
         except asyncio.CancelledError:
-            # Complete any active path on disconnect
             if shared.get("path_id"):
                 await PathService.complete_path(shared["path_id"])
 

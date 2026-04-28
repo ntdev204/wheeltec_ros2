@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung R&D Institute Russia
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_collision_monitor/source.hpp"
 
@@ -53,7 +53,7 @@ void Source::getCommonParameters(std::string & source_topic)
 
   nav2_util::declare_parameter_if_not_declared(
     node, source_name_ + ".topic",
-    rclcpp::ParameterValue("scan"));  // Set deafult topic for laser scanner
+    rclcpp::ParameterValue("scan"));
   source_topic = node->get_parameter(source_name_ + ".topic").as_string();
 }
 
@@ -61,8 +61,8 @@ bool Source::sourceValid(
   const rclcpp::Time & source_time,
   const rclcpp::Time & curr_time) const
 {
-  // Source is considered as not valid, if latest received data timestamp is earlier
-  // than current time by source_timeout_ interval
+
+
   const rclcpp::Duration dt = curr_time - source_time;
   if (dt > source_timeout_) {
     RCLCPP_WARN(
@@ -83,11 +83,11 @@ bool Source::getTransform(
   tf2::Transform & tf2_transform) const
 {
   geometry_msgs::msg::TransformStamped transform;
-  tf2_transform.setIdentity();  // initialize by identical transform
+  tf2_transform.setIdentity();
 
   try {
-    // Obtaining the transform to get data from source to base frame.
-    // This also considers the time shift between source and base.
+
+
     transform = tf_buffer_->lookupTransform(
       base_frame_id_, curr_time,
       source_frame_id, source_time,
@@ -100,9 +100,9 @@ bool Source::getTransform(
     return false;
   }
 
-  // Convert TransformStamped to TF2 transform
+
   tf2::fromMsg(transform.transform, tf2_transform);
   return true;
 }
 
-}  // namespace nav2_collision_monitor
+}

@@ -1,36 +1,7 @@
-/*
- *  RPLIDAR SDK
- *
- *  Copyright (c) 2009 - 2014 RoboPeak Team
- *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2018 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- *
- */
-/*
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- */
+
+
+
+
 
 #include "arch/macOS/arch_macOS.h"
 #include "arch/macOS/net_serial.h"
@@ -82,25 +53,25 @@ bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
 
     cfsetspeed(&options, B19200);
 
-	// enable rx and tx
+
 	options.c_cflag |= (CLOCAL | CREAD);
 
 
-    options.c_cflag &= ~PARENB; //no checkbit
-	options.c_cflag &= ~CSTOPB; //1bit stop bit
+    options.c_cflag &= ~PARENB;
+	options.c_cflag &= ~CSTOPB;
 
 	options.c_cflag &= ~CSIZE;
-    options.c_cflag |= CS8; /* Select 8 data bits */
+    options.c_cflag |= CS8; 
 
 #ifdef CNEW_RTSCTS
-    options.c_cflag &= ~CNEW_RTSCTS; // no hw flow control
+    options.c_cflag &= ~CNEW_RTSCTS;
 #endif
 
-    options.c_iflag &= ~(IXON | IXOFF | IXANY); // no sw flow control
+    options.c_iflag &= ~(IXON | IXOFF | IXANY);
 
-    // raw input mode   
+
     options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-    // raw output mode   
+
     options.c_oflag &= ~OPOST;
     
     tcflush(serial_fd,TCIFLUSH); 
@@ -123,7 +94,7 @@ bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
 
     _is_serial_opened = true;
 
-    //Clear the DTR bit to let the motor spin
+
     clearDTR();
     
     return true;
@@ -140,7 +111,7 @@ void raw_serial::close()
 
 int raw_serial::senddata(const unsigned char * data, size_t size)
 {
-// FIXME: non-block io should be used
+
     if (!isOpened()) return 0;
 
     if (data == NULL || size ==0) return 0;
@@ -202,12 +173,12 @@ int raw_serial::waitfordata(size_t data_count, _u32 timeout, size_t * returned_s
     fd_set input_set;
     struct timeval timeout_val;
 
-    /* Initialize the input set */
+    
     FD_ZERO(&input_set);
     FD_SET(serial_fd, &input_set);
     max_fd = serial_fd + 1;
 
-    /* Initialize the timeout structure */
+    
     timeout_val.tv_sec = timeout / 1000;
     timeout_val.tv_usec = (timeout % 1000) * 1000;
 
@@ -227,24 +198,24 @@ int raw_serial::waitfordata(size_t data_count, _u32 timeout, size_t * returned_s
 
     while ( isOpened() )
     {
-        /* Do the select */
+        
         int n = ::select(max_fd, &input_set, NULL, NULL, &timeout_val);
 
         if (n < 0)
         {
-            // select error
+
             *returned_size =  0;
             return ANS_DEV_ERR;
         }
         else if (n == 0)
         {
-            // time out
+
             *returned_size =0;
             return ANS_TIMEOUT;
         }
         else
         {
-            // data avaliable
+
             assert (FD_ISSET(serial_fd, &input_set));
 
 
@@ -326,11 +297,11 @@ _u32 raw_serial::getTermBaudBitmap(_u32 baud)
     return -1;
 }
     
-}}} //end rp::arch::net
+}}}
 
 
 
-//begin rp::hal
+
 namespace rp{ namespace hal{
     
     serial_rxtx * serial_rxtx::CreateRxTx()
@@ -343,4 +314,4 @@ namespace rp{ namespace hal{
         delete rxtx;
     }
     
-}} //end rp::hal
+}}

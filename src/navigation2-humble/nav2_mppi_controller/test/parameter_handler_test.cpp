@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <chrono>
 #include <thread>
@@ -19,7 +19,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_mppi_controller/tools/parameters_handler.hpp"
 
-// Tests parameter handler object
+
 
 class RosLockGuard
 {
@@ -30,7 +30,7 @@ public:
 
 RosLockGuard g_rclcpp;
 
-using namespace mppi;  // NOLINT
+using namespace mppi;
 
 class ParametersHandlerWrapper : public ParametersHandler
 {
@@ -48,7 +48,7 @@ public:
   }
 };
 
-using namespace mppi;  // NOLINT
+using namespace mppi;
 
 TEST(ParameterHandlerTest, asTypeConversionTest)
 {
@@ -93,7 +93,7 @@ TEST(ParameterHandlerTest, PrePostDynamicCallbackTest)
       post_triggered = true;
     };
 
-  auto dynamicCb = [&](const rclcpp::Parameter & /*param*/) {
+  auto dynamicCb = [&](const rclcpp::Parameter & ) {
       dynamic_triggered = true;
     };
 
@@ -107,14 +107,14 @@ TEST(ParameterHandlerTest, PrePostDynamicCallbackTest)
   a.addDynamicParamCallback("use_sim_time", dynamicCb);
   a.setDynamicParamCallback(val, "blah_blah");
 
-  // Dynamic callback should not trigger, wrong parameter, but val should be updated
+
   a.dynamicParamsCallback(std::vector<rclcpp::Parameter>{random_param});
   EXPECT_FALSE(dynamic_triggered);
   EXPECT_TRUE(pre_triggered);
   EXPECT_TRUE(post_triggered);
   EXPECT_TRUE(val);
 
-  // Now dynamic parameter bool should be updated, right param called!
+
   pre_triggered = false, post_triggered = false;
   a.dynamicParamsCallback(std::vector<rclcpp::Parameter>{random_param2});
   EXPECT_TRUE(dynamic_triggered);
@@ -128,7 +128,7 @@ TEST(ParameterHandlerTest, GetSystemParamsTest)
   node->declare_parameter("param1", rclcpp::ParameterValue(true));
   node->declare_parameter("ns.param2", rclcpp::ParameterValue(7));
 
-  // Get parameters in global namespace and in subnamespaces
+
   ParametersHandler handler(node);
   auto getParamer = handler.getParamGetter("");
   bool p1 = false;
@@ -138,7 +138,7 @@ TEST(ParameterHandlerTest, GetSystemParamsTest)
   EXPECT_EQ(p1, true);
   EXPECT_EQ(p2, 7);
 
-  // Get parameters in subnamespaces using name semantics of getter
+
   auto getParamer2 = handler.getParamGetter("ns");
   p2 = 0;
   getParamer2(p2, "param2", 0);
@@ -153,7 +153,7 @@ TEST(ParameterHandlerTest, DynamicAndStaticParametersTest)
   ParametersHandlerWrapper handler(node);
   handler.start();
 
-  // Get parameters and check they have initial values
+
   auto getParamer = handler.getParamGetter("");
   int p1 = 0, p2 = 0;
   getParamer(p1, "dynamic_int", 0, ParameterType::Dynamic);
@@ -161,7 +161,7 @@ TEST(ParameterHandlerTest, DynamicAndStaticParametersTest)
   EXPECT_EQ(p1, 7);
   EXPECT_EQ(p2, 7);
 
-  // Now change them both via dynamic parameters
+
   auto rec_param = std::make_shared<rclcpp::AsyncParametersClient>(
     node->get_node_base_interface(), node->get_node_topics_interface(),
     node->get_node_graph_interface(),
@@ -175,7 +175,7 @@ TEST(ParameterHandlerTest, DynamicAndStaticParametersTest)
     node->get_node_base_interface(),
     results);
 
-  // Now, only param1 should change, param 2 should be the same
+
   EXPECT_EQ(p1, 10);
   EXPECT_EQ(p2, 7);
 }

@@ -1,16 +1,3 @@
-# Copyright (c) 2019 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 from typing import Dict
 from typing import List
@@ -35,11 +22,6 @@ class DictItemReference:
 
 
 class RewrittenYaml(launch.Substitution):
-    """
-    Substitution that modifies the given YAML file.
-
-    Used in launch system
-    """
 
     def __init__(self,
         source_file: launch.SomeSubstitutionsType,
@@ -48,17 +30,8 @@ class RewrittenYaml(launch.Substitution):
         key_rewrites: Optional[Dict] = None,
         convert_types = False) -> None:
         super().__init__()
-        """
-        Construct the substitution
 
-        :param: source_file the original YAML file to modify
-        :param: param_rewrites mappings to replace
-        :param: root_key if provided, the contents are placed under this key
-        :param: key_rewrites keys of mappings to replace
-        :param: convert_types whether to attempt converting the string to a number or boolean
-        """
-
-        from launch.utilities import normalize_to_list_of_substitutions  # import here to avoid loop
+        from launch.utilities import normalize_to_list_of_substitutions
         self.__source_file = normalize_to_list_of_substitutions(source_file)
         self.__param_rewrites = {}
         self.__key_rewrites = {}
@@ -74,11 +47,9 @@ class RewrittenYaml(launch.Substitution):
 
     @property
     def name(self) -> List[launch.Substitution]:
-        """Getter for name."""
         return self.__source_file
 
     def describe(self) -> Text:
-        """Return a description of this substitution as a string."""
         return ''
 
     def perform(self, context: launch.LaunchContext) -> Text:
@@ -106,17 +77,14 @@ class RewrittenYaml(launch.Substitution):
         return resolved_params, resolved_keys
 
     def substitute_params(self, yaml, param_rewrites):
-        # substitute leaf-only parameters
         for key in self.getYamlLeafKeys(yaml):
             if key.key() in param_rewrites:
                 raw_value = param_rewrites[key.key()]
                 key.setValue(self.convert(raw_value))
 
-        # substitute total path parameters
         yaml_paths = self.pathify(yaml)
         for path in yaml_paths:
             if path in param_rewrites:
-                # this is an absolute path (ex. 'key.keyA.keyB.val')
                 rewrite_val = self.convert(param_rewrites[path])
                 yaml_keys = path.split('.')
                 yaml = self.updateYamlPathVals(yaml, yaml_keys, rewrite_val)
@@ -170,17 +138,14 @@ class RewrittenYaml(launch.Substitution):
 
     def convert(self, text_value):
         if self.__convert_types:
-            # try converting to int or float
             try:
                 return float(text_value) if '.' in text_value else int(text_value)
             except ValueError:
                 pass
 
-        # try converting to bool
         if text_value.lower() == "true":
             return True
         if text_value.lower() == "false":
             return False
 
-        # nothing else worked so fall through and return text
         return text_value

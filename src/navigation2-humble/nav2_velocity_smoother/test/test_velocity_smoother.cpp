@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <math.h>
 #include <memory>
@@ -73,25 +73,25 @@ TEST(VelocitySmootherTest, openLoopTestTimer)
       linear_vels.push_back(msg->linear.x);
     });
 
-  // Send a velocity command
+
   auto cmd = std::make_shared<geometry_msgs::msg::Twist>();
-  cmd->linear.x = 1.0;  // Max is 0.5, so should threshold
+  cmd->linear.x = 1.0;
   smoother->sendCommandMsg(cmd);
 
-  // Process velocity smoothing and send updated odometry based on commands
+
   auto start = smoother->now();
   while (smoother->now() - start < 1.5s) {
     rclcpp::spin_some(smoother->get_node_base_interface());
   }
 
-  // Sanity check we have the approximately right number of messages for the timespan and timeout
+
   EXPECT_GT(linear_vels.size(), 19u);
   EXPECT_LT(linear_vels.size(), 30u);
 
-  // Should have last command be a stop since we timed out the command stream
+
   EXPECT_EQ(linear_vels.back(), 0.0);
 
-  // From deadband, first few should be 0 until above 0.2
+
   for (unsigned int i = 0; i != linear_vels.size(); i++) {
     if (linear_vels[i] != 0) {
       EXPECT_GT(linear_vels[i], 0.2);
@@ -99,8 +99,8 @@ TEST(VelocitySmootherTest, openLoopTestTimer)
     }
   }
 
-  // Process to make sure stops at limit in velocity,
-  // doesn't exceed acceleration
+
+
   for (unsigned int i = 0; i != linear_vels.size(); i++) {
     EXPECT_TRUE(linear_vels[i] <= 0.5);
   }
@@ -130,18 +130,18 @@ TEST(VelocitySmootherTest, approxClosedLoopTestTimer)
   odom_msg.header.frame_id = "odom";
   odom_msg.child_frame_id = "base_link";
 
-  // Fill buffer with 0 twisted-commands
+
   for (unsigned int i = 0; i != 30; i++) {
     odom_msg.header.stamp = smoother->now() + rclcpp::Duration::from_seconds(i * 0.01);
     odom_pub->publish(odom_msg);
   }
 
-  // Send a velocity command
+
   auto cmd = std::make_shared<geometry_msgs::msg::Twist>();
-  cmd->linear.x = 1.0;  // Max is 0.5, so should threshold
+  cmd->linear.x = 1.0;
   smoother->sendCommandMsg(cmd);
 
-  // Process velocity smoothing and send updated odometry based on commands
+
   auto start = smoother->now();
   while (smoother->now() - start < 1.5s) {
     odom_msg.header.stamp = smoother->now();
@@ -152,19 +152,19 @@ TEST(VelocitySmootherTest, approxClosedLoopTestTimer)
     rclcpp::spin_some(smoother->get_node_base_interface());
   }
 
-  // Sanity check we have the approximately right number of messages for the timespan and timeout
+
   EXPECT_GT(linear_vels.size(), 19u);
   EXPECT_LT(linear_vels.size(), 30u);
 
-  // Should have last command be a stop since we timed out the command stream
+
   EXPECT_EQ(linear_vels.back(), 0.0);
 
-  // Process to make sure stops at limit in velocity,
-  // doesn't exceed acceleration
+
+
   for (unsigned int i = 0; i != linear_vels.size(); i++) {
     if (i > 0) {
       double diff = linear_vels[i] - linear_vels[i - 1];
-      EXPECT_LT(diff, 0.126);  // default accel of 0.5 / 20 hz = 0.125
+      EXPECT_LT(diff, 0.126);
     }
 
     EXPECT_TRUE(linear_vels[i] <= 0.5);
@@ -176,19 +176,19 @@ TEST(VelocitySmootherTest, testfindEtaConstraint)
   auto smoother =
     std::make_shared<VelSmootherShim>();
   rclcpp_lifecycle::State state;
-  // default frequency is 20.0
+
   smoother->configure(state);
 
-  // In range
+
   EXPECT_EQ(smoother->findEtaConstraint(1.0, 1.0, 1.5, -2.0), -1);
   EXPECT_EQ(smoother->findEtaConstraint(0.5, 0.55, 1.5, -2.0), -1);
   EXPECT_EQ(smoother->findEtaConstraint(0.5, 0.45, 1.5, -2.0), -1);
-  // Too high
+
   EXPECT_EQ(smoother->findEtaConstraint(1.0, 2.0, 1.5, -2.0), 0.075);
-  // Too low
+
   EXPECT_EQ(smoother->findEtaConstraint(1.0, 0.0, 1.5, -2.0), 0.1);
 
-  // In a more realistic situation accelerating linear axis
+
   EXPECT_NEAR(smoother->findEtaConstraint(0.40, 0.50, 1.5, -2.0), 0.75, 0.001);
 }
 
@@ -197,23 +197,23 @@ TEST(VelocitySmootherTest, testapplyConstraints)
   auto smoother =
     std::make_shared<VelSmootherShim>();
   rclcpp_lifecycle::State state;
-  // default frequency is 20.0
+
   smoother->configure(state);
   double no_eta = 1.0;
 
-  // Apply examples from testfindEtaConstraint
-  // In range, so no eta or acceleration limit impact
+
+
   EXPECT_EQ(smoother->applyConstraints(1.0, 1.0, 1.5, -2.0, no_eta), 1.0);
   EXPECT_EQ(smoother->applyConstraints(0.5, 0.55, 1.5, -2.0, no_eta), 0.55);
   EXPECT_EQ(smoother->applyConstraints(0.5, 0.45, 1.5, -2.0, no_eta), 0.45);
-  // Too high, without eta
+
   EXPECT_NEAR(smoother->applyConstraints(1.0, 2.0, 1.5, -2.0, no_eta), 1.075, 0.01);
-  // Too high, with eta applied on its own axis
+
   EXPECT_NEAR(smoother->applyConstraints(1.0, 2.0, 1.5, -2.0, 0.075), 1.075, 0.01);
-  // On another virtual axis that is OK
+
   EXPECT_NEAR(smoother->applyConstraints(0.5, 0.55, 1.5, -2.0, 0.075), 0.503, 0.01);
 
-  // In a more realistic situation, applied to angular
+
   EXPECT_NEAR(smoother->applyConstraints(0.8, 1.0, 3.2, -3.2, 0.75), 1.075, 0.95);
 }
 
@@ -251,7 +251,7 @@ TEST(VelocitySmootherTest, testInvalidParams)
 {
   auto smoother =
     std::make_shared<VelSmootherShim>();
-  std::vector<double> max_vels{0.0, 0.0};  // invalid size
+  std::vector<double> max_vels{0.0, 0.0};
   smoother->declare_parameter("max_velocity", rclcpp::ParameterValue(max_vels));
   rclcpp_lifecycle::State state;
   EXPECT_THROW(smoother->configure(state), std::runtime_error);
@@ -310,26 +310,26 @@ TEST(VelocitySmootherTest, testDynamicParameter)
   EXPECT_EQ(smoother->get_parameter("velocity_timeout").as_double(), 4.0);
   EXPECT_EQ(smoother->get_parameter("deadband_velocity").as_double_array(), deadband);
 
-  // Test reverting
+
   results = rec_param->set_parameters_atomically(
     {rclcpp::Parameter("feedback", std::string("OPEN_LOOP"))});
   rclcpp::spin_until_future_complete(
     smoother->get_node_base_interface(), results);
   EXPECT_EQ(smoother->get_parameter("feedback").as_string(), std::string("OPEN_LOOP"));
 
-  // Test invalid change
+
   results = rec_param->set_parameters_atomically(
     {rclcpp::Parameter("feedback", std::string("LAWLS"))});
   rclcpp::spin_until_future_complete(smoother->get_node_base_interface(), results);
   EXPECT_FALSE(results.get().successful);
 
-  // Test invalid size
+
   results = rec_param->set_parameters_atomically(
     {rclcpp::Parameter("max_velocity", bad_test)});
   rclcpp::spin_until_future_complete(smoother->get_node_base_interface(), results);
   EXPECT_FALSE(results.get().successful);
 
-  // test full state after major changes
+
   smoother->deactivate(state);
   smoother->cleanup(state);
   smoother->shutdown(state);

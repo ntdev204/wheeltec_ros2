@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung R&D Institute Russia
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 
@@ -116,19 +116,19 @@ public:
     sensor_msgs::PointCloud2Iterator<float> iter_y(*msg, "y");
     sensor_msgs::PointCloud2Iterator<float> iter_z(*msg, "z");
 
-    // Point 0: (0.5, 0.5, 0.2)
+
     *iter_x = 0.5;
     *iter_y = 0.5;
     *iter_z = 0.2;
     ++iter_x; ++iter_y; ++iter_z;
 
-    // Point 1: (-0.5, -0.5, 0.3)
+
     *iter_x = -0.5;
     *iter_y = -0.5;
     *iter_z = 0.3;
     ++iter_x; ++iter_y; ++iter_z;
 
-    // Point 2: (1.0, 1.0, 10.0)
+
     *iter_x = 1.0;
     *iter_y = 1.0;
     *iter_z = 10.0;
@@ -160,7 +160,7 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr scan_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_pub_;
   rclcpp::Publisher<sensor_msgs::msg::Range>::SharedPtr range_pub_;
-};  // TestNode
+};
 
 class ScanWrapper : public nav2_collision_monitor::Scan
 {
@@ -182,7 +182,7 @@ public:
   {
     return data_ != nullptr;
   }
-};  // ScanWrapper
+};
 
 class PointCloudWrapper : public nav2_collision_monitor::PointCloud
 {
@@ -204,7 +204,7 @@ public:
   {
     return data_ != nullptr;
   }
-};  // PointCloudWrapper
+};
 
 class RangeWrapper : public nav2_collision_monitor::Range
 {
@@ -226,7 +226,7 @@ public:
   {
     return data_ != nullptr;
   }
-};  // RangeWrapper
+};
 
 class Tester : public ::testing::Test
 {
@@ -235,10 +235,10 @@ public:
   ~Tester();
 
 protected:
-  // Setting TF chains
+
   void sendTransforms(const rclcpp::Time & stamp);
 
-  // Data sources working routines
+
   bool waitScan(const std::chrono::nanoseconds & timeout);
   bool waitPointCloud(const std::chrono::nanoseconds & timeout);
   bool waitRange(const std::chrono::nanoseconds & timeout);
@@ -254,17 +254,17 @@ protected:
 private:
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-};  // Tester
+};
 
 Tester::Tester()
 {
   test_node_ = std::make_shared<TestNode>();
 
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(test_node_->get_clock());
-  tf_buffer_->setUsingDedicatedThread(true);  // One-thread broadcasting-listening model
+  tf_buffer_->setUsingDedicatedThread(true);
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-  // Create Scan object
+
   test_node_->declare_parameter(
     std::string(SCAN_NAME) + ".topic", rclcpp::ParameterValue(SCAN_TOPIC));
   test_node_->set_parameter(
@@ -276,7 +276,7 @@ Tester::Tester()
     TRANSFORM_TOLERANCE, DATA_TIMEOUT);
   scan_->configure();
 
-  // Create PointCloud object
+
   test_node_->declare_parameter(
     std::string(POINTCLOUD_NAME) + ".topic", rclcpp::ParameterValue(POINTCLOUD_TOPIC));
   test_node_->set_parameter(
@@ -296,7 +296,7 @@ Tester::Tester()
     TRANSFORM_TOLERANCE, DATA_TIMEOUT);
   pointcloud_->configure();
 
-  // Create Range object
+
   test_node_->declare_parameter(
     std::string(RANGE_NAME) + ".topic", rclcpp::ParameterValue(RANGE_TOPIC));
   test_node_->set_parameter(
@@ -331,7 +331,7 @@ void Tester::sendTransforms(const rclcpp::Time & stamp)
 
   geometry_msgs::msg::TransformStamped transform;
 
-  // base_frame -> source_frame transform
+
   transform.header.frame_id = BASE_FRAME_ID;
   transform.child_frame_id = SOURCE_FRAME_ID;
 
@@ -346,7 +346,7 @@ void Tester::sendTransforms(const rclcpp::Time & stamp)
 
   tf_broadcaster->sendTransform(transform);
 
-  // global_frame -> base_frame transform
+
   transform.header.frame_id = GLOBAL_FRAME_ID;
   transform.child_frame_id = BASE_FRAME_ID;
 
@@ -399,19 +399,19 @@ void Tester::checkScan(const std::vector<nav2_collision_monitor::Point> & data)
 {
   ASSERT_EQ(data.size(), 4u);
 
-  // Point 0: (1.0 + 0.1, 0.0 + 0.1)
+
   EXPECT_NEAR(data[0].x, 1.1, EPSILON);
   EXPECT_NEAR(data[0].y, 0.1, EPSILON);
 
-  // Point 1: (0.0 + 0.1, 1.0 + 0.1)
+
   EXPECT_NEAR(data[1].x, 0.1, EPSILON);
   EXPECT_NEAR(data[1].y, 1.1, EPSILON);
 
-  // Point 2: (-1.0 + 0.1, 0.0 + 0.1)
+
   EXPECT_NEAR(data[2].x, -0.9, EPSILON);
   EXPECT_NEAR(data[2].y, 0.1, EPSILON);
 
-  // Point 3: (0.0 + 0.1, -1.0 + 0.1)
+
   EXPECT_NEAR(data[3].x, 0.1, EPSILON);
   EXPECT_NEAR(data[3].y, -0.9, EPSILON);
 }
@@ -420,15 +420,15 @@ void Tester::checkPointCloud(const std::vector<nav2_collision_monitor::Point> & 
 {
   ASSERT_EQ(data.size(), 2u);
 
-  // Point 0: (0.5 + 0.1, 0.5 + 0.1)
+
   EXPECT_NEAR(data[0].x, 0.6, EPSILON);
   EXPECT_NEAR(data[0].y, 0.6, EPSILON);
 
-  // Point 1: (-0.5 + 0.1, -0.5 + 0.1)
+
   EXPECT_NEAR(data[1].x, -0.4, EPSILON);
   EXPECT_NEAR(data[1].y, -0.4, EPSILON);
 
-  // Point 2 should be out of scope by height
+
 }
 
 void Tester::checkRange(const std::vector<nav2_collision_monitor::Point> & data)
@@ -443,7 +443,7 @@ void Tester::checkRange(const std::vector<nav2_collision_monitor::Point> & data)
     ASSERT_NEAR(data[i].y, 1.0 * std::sin(angle) + 0.1, EPSILON);
     angle += angle_increment;
   }
-  // Check for the latest FoW/2 point
+
   angle = M_PI / (10 * 2);
   ASSERT_NEAR(data[i].x, 1.0 * std::cos(angle) + 0.1, EPSILON);
   ASSERT_NEAR(data[i].y, 1.0 * std::sin(angle) + 0.1, EPSILON);
@@ -455,27 +455,27 @@ TEST_F(Tester, testGetData)
 
   sendTransforms(curr_time);
 
-  // Publish data for sources
+
   test_node_->publishScan(curr_time, 1.0);
   test_node_->publishPointCloud(curr_time);
   test_node_->publishRange(curr_time, 1.0);
 
-  // Wait until all sources will receive the data
+
   ASSERT_TRUE(waitScan(500ms));
   ASSERT_TRUE(waitPointCloud(500ms));
   ASSERT_TRUE(waitRange(500ms));
 
-  // Check Scan data
+
   std::vector<nav2_collision_monitor::Point> data;
   scan_->getData(curr_time, data);
   checkScan(data);
 
-  // Check Pointcloud data
+
   data.clear();
   pointcloud_->getData(curr_time, data);
   checkPointCloud(data);
 
-  // Check Range data
+
   data.clear();
   range_->getData(curr_time, data);
   checkRange(data);
@@ -487,26 +487,26 @@ TEST_F(Tester, testGetOutdatedData)
 
   sendTransforms(curr_time);
 
-  // Publish outdated data for sources
+
   test_node_->publishScan(curr_time - DATA_TIMEOUT - 1s, 1.0);
   test_node_->publishPointCloud(curr_time - DATA_TIMEOUT - 1s);
   test_node_->publishRange(curr_time - DATA_TIMEOUT - 1s, 1.0);
 
-  // Wait until all sources will receive the data
+
   ASSERT_TRUE(waitScan(500ms));
   ASSERT_TRUE(waitPointCloud(500ms));
   ASSERT_TRUE(waitRange(500ms));
 
-  // Scan data should be empty
+
   std::vector<nav2_collision_monitor::Point> data;
   scan_->getData(curr_time, data);
   ASSERT_EQ(data.size(), 0u);
 
-  // Pointcloud data should be empty
+
   pointcloud_->getData(curr_time, data);
   ASSERT_EQ(data.size(), 0u);
 
-  // Range data should be empty
+
   range_->getData(curr_time, data);
   ASSERT_EQ(data.size(), 0u);
 }
@@ -515,29 +515,29 @@ TEST_F(Tester, testIncorrectFrameData)
 {
   rclcpp::Time curr_time = test_node_->now();
 
-  // Send incorrect transform
+
   sendTransforms(curr_time - 1s);
 
-  // Publish data for sources
+
   test_node_->publishScan(curr_time, 1.0);
   test_node_->publishPointCloud(curr_time);
   test_node_->publishRange(curr_time, 1.0);
 
-  // Wait until all sources will receive the data
+
   ASSERT_TRUE(waitScan(500ms));
   ASSERT_TRUE(waitPointCloud(500ms));
   ASSERT_TRUE(waitRange(500ms));
 
-  // Scan data should be empty
+
   std::vector<nav2_collision_monitor::Point> data;
   scan_->getData(curr_time, data);
   ASSERT_EQ(data.size(), 0u);
 
-  // Pointcloud data should be empty
+
   pointcloud_->getData(curr_time, data);
   ASSERT_EQ(data.size(), 0u);
 
-  // Range data should be empty
+
   range_->getData(curr_time, data);
   ASSERT_EQ(data.size(), 0u);
 }
@@ -548,35 +548,35 @@ TEST_F(Tester, testIncorrectData)
 
   sendTransforms(curr_time);
 
-  // Publish data for sources
+
   test_node_->publishScan(curr_time, 2.0);
   test_node_->publishPointCloud(curr_time);
   test_node_->publishRange(curr_time, 2.0);
 
-  // Wait until all sources will receive the data
+
   ASSERT_TRUE(waitScan(500ms));
   ASSERT_TRUE(waitRange(500ms));
 
-  // Scan data should be empty
+
   std::vector<nav2_collision_monitor::Point> data;
   scan_->getData(curr_time, data);
   ASSERT_EQ(data.size(), 0u);
 
-  // Range data should be empty
+
   range_->getData(curr_time, data);
   ASSERT_EQ(data.size(), 0u);
 }
 
 int main(int argc, char ** argv)
 {
-  // Initialize the system
+
   testing::InitGoogleTest(&argc, argv);
   rclcpp::init(argc, argv);
 
-  // Actual testing
+
   bool test_result = RUN_ALL_TESTS();
 
-  // Shutdown
+
   rclcpp::shutdown();
 
   return test_result;

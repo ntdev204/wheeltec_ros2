@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef NAV2_WAYPOINT_FOLLOWER__WAYPOINT_FOLLOWER_HPP_
 #define NAV2_WAYPOINT_FOLLOWER__WAYPOINT_FOLLOWER_HPP_
@@ -43,11 +43,8 @@ enum class ActionStatus
   SUCCEEDED = 3
 };
 
-/**
- * @class nav2_waypoint_follower::WaypointFollower
- * @brief An action server that uses behavior tree for navigating a robot to its
- * goal position.
- */
+
+
 class WaypointFollower : public nav2_util::LifecycleNode
 {
 public:
@@ -56,78 +53,51 @@ public:
   using ActionServer = nav2_util::SimpleActionServer<ActionT>;
   using ActionClient = rclcpp_action::Client<ClientT>;
 
-  /**
-   * @brief A constructor for nav2_waypoint_follower::WaypointFollower class
-   * @param options Additional options to control creation of the node.
-   */
+  
+
   explicit WaypointFollower(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
-  /**
-   * @brief A destructor for nav2_waypoint_follower::WaypointFollower class
-   */
+  
+
   ~WaypointFollower();
 
 protected:
-  /**
-   * @brief Configures member variables
-   *
-   * Initializes action server for "follow_waypoints"
-   * @param state Reference to LifeCycle node state
-   * @return SUCCESS or FAILURE
-   */
+  
+
   nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
-  /**
-   * @brief Activates action server
-   * @param state Reference to LifeCycle node state
-   * @return SUCCESS or FAILURE
-   */
+  
+
   nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
-  /**
-   * @brief Deactivates action server
-   * @param state Reference to LifeCycle node state
-   * @return SUCCESS or FAILURE
-   */
+  
+
   nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
-  /**
-   * @brief Resets member variables
-   * @param state Reference to LifeCycle node state
-   * @return SUCCESS or FAILURE
-   */
+  
+
   nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
-  /**
-   * @brief Called when in shutdown state
-   * @param state Reference to LifeCycle node state
-   * @return SUCCESS or FAILURE
-   */
+  
+
   nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
 
-  /**
-   * @brief Action server callbacks
-   */
+  
+
   void followWaypoints();
 
-  /**
-   * @brief Action client result callback
-   * @param result Result of action server updated asynchronously
-   */
+  
+
   void resultCallback(const rclcpp_action::ClientGoalHandle<ClientT>::WrappedResult & result);
 
-  /**
-   * @brief Action client goal response callback
-   * @param goal Response of action server updated asynchronously
-   */
+  
+
   void goalResponseCallback(const rclcpp_action::ClientGoalHandle<ClientT>::SharedPtr & goal);
 
-  /**
-   * @brief Callback executed when a parameter change is detected
-   * @param event ParameterEvent message
-   */
+  
+
   rcl_interfaces::msg::SetParametersResult
   dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
 
-  // Dynamic parameters handler
+
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr dyn_params_handler_;
 
-  // Our action server
+
   std::unique_ptr<ActionServer> action_server_;
   ActionClient::SharedPtr nav_to_pose_client_;
   rclcpp::CallbackGroup::SharedPtr callback_group_;
@@ -138,7 +108,7 @@ protected:
   int loop_rate_;
   std::vector<int> failed_ids_;
 
-  // Task Execution At Waypoint Plugin
+
   pluginlib::ClassLoader<nav2_core::WaypointTaskExecutor>
   waypoint_task_executor_loader_;
   pluginlib::UniquePtr<nav2_core::WaypointTaskExecutor>
@@ -147,6 +117,6 @@ protected:
   std::string waypoint_task_executor_type_;
 };
 
-}  // namespace nav2_waypoint_follower
+}
 
-#endif  // NAV2_WAYPOINT_FOLLOWER__WAYPOINT_FOLLOWER_HPP_
+#endif

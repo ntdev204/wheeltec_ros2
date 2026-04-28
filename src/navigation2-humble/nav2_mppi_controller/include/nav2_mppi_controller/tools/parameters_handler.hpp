@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef NAV2_MPPI_CONTROLLER__TOOLS__PARAMETERS_HANDLER_HPP_
 #define NAV2_MPPI_CONTROLLER__TOOLS__PARAMETERS_HANDLER_HPP_
@@ -29,15 +29,12 @@
 
 namespace mppi
 {
-/**
- * @class Parameter Type enum
- */
+
+
 enum class ParameterType { Dynamic, Static };
 
-/**
- * @class mppi::ParametersHandler
- * @brief Handles getting parameters and dynamic parmaeter changes
- */
+
+
 class ParametersHandler
 {
 public:
@@ -45,104 +42,70 @@ public:
   using post_callback_t = void ();
   using pre_callback_t = void ();
 
-  /**
-    * @brief Constructor for mppi::ParametersHandler
-    */
+  
+
   ParametersHandler() = default;
 
-  /**
-    * @brief Constructor for mppi::ParametersHandler
-    * @param parent Weak ptr to node
-    */
+  
+
   explicit ParametersHandler(
     const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent);
 
-  /**
-    * @brief Starts processing dynamic parameter changes
-    */
+  
+
   void start();
 
-  /**
-    * @brief Dynamic parameter callback
-    * @param parameter Parameter changes to process
-    * @return Set Parameter Result
-    */
+  
+
   rcl_interfaces::msg::SetParametersResult dynamicParamsCallback(
     std::vector<rclcpp::Parameter> parameters);
 
-  /**
-    * @brief Get an object to retreive parameters
-    * @param ns Namespace to get parameters within
-    * @return Parameter getter object
-    */
+  
+
   inline auto getParamGetter(const std::string & ns);
 
-  /**
-    * @brief Set a callback to process after parameter changes
-    * @param callback Callback function
-    */
+  
+
   template<typename T>
   void addPostCallback(T && callback);
 
-  /**
-    * @brief Set a callback to process before parameter changes
-    * @param callback Callback function
-    */
+  
+
   template<typename T>
   void addPreCallback(T && callback);
 
-  /**
-    * @brief Set a parameter to a dynamic parameter callback
-    * @param setting Parameter
-    * @param name Name of parameter
-    */
+  
+
   template<typename T>
   void setDynamicParamCallback(T & setting, const std::string & name);
 
-  /**
-    * @brief Get mutex lock for changing parameters
-    * @return Pointer to mutex
-    */
+  
+
   std::mutex * getLock()
   {
     return &parameters_change_mutex_;
   }
 
-  /**
-    * @brief Set a parameter to a dynamic parameter callback
-    * @param name Name of parameter
-    * @param callback Parameter callback
-    */
+  
+
   template<typename T>
   void addDynamicParamCallback(const std::string & name, T && callback);
 
 protected:
-  /**
-    * @brief Gets parameter
-    * @param setting Return Parameter type
-    * @param name Parameter name
-    * @param default_value Default parameter value
-    * @param param_type Type of parameter (dynamic or static)
-    */
+  
+
   template<typename SettingT, typename ParamT>
   void getParam(
     SettingT & setting, const std::string & name, ParamT default_value,
     ParameterType param_type = ParameterType::Dynamic);
 
-  /**
-    * @brief Set a parameter
-    * @param setting Return Parameter type
-    * @param name Parameter name
-    * @param node Node to set parameter via
-    */
+  
+
   template<typename ParamT, typename SettingT, typename NodeT>
   void setParam(SettingT & setting, const std::string & name, NodeT node) const;
 
-  /**
-    * @brief Converts parameter type to real types
-    * @param parameter Parameter to convert into real type
-    * @return parameter as a functional type
-    */
+  
+
   template<typename T>
   static auto as(const rclcpp::Parameter & parameter);
 
@@ -262,6 +225,6 @@ auto ParametersHandler::as(const rclcpp::Parameter & parameter)
   }
 }
 
-}  // namespace mppi
+}
 
-#endif  // NAV2_MPPI_CONTROLLER__TOOLS__PARAMETERS_HANDLER_HPP_
+#endif

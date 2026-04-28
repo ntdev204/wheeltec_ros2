@@ -1,22 +1,22 @@
-// Copyright (c) 2018 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 
 #include <string>
 #include <memory>
-#include <experimental/filesystem>  // NOLINT
+#include <experimental/filesystem>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -25,7 +25,7 @@
 #include "nav2_util/lifecycle_service_client.hpp"
 #include "nav2_msgs/srv/load_map.hpp"
 using namespace std::chrono_literals;
-using namespace rclcpp;  // NOLINT
+using namespace rclcpp;
 
 #define TEST_DIR TEST_DIRECTORY
 
@@ -52,7 +52,7 @@ public:
       std::make_shared<nav2_util::LifecycleServiceClient>("map_server", node_);
     RCLCPP_INFO(node_->get_logger(), "Creating Test Node");
 
-    std::this_thread::sleep_for(std::chrono::seconds(5));  // allow node to start up
+    std::this_thread::sleep_for(std::chrono::seconds(5));
     const std::chrono::seconds timeout(5);
     lifecycle_client_->change_state(Transition::TRANSITION_CONFIGURE, timeout);
     lifecycle_client_->change_state(Transition::TRANSITION_ACTIVATE, timeout);
@@ -75,7 +75,7 @@ public:
   {
     auto result = client->async_send_request(request);
 
-    // Wait for the result
+
     if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
       return result.get();
     } else {
@@ -84,8 +84,8 @@ public:
   }
 
 protected:
-  // Check that map_msg corresponds to reference pattern
-  // Input: map_msg
+
+
   void verifyMapMsg(const nav_msgs::msg::OccupancyGrid & map_msg)
   {
     ASSERT_FLOAT_EQ(map_msg.info.resolution, g_valid_image_res);
@@ -106,7 +106,7 @@ std::shared_ptr<nav2_util::LifecycleServiceClient> MapServerTestFixture::lifecyc
   nullptr;
 
 
-// Send map getting service request and verify obtained OccupancyGrid
+
 TEST_F(MapServerTestFixture, GetMap)
 {
   RCLCPP_INFO(node_->get_logger(), "Testing GetMap service");
@@ -122,7 +122,7 @@ TEST_F(MapServerTestFixture, GetMap)
   verifyMapMsg(resp->map);
 }
 
-// Send map loading service request and verify obtained OccupancyGrid
+
 TEST_F(MapServerTestFixture, LoadMap)
 {
   RCLCPP_INFO(node_->get_logger(), "Testing LoadMap service");
@@ -140,7 +140,7 @@ TEST_F(MapServerTestFixture, LoadMap)
   verifyMapMsg(resp->map);
 }
 
-// Send map loading service request without specifying which map to load
+
 TEST_F(MapServerTestFixture, LoadMapNull)
 {
   RCLCPP_INFO(node_->get_logger(), "Testing LoadMap service");
@@ -158,7 +158,7 @@ TEST_F(MapServerTestFixture, LoadMapNull)
   ASSERT_EQ(resp->result, nav2_msgs::srv::LoadMap::Response::RESULT_MAP_DOES_NOT_EXIST);
 }
 
-// Send map loading service request with non-existing yaml file
+
 TEST_F(MapServerTestFixture, LoadMapInvalidYaml)
 {
   RCLCPP_INFO(node_->get_logger(), "Testing LoadMap service");
@@ -176,7 +176,7 @@ TEST_F(MapServerTestFixture, LoadMapInvalidYaml)
   ASSERT_EQ(resp->result, nav2_msgs::srv::LoadMap::Response::RESULT_INVALID_MAP_METADATA);
 }
 
-// Send map loading service request with yaml file containing non-existing map
+
 TEST_F(MapServerTestFixture, LoadMapInvalidImage)
 {
   RCLCPP_INFO(node_->get_logger(), "Testing LoadMap service");
@@ -194,12 +194,11 @@ TEST_F(MapServerTestFixture, LoadMapInvalidImage)
   ASSERT_EQ(resp->result, nav2_msgs::srv::LoadMap::Response::RESULT_INVALID_MAP_DATA);
 }
 
-/**
- * Test behaviour of server if yaml_filename is set to an empty string.
- */
+
+
 TEST_F(MapServerTestFixture, NoInitialMap)
 {
-  // turn off node into unconfigured state
+
   lifecycle_client_->change_state(Transition::TRANSITION_DEACTIVATE);
   lifecycle_client_->change_state(Transition::TRANSITION_CLEANUP);
 
@@ -209,11 +208,11 @@ TEST_F(MapServerTestFixture, NoInitialMap)
   auto parameters_client = std::make_shared<rclcpp::SyncParametersClient>(node_, "map_server");
   ASSERT_TRUE(parameters_client->wait_for_service(3s));
 
-  // set yaml_filename-parameter to empty string (essentially restart the node)
+
   RCLCPP_INFO(node_->get_logger(), "Removing yaml_filename-parameter before restarting");
   parameters_client->set_parameters({Parameter("yaml_filename", ParameterValue(""))});
 
-  // only configure node, to test behaviour of service while node is not active
+
   lifecycle_client_->change_state(Transition::TRANSITION_CONFIGURE, 3s);
 
   RCLCPP_INFO(node_->get_logger(), "Testing LoadMap service while not being active");
@@ -225,7 +224,7 @@ TEST_F(MapServerTestFixture, NoInitialMap)
 
   ASSERT_EQ(resp->result, nav2_msgs::srv::LoadMap::Response::RESULT_UNDEFINED_FAILURE);
 
-  // activate server and load map:
+
   lifecycle_client_->change_state(Transition::TRANSITION_ACTIVATE, 3s);
   RCLCPP_INFO(node_->get_logger(), "active again");
 

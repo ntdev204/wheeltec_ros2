@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_lifecycle_manager/lifecycle_manager_client.hpp"
 
@@ -33,10 +33,10 @@ LifecycleManagerClient::LifecycleManagerClient(
   manage_service_name_ = name + std::string("/manage_nodes");
   active_service_name_ = name + std::string("/is_active");
 
-  // Use parent node for service call and logging
+
   node_ = parent_node;
 
-  // Create the service clients
+
   manager_client_ = std::make_shared<nav2_util::ServiceClient<ManageLifecycleNodes>>(
     manage_service_name_, node_);
   is_active_client_ = std::make_shared<nav2_util::ServiceClient<std_srvs::srv::Trigger>>(
@@ -133,4 +133,4 @@ LifecycleManagerClient::callService(uint8_t command, const std::chrono::nanoseco
   }
 }
 
-}  // namespace nav2_lifecycle_manager
+}

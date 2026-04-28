@@ -20,7 +20,6 @@ class waypoint_cycle(Node):
 
 
     def pose_callback(self, msg):
-        # self.get_logger().info(f'status:{msg.status_list[-1].status},count:{self.count}')
         if msg.status_list[-1].status != GoalStatus.STATUS_EXECUTING:
             if msg.status_list[-1].status >= GoalStatus.STATUS_SUCCEEDED and self.count > 0:
                 self.try_again = True

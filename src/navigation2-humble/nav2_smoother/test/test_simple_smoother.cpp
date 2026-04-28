@@ -1,16 +1,16 @@
-// Copyright (c) 2022, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <math.h>
 #include <memory>
@@ -28,9 +28,9 @@
 #include "nav2_smoother/simple_smoother.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
-using namespace smoother_utils;  // NOLINT
-using namespace nav2_smoother;  // NOLINT
-using namespace std::chrono_literals;  // NOLINT
+using namespace smoother_utils;
+using namespace nav2_smoother;
+using namespace std::chrono_literals;
 
 class RclCppFixture
 {
@@ -73,7 +73,7 @@ TEST(SmootherTest, test_simple_smoother)
   costmap_msg->metadata.size_x = 100;
   costmap_msg->metadata.size_y = 100;
 
-  // island in the middle of lethal cost to cross
+
   for (unsigned int i = 20; i <= 30; ++i) {
     for (unsigned int j = 20; j <= 30; ++j) {
       costmap_msg->data[j * 100 + i] = 254;
@@ -85,13 +85,13 @@ TEST(SmootherTest, test_simple_smoother)
   dummy_costmap = std::make_shared<nav2_costmap_2d::CostmapSubscriber>(parent, "dummy_topic");
   dummy_costmap->costmapCallback(costmap_msg);
 
-  // Make smoother
+
   std::shared_ptr<tf2_ros::Buffer> dummy_tf;
   std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> dummy_footprint;
   auto smoother = std::make_unique<SmootherWrapper>();
   smoother->configure(parent, "test", dummy_tf, dummy_costmap, dummy_footprint);
 
-  // Test that an irregular distributed path becomes more distributed
+
   nav_msgs::msg::Path straight_irregular_path;
   straight_irregular_path.header.frame_id = "map";
   straight_irregular_path.header.stamp = node->now();
@@ -119,19 +119,19 @@ TEST(SmootherTest, test_simple_smoother)
   straight_irregular_path.poses[10].pose.position.x = 0.5;
   straight_irregular_path.poses[10].pose.position.y = 2.5;
 
-  rclcpp::Duration no_time = rclcpp::Duration::from_seconds(0.0);  // 0 seconds
-  rclcpp::Duration max_time = rclcpp::Duration::from_seconds(1);  // 1 second
+  rclcpp::Duration no_time = rclcpp::Duration::from_seconds(0.0);
+  rclcpp::Duration max_time = rclcpp::Duration::from_seconds(1);
   EXPECT_FALSE(smoother->smooth(straight_irregular_path, no_time));
   EXPECT_TRUE(smoother->smooth(straight_irregular_path, max_time));
   for (uint i = 0; i != straight_irregular_path.poses.size() - 1; i++) {
-    // Check distances are more evenly spaced out now
+
     EXPECT_LT(
       fabs(
         straight_irregular_path.poses[i].pose.position.y -
         straight_irregular_path.poses[i + 1].pose.position.y), 0.38);
   }
 
-  // Test regular path, should see no effective change
+
   nav_msgs::msg::Path straight_regular_path;
   straight_regular_path.header = straight_irregular_path.header;
   straight_regular_path.poses.resize(11);
@@ -160,14 +160,14 @@ TEST(SmootherTest, test_simple_smoother)
 
   EXPECT_TRUE(smoother->smooth(straight_regular_path, max_time));
   for (uint i = 0; i != straight_regular_path.poses.size() - 1; i++) {
-    // Check distances are still very evenly spaced
+
     EXPECT_NEAR(
       fabs(
         straight_regular_path.poses[i].pose.position.y -
         straight_regular_path.poses[i + 1].pose.position.y), 0.1, 0.001);
   }
 
-  // test shorter and curved if given a right angle
+
   nav_msgs::msg::Path right_angle_path;
   right_angle_path = straight_regular_path;
   straight_regular_path.poses[6].pose.position.x = 0.6;
@@ -184,7 +184,7 @@ TEST(SmootherTest, test_simple_smoother)
   EXPECT_NEAR(straight_regular_path.poses[5].pose.position.x, 0.637, 0.01);
   EXPECT_NEAR(straight_regular_path.poses[5].pose.position.y, 0.353, 0.01);
 
-  // Test that collisions are rejected
+
   nav_msgs::msg::Path collision_path;
   collision_path.poses.resize(11);
   collision_path.poses[0].pose.position.x = 0.0;
@@ -211,7 +211,7 @@ TEST(SmootherTest, test_simple_smoother)
   collision_path.poses[10].pose.position.y = 1.5;
   EXPECT_FALSE(smoother->smooth(collision_path, max_time));
 
-  // test cusp / reversing segments
+
   nav_msgs::msg::Path reversing_path;
   reversing_path.poses.resize(11);
   reversing_path.poses[0].pose.position.x = 0.5;
@@ -238,7 +238,7 @@ TEST(SmootherTest, test_simple_smoother)
   reversing_path.poses[10].pose.position.y = 0.0;
   EXPECT_TRUE(smoother->smooth(reversing_path, max_time));
 
-  // // test rotate in place
+
   tf2::Quaternion quat1, quat2;
   quat1.setRPY(0.0, 0.0, 0.0);
   quat2.setRPY(0.0, 0.0, 1.0);
@@ -250,7 +250,7 @@ TEST(SmootherTest, test_simple_smoother)
   straight_irregular_path.poses[6].pose.orientation = tf2::toMsg(quat2);
   EXPECT_TRUE(smoother->smooth(straight_irregular_path, max_time));
 
-  // test max iterations
+
   smoother->setMaxItsToInvalid();
   nav_msgs::msg::Path max_its_path;
   max_its_path.poses.resize(11);

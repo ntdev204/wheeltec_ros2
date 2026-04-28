@@ -1,16 +1,16 @@
-// Copyright (c) 2022, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <math.h>
 #include <memory>
@@ -29,9 +29,9 @@
 #include "nav2_smoother/savitzky_golay_smoother.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
-using namespace smoother_utils;  // NOLINT
-using namespace nav2_smoother;  // NOLINT
-using namespace std::chrono_literals;  // NOLINT
+using namespace smoother_utils;
+using namespace nav2_smoother;
+using namespace std::chrono_literals;
 
 class RclCppFixture
 {
@@ -60,16 +60,16 @@ TEST(SmootherTest, test_sg_smoother_basics)
   dummy_costmap = std::make_shared<nav2_costmap_2d::CostmapSubscriber>(parent, "dummy_topic");
   dummy_costmap->costmapCallback(costmap_msg);
 
-  // Make smoother
+
   std::shared_ptr<tf2_ros::Buffer> dummy_tf;
   std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> dummy_footprint;
   node->declare_parameter("test.do_refinement", rclcpp::ParameterValue(false));
   auto smoother = std::make_unique<nav2_smoother::SavitzkyGolaySmoother>();
   smoother->configure(parent, "test", dummy_tf, dummy_costmap, dummy_footprint);
   smoother->activate();
-  rclcpp::Duration max_time = rclcpp::Duration::from_seconds(1.0);  // 1 seconds
+  rclcpp::Duration max_time = rclcpp::Duration::from_seconds(1.0);
 
-  // Test regular path, should see no effective change
+
   nav_msgs::msg::Path straight_regular_path, straight_regular_path_baseline;
   straight_regular_path.header.frame_id = "map";
   straight_regular_path.header.stamp = node->now();
@@ -100,15 +100,15 @@ TEST(SmootherTest, test_sg_smoother_basics)
 
   EXPECT_TRUE(smoother->smooth(straight_regular_path, max_time));
   for (uint i = 0; i != straight_regular_path.poses.size() - 1; i++) {
-    // Check distances are still the same
+
     EXPECT_NEAR(
       fabs(
         straight_regular_path.poses[i].pose.position.y -
         straight_regular_path_baseline.poses[i].pose.position.y), 0.0, 0.011);
   }
 
-  // Attempt smoothing with no time given, should fail
-  rclcpp::Duration no_time = rclcpp::Duration::from_seconds(-1.0);  // 0 seconds
+
+  rclcpp::Duration no_time = rclcpp::Duration::from_seconds(-1.0);
   EXPECT_FALSE(smoother->smooth(straight_regular_path, no_time));
 
   smoother->deactivate();
@@ -134,15 +134,15 @@ TEST(SmootherTest, test_sg_smoother_noisey_path)
   dummy_costmap = std::make_shared<nav2_costmap_2d::CostmapSubscriber>(parent, "dummy_topic");
   dummy_costmap->costmapCallback(costmap_msg);
 
-  // Make smoother
+
   std::shared_ptr<tf2_ros::Buffer> dummy_tf;
   std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> dummy_footprint;
   node->declare_parameter("test.do_refinement", rclcpp::ParameterValue(false));
   auto smoother = std::make_unique<nav2_smoother::SavitzkyGolaySmoother>();
   smoother->configure(parent, "test", dummy_tf, dummy_costmap, dummy_footprint);
-  rclcpp::Duration max_time = rclcpp::Duration::from_seconds(1.0);  // 1 seconds
+  rclcpp::Duration max_time = rclcpp::Duration::from_seconds(1.0);
 
-  // Given nominal irregular/noisey path, test that the output is shorter and smoother
+
   nav_msgs::msg::Path noisey_path, noisey_path_baseline;
   noisey_path.header.frame_id = "map";
   noisey_path.header.stamp = node->now();
@@ -170,7 +170,7 @@ TEST(SmootherTest, test_sg_smoother_noisey_path)
   noisey_path.poses[10].pose.position.x = 0.5;
   noisey_path.poses[10].pose.position.y = 1.1;
 
-  // Add random but deterministic noises
+
   std::random_device rd{};
   std::mt19937 gen{rd()};
   std::normal_distribution<> normal_distribution{0.0, 0.02};
@@ -182,7 +182,7 @@ TEST(SmootherTest, test_sg_smoother_noisey_path)
   noisey_path_baseline = noisey_path;
   EXPECT_TRUE(smoother->smooth(noisey_path, max_time));
 
-  // Compute metric, should be shorter if smoother
+
   double length = 0;
   double base_length = 0;
   for (unsigned int i = 0; i != noisey_path.poses.size() - 1; i++) {
@@ -198,7 +198,7 @@ TEST(SmootherTest, test_sg_smoother_noisey_path)
 
   EXPECT_LT(length, base_length);
 
-  // Test again with refinement, even shorter and smoother
+
   node->set_parameter(rclcpp::Parameter("test.do_refinement", rclcpp::ParameterValue(true)));
   smoother->configure(parent, "test", dummy_tf, dummy_costmap, dummy_footprint);
   nav_msgs::msg::Path noisey_path_refined = noisey_path_baseline;
@@ -239,15 +239,15 @@ TEST(SmootherTest, test_sg_smoother_reversing)
   dummy_costmap = std::make_shared<nav2_costmap_2d::CostmapSubscriber>(parent, "dummy_topic");
   dummy_costmap->costmapCallback(costmap_msg);
 
-  // Make smoother
+
   std::shared_ptr<tf2_ros::Buffer> dummy_tf;
   std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> dummy_footprint;
   node->declare_parameter("test.do_refinement", rclcpp::ParameterValue(false));
   auto smoother = std::make_unique<nav2_smoother::SavitzkyGolaySmoother>();
   smoother->configure(parent, "test", dummy_tf, dummy_costmap, dummy_footprint);
-  rclcpp::Duration max_time = rclcpp::Duration::from_seconds(1.0);  // 1 seconds
+  rclcpp::Duration max_time = rclcpp::Duration::from_seconds(1.0);
 
-  // Test reversing / multiple segments via a cusp
+
   nav_msgs::msg::Path cusp_path, cusp_path_baseline;
   cusp_path.header.frame_id = "map";
   cusp_path.header.stamp = node->now();
@@ -297,7 +297,7 @@ TEST(SmootherTest, test_sg_smoother_reversing)
   cusp_path.poses[21].pose.position.x = 0.5;
   cusp_path.poses[21].pose.position.y = 0.0;
 
-  // Add random but deterministic noises
+
   std::random_device rd{};
   std::mt19937 gen{rd()};
   std::normal_distribution<> normal_distribution{0.0, 0.02};
@@ -310,11 +310,11 @@ TEST(SmootherTest, test_sg_smoother_reversing)
 
   EXPECT_TRUE(smoother->smooth(cusp_path, max_time));
 
-  // If it detected the cusp, the cusp point should be fixed
+
   EXPECT_EQ(cusp_path.poses[10].pose.position.x, cusp_path_baseline.poses[10].pose.position.x);
   EXPECT_EQ(cusp_path.poses[10].pose.position.y, cusp_path_baseline.poses[10].pose.position.y);
 
-  // But the path also should be smoother / shorter
+
   double length = 0;
   double base_length = 0;
   for (unsigned int i = 0; i != cusp_path.poses.size() - 1; i++) {

@@ -93,11 +93,6 @@ class PatrolService:
     async def ensure_default_schedule() -> None:
         async with aiosqlite.connect(settings.db_path) as db:
             await db.execute(
-                """
-                INSERT INTO patrol_schedules (id, route_id, enabled, interval_minutes, loops_per_run, start_from_home, return_to_home, next_trigger_at)
-                VALUES (1, NULL, 0, ?, ?, 1, 1, NULL)
-                ON CONFLICT(id) DO NOTHING
-                """,
                 (DEFAULT_INTERVAL_MINUTES, DEFAULT_LOOPS_PER_RUN),
             )
             await db.commit()
@@ -134,10 +129,6 @@ class PatrolService:
         async with aiosqlite.connect(settings.db_path) as db:
             await db.execute("UPDATE patrol_routes SET is_active = 0 WHERE is_active = 1")
             cursor = await db.execute(
-                """
-                INSERT INTO patrol_routes (name, map_id, waypoints_json, is_active, updated_at)
-                VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
-                """,
                 (name, map_id, json.dumps(normalized_waypoints)),
             )
             route_id = cursor.lastrowid
@@ -213,12 +204,6 @@ class PatrolService:
 
         async with aiosqlite.connect(settings.db_path) as db:
             await db.execute(
-                """
-                UPDATE patrol_schedules
-                SET route_id = ?, enabled = ?, interval_minutes = ?, loops_per_run = ?,
-                    start_from_home = ?, return_to_home = ?, next_trigger_at = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE id = 1
-                """,
                 (
                     route_id,
                     int(enabled),
@@ -306,13 +291,6 @@ class PatrolService:
         schedule = await PatrolService.get_schedule()
         async with aiosqlite.connect(settings.db_path) as db:
             cursor = await db.execute(
-                """
-                INSERT INTO patrol_runs (
-                    schedule_id, route_id, session_id, status, current_loop, total_loops,
-                    current_waypoint_index, started_at, started_from_home_x, started_from_home_y, started_from_home_yaw, ended_at_home
-                )
-                VALUES (?, ?, ?, 'pending', 0, ?, -1, CURRENT_TIMESTAMP, ?, ?, ?, 0)
-                """,
                 (
                     schedule_id,
                     route["id"],
@@ -368,11 +346,6 @@ class PatrolService:
             next_trigger_at = PatrolService._utcnow() + timedelta(minutes=int(schedule["interval_minutes"]))
             async with aiosqlite.connect(settings.db_path) as db:
                 await db.execute(
-                    """
-                    UPDATE patrol_schedules
-                    SET last_triggered_at = CURRENT_TIMESTAMP, next_trigger_at = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = 1
-                    """,
                     (next_trigger_at.isoformat(),),
                 )
                 await db.execute(
@@ -412,11 +385,6 @@ class PatrolService:
             status = "failed"
         async with aiosqlite.connect(settings.db_path) as db:
             await db.execute(
-                """
-                UPDATE patrol_runs
-                SET status = ?, ended_at = CURRENT_TIMESTAMP, failure_reason = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-                """,
                 (status, reason, run_id),
             )
             await db.commit()
@@ -473,11 +441,6 @@ class PatrolService:
         async with aiosqlite.connect(settings.db_path) as db:
             if status in {"starting", "running", "returning_home"}:
                 await db.execute(
-                    """
-                    UPDATE patrol_runs
-                    SET status = ?, current_loop = ?, current_waypoint_index = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                    """,
                     (status, current_loop, current_waypoint_index, run_id),
                 )
             elif status == "completed":
@@ -489,22 +452,10 @@ class PatrolService:
                     dy = float(map_pose.get("y", 0.0)) - float(last_goal.get("y", 0.0))
                     ended_at_home = int((dx * dx + dy * dy) ** 0.5 <= WAYPOINT_TOLERANCE_METERS)
                 await db.execute(
-                    """
-                    UPDATE patrol_runs
-                    SET status = 'completed', current_loop = ?, current_waypoint_index = ?, ended_at = CURRENT_TIMESTAMP,
-                        ended_at_home = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                    """,
                     (current_loop, current_waypoint_index, ended_at_home, run_id),
                 )
             elif status in {"failed", "aborted", "stopped"}:
                 await db.execute(
-                    """
-                    UPDATE patrol_runs
-                    SET status = ?, current_loop = ?, current_waypoint_index = ?, ended_at = CURRENT_TIMESTAMP,
-                        failure_reason = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                    """,
                     (status, current_loop, current_waypoint_index, message, run_id),
                 )
             await db.commit()

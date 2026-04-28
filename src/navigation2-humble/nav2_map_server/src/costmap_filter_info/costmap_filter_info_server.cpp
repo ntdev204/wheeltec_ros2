@@ -1,19 +1,19 @@
-// Copyright (c) 2020 Samsung Research Russia
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
-// TODO(AlexeyMerzlyakov): This dummy info publisher should be removed
-// after Semantic Map Server having the same functionality will be developed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_map_server/costmap_filter_info_server.hpp"
 
@@ -39,7 +39,7 @@ CostmapFilterInfoServer::~CostmapFilterInfoServer()
 }
 
 nav2_util::CallbackReturn
-CostmapFilterInfoServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
+CostmapFilterInfoServer::on_configure(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Configuring");
 
@@ -60,7 +60,7 @@ CostmapFilterInfoServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
 }
 
 nav2_util::CallbackReturn
-CostmapFilterInfoServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
+CostmapFilterInfoServer::on_activate(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Activating");
 
@@ -68,27 +68,27 @@ CostmapFilterInfoServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
   auto costmap_filter_info = std::make_unique<nav2_msgs::msg::CostmapFilterInfo>(msg_);
   publisher_->publish(std::move(costmap_filter_info));
 
-  // create bond connection
+
   createBond();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn
-CostmapFilterInfoServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
+CostmapFilterInfoServer::on_deactivate(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Deactivating");
 
   publisher_->on_deactivate();
 
-  // destroy bond connection
+
   destroyBond();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn
-CostmapFilterInfoServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
+CostmapFilterInfoServer::on_cleanup(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Cleaning up");
 
@@ -98,11 +98,11 @@ CostmapFilterInfoServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
 }
 
 nav2_util::CallbackReturn
-CostmapFilterInfoServer::on_shutdown(const rclcpp_lifecycle::State & /*state*/)
+CostmapFilterInfoServer::on_shutdown(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Shutting down");
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
-}  // namespace nav2_map_server
+}

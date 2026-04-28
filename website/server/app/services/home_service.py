@@ -1,10 +1,10 @@
 import aiosqlite
 from app.config import settings
 
-BATTERY_MIN = 21.0  # 6S LiPo empty
-BATTERY_MAX = 25.2  # 6S LiPo full
-WARN_THRESHOLD = 20  # percent
-RETURN_THRESHOLD = 10  # percent
+BATTERY_MIN = 21.0
+BATTERY_MAX = 25.2
+WARN_THRESHOLD = 20
+RETURN_THRESHOLD = 10
 
 
 def voltage_to_percent(voltage: float) -> float:
@@ -41,22 +41,3 @@ class HomeService:
                         y = excluded.y,
                         yaw = excluded.yaw,
                         updated_at = CURRENT_TIMESTAMP
-                """, (x, y, yaw))
-                await db.commit()
-            print(f"[HomeService] Home set to ({x:.3f}, {y:.3f}, yaw={yaw:.3f})")
-            return True
-        except Exception as e:
-            print(f"[HomeService] Error saving home: {e}")
-            return False
-
-    @staticmethod
-    def should_auto_return(voltage: float, is_charging: bool, already_triggered: bool) -> bool:
-        if is_charging or already_triggered:
-            return False
-        pct = voltage_to_percent(voltage)
-        return pct <= RETURN_THRESHOLD
-
-    @staticmethod
-    def should_warn(voltage: float) -> bool:
-        pct = voltage_to_percent(voltage)
-        return RETURN_THRESHOLD < pct <= WARN_THRESHOLD

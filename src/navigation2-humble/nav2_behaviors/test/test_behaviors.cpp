@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <string>
 #include <memory>
@@ -32,7 +32,7 @@ using ClientGoalHandle = rclcpp_action::ClientGoalHandle<BehaviorAction>;
 
 using namespace std::chrono_literals;
 
-// A behavior for testing the base class
+
 
 class DummyBehavior : public TimedBehavior<BehaviorAction>
 {
@@ -45,13 +45,13 @@ public:
 
   Status onRun(const std::shared_ptr<const BehaviorAction::Goal> goal) override
   {
-    // A normal behavior would catch the command and initialize
+
     initialized_ = false;
     command_ = goal->command.data;
     start_time_ = std::chrono::system_clock::now();
 
-    // onRun method can have various possible outcomes (success, failure, cancelled)
-    // The output is defined by the tester class on the command string.
+
+
     if (command_ == "Testing success" || command_ == "Testing failure on run") {
       initialized_ = true;
       return Status::SUCCEEDED;
@@ -62,21 +62,21 @@ public:
 
   Status onCycleUpdate() override
   {
-    // A normal behavior would set the robot in motion in the first call
-    // and check for robot states on subsequent calls to check if the movement
-    // was completed.
+
+
+
 
     if (command_ != "Testing success" || !initialized_) {
       return Status::FAILED;
     }
 
-    // For testing, pretend the robot takes some fixed
-    // amount of time to complete the motion.
+
+
     auto current_time = std::chrono::system_clock::now();
     auto motion_duration = 1s;
 
     if (current_time - start_time_ >= motion_duration) {
-      // Movement was completed
+
       return Status::SUCCEEDED;
     }
 
@@ -89,7 +89,7 @@ private:
   std::chrono::system_clock::time_point start_time_;
 };
 
-// Define a test class to hold the context for the tests
+
 
 class BehaviorTest : public ::testing::Test
 {
@@ -159,7 +159,7 @@ protected:
       rclcpp::FutureReturnCode::SUCCESS)
     {
       std::cout << "failed sending goal" << std::endl;
-      // failed sending the goal
+
       return false;
     }
 
@@ -167,7 +167,7 @@ protected:
 
     if (!goal_handle_) {
       std::cout << "goal was rejected" << std::endl;
-      // goal was rejected by the action server
+
       return false;
     }
 
@@ -201,7 +201,7 @@ protected:
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 };
 
-// Define the tests
+
 
 TEST_F(BehaviorTest, testingSuccess)
 {
@@ -256,12 +256,12 @@ int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
 
-  // initialize ROS
+
   rclcpp::init(argc, argv);
 
   bool all_successful = RUN_ALL_TESTS();
 
-  // shutdown ROS
+
   rclcpp::shutdown();
 
   return all_successful;

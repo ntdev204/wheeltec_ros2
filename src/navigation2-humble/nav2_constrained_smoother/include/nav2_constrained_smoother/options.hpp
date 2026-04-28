@@ -1,17 +1,17 @@
-// Copyright (c) 2021 RoboTech Vision
-// Copyright (c) 2020, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef NAV2_CONSTRAINED_SMOOTHER__OPTIONS_HPP_
 #define NAV2_CONSTRAINED_SMOOTHER__OPTIONS_HPP_
@@ -26,29 +26,23 @@
 namespace nav2_constrained_smoother
 {
 
-/**
- * @struct nav2_smac_planner::SmootherParams
- * @brief Parameters for the smoother cost function
- */
+
+
 struct SmootherParams
 {
-  /**
-   * @brief A constructor for nav2_smac_planner::SmootherParams
-   */
+  
+
   SmootherParams()
   {
   }
 
-  /**
-   * @brief Get params from ROS parameter
-   * @param node_ Ptr to node
-   * @param name Name of plugin
-   */
+  
+
   void get(rclcpp_lifecycle::LifecycleNode * node, const std::string & name)
   {
     std::string local_name = name + std::string(".");
 
-    // Smoother params
+
     double minimum_turning_radius;
     nav2_util::declare_parameter_if_not_declared(
       node, name + ".minimum_turning_radius", rclcpp::ParameterValue(0.4));
@@ -85,7 +79,7 @@ struct SmootherParams
         "[x1, y1, weight1, x2, y2, weight2, ...]");
       throw std::runtime_error("Invalid parameter: cost_check_points");
     }
-    // normalize check point weights so that their sum == 1.0
+
     double check_point_weights_sum = 0.0;
     for (size_t i = 2u; i < cost_check_points.size(); i += 3) {
       check_point_weights_sum += cost_check_points[i];
@@ -117,7 +111,7 @@ struct SmootherParams
   double distance_weight{0.0};
   double curvature_weight{0.0};
   double max_curvature{0.0};
-  double max_time{10.0};  // adjusted by action goal, not by parameters
+  double max_time{10.0};
   int path_downsampling_factor{1};
   int path_upsampling_factor{1};
   bool reversing_enabled{true};
@@ -126,10 +120,8 @@ struct SmootherParams
   std::vector<double> cost_check_points{};
 };
 
-/**
- * @struct nav2_smac_planner::OptimizerParams
- * @brief Parameters for the ceres optimizer
- */
+
+
 struct OptimizerParams
 {
   OptimizerParams()
@@ -141,16 +133,13 @@ struct OptimizerParams
   {
   }
 
-  /**
-   * @brief Get params from ROS parameter
-   * @param node_ Ptr to node
-   * @param name Name of plugin
-   */
+  
+
   void get(rclcpp_lifecycle::LifecycleNode * node, const std::string & name)
   {
     std::string local_name = name + std::string(".optimizer.");
 
-    // Optimizer params
+
     nav2_util::declare_parameter_if_not_declared(
       node, local_name + "linear_solver_type", rclcpp::ParameterValue("SPARSE_NORMAL_CHOLESKY"));
     node->get_parameter(local_name + "linear_solver_type", linear_solver_type);
@@ -190,13 +179,13 @@ struct OptimizerParams
 
   bool debug;
   std::string linear_solver_type;
-  int max_iterations;  // Ceres default: 50
+  int max_iterations;
 
-  double param_tol;  // Ceres default: 1e-8
-  double fn_tol;  // Ceres default: 1e-6
-  double gradient_tol;  // Ceres default: 1e-10
+  double param_tol;
+  double fn_tol;
+  double gradient_tol;
 };
 
-}  // namespace nav2_constrained_smoother
+}
 
-#endif  // NAV2_CONSTRAINED_SMOOTHER__OPTIONS_HPP_
+#endif

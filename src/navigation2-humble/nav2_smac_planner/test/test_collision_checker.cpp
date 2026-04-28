@@ -1,17 +1,17 @@
-// Copyright (c) 2020 Shivang Patel
-// Copyright (c) 2020 Samsung Research
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <string>
 #include <vector>
@@ -20,7 +20,7 @@
 #include "gtest/gtest.h"
 #include "nav2_smac_planner/collision_checker.hpp"
 
-using namespace nav2_costmap_2d;  // NOLINT
+using namespace nav2_costmap_2d;
 
 TEST(collision_footprint, test_basic)
 {
@@ -42,7 +42,7 @@ TEST(collision_footprint, test_basic)
   nav2_costmap_2d::Footprint footprint = {p1, p2, p3, p4};
 
   nav2_smac_planner::GridCollisionChecker collision_checker(costmap_, 72);
-  collision_checker.setFootprint(footprint, false /*use footprint*/, 0.0);
+  collision_checker.setFootprint(footprint, false , 0.0);
   collision_checker.inCollision(5.0, 5.0, 0.0, false);
   float cost = collision_checker.getCost();
   EXPECT_NEAR(cost, 0.0, 0.001);
@@ -55,7 +55,7 @@ TEST(collision_footprint, test_point_cost)
 
   nav2_smac_planner::GridCollisionChecker collision_checker(costmap_, 72);
   nav2_costmap_2d::Footprint footprint;
-  collision_checker.setFootprint(footprint, true /*radius / pointcose*/, 0.0);
+  collision_checker.setFootprint(footprint, true , 0.0);
 
   collision_checker.inCollision(5.0, 5.0, 0.0, false);
   float cost = collision_checker.getCost();
@@ -69,7 +69,7 @@ TEST(collision_footprint, test_world_to_map)
 
   nav2_smac_planner::GridCollisionChecker collision_checker(costmap_, 72);
   nav2_costmap_2d::Footprint footprint;
-  collision_checker.setFootprint(footprint, true /*radius / point cost*/, 0.0);
+  collision_checker.setFootprint(footprint, true , 0.0);
 
   unsigned int x, y;
 
@@ -114,7 +114,7 @@ TEST(collision_footprint, test_footprint_at_pose_with_movement)
   nav2_costmap_2d::Footprint footprint = {p1, p2, p3, p4};
 
   nav2_smac_planner::GridCollisionChecker collision_checker(costmap_, 72);
-  collision_checker.setFootprint(footprint, false /*use footprint*/, 0.0);
+  collision_checker.setFootprint(footprint, false , 0.0);
 
   collision_checker.inCollision(50, 50, 0.0, false);
   float cost = collision_checker.getCost();
@@ -154,7 +154,7 @@ TEST(collision_footprint, test_point_and_line_cost)
   nav2_costmap_2d::Footprint footprint = {p1, p2, p3, p4};
 
   nav2_smac_planner::GridCollisionChecker collision_checker(costmap_, 72);
-  collision_checker.setFootprint(footprint, false /*use footprint*/, 0.0);
+  collision_checker.setFootprint(footprint, false , 0.0);
 
   collision_checker.inCollision(50, 50, 0.0, false);
   float value = collision_checker.getCost();

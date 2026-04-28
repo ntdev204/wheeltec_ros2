@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <chrono>
 #include <thread>
@@ -19,7 +19,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_mppi_controller/tools/trajectory_visualizer.hpp"
 
-// Tests trajectory visualization
+
 
 class RosLockGuard
 {
@@ -29,7 +29,7 @@ public:
 };
 RosLockGuard g_rclcpp;
 
-using namespace mppi;  // NOLINT
+using namespace mppi;
 
 TEST(TrajectoryVisualizerTests, StateTransition)
 {
@@ -76,7 +76,7 @@ TEST(TrajectoryVisualizerTests, VisOptimalTrajectory)
     "/trajectories", 10,
     [&](const visualization_msgs::msg::MarkerArray msg) {recieved_msg = msg;});
 
-  // optimal_trajectory empty, should fail to publish
+
   xt::xtensor<float, 2> optimal_trajectory;
   TrajectoryVisualizer vis;
   vis.on_configure(node, "my_name", "fkmap", parameters_handler.get());
@@ -88,28 +88,28 @@ TEST(TrajectoryVisualizerTests, VisOptimalTrajectory)
   rclcpp::spin_some(node->get_node_base_interface());
   EXPECT_EQ(recieved_msg.markers.size(), 0u);
 
-  // Now populated with content, should publish
+
   optimal_trajectory = xt::ones<float>({20, 2});
   vis.add(optimal_trajectory, "Optimal Trajectory");
   vis.visualize(bogus_path);
 
   rclcpp::spin_some(node->get_node_base_interface());
 
-  // Should have 20 trajectory points in the map frame
+
   EXPECT_EQ(recieved_msg.markers.size(), 20u);
   EXPECT_EQ(recieved_msg.markers[0].header.frame_id, "fkmap");
 
-  // Check IDs are properly populated
+
   EXPECT_EQ(recieved_msg.markers[0].id, 0);
   EXPECT_EQ(recieved_msg.markers[1].id, 1);
   EXPECT_EQ(recieved_msg.markers[10].id, 10);
 
-  // Check poses are correct
+
   EXPECT_EQ(recieved_msg.markers[0].pose.position.x, 1);
   EXPECT_EQ(recieved_msg.markers[0].pose.position.y, 1);
   EXPECT_EQ(recieved_msg.markers[0].pose.position.z, 0.06);
 
-  // Check that scales are rational
+
   EXPECT_EQ(recieved_msg.markers[0].scale.x, 0.03);
   EXPECT_EQ(recieved_msg.markers[0].scale.y, 0.03);
   EXPECT_EQ(recieved_msg.markers[0].scale.z, 0.07);
@@ -118,7 +118,7 @@ TEST(TrajectoryVisualizerTests, VisOptimalTrajectory)
   EXPECT_EQ(recieved_msg.markers[19].scale.y, 0.07);
   EXPECT_EQ(recieved_msg.markers[19].scale.z, 0.09);
 
-  // Check that the colors are rational
+
   for (unsigned int i = 0; i != recieved_msg.markers.size() - 1; i++) {
     EXPECT_LT(recieved_msg.markers[i].color.g, recieved_msg.markers[i + 1].color.g);
     EXPECT_LT(recieved_msg.markers[i].color.b, recieved_msg.markers[i + 1].color.b);
@@ -150,6 +150,6 @@ TEST(TrajectoryVisualizerTests, VisCandidateTrajectories)
   vis.visualize(bogus_path);
 
   rclcpp::spin_some(node->get_node_base_interface());
-  // 40 * 4, for 5 trajectory steps + 3 point steps
+
   EXPECT_EQ(recieved_msg.markers.size(), 160u);
 }

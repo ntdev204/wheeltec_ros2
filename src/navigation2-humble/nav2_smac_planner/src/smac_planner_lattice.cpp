@@ -1,16 +1,16 @@
-// Copyright (c) 2021, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <string>
 #include <memory>
@@ -21,12 +21,12 @@
 #include "Eigen/Core"
 #include "nav2_smac_planner/smac_planner_lattice.hpp"
 
-// #define BENCHMARK_TESTING
+
 
 namespace nav2_smac_planner
 {
 
-using namespace std::chrono;  // NOLINT
+using namespace std::chrono;
 using rcl_interfaces::msg::ParameterType;
 
 SmacPlannerLattice::SmacPlannerLattice()
@@ -46,7 +46,7 @@ SmacPlannerLattice::~SmacPlannerLattice()
 
 void SmacPlannerLattice::configure(
   const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-  std::string name, std::shared_ptr<tf2_ros::Buffer>/*tf*/,
+  std::string name, std::shared_ptr<tf2_ros::Buffer>,
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
 {
   _node = parent;
@@ -61,7 +61,7 @@ void SmacPlannerLattice::configure(
 
   RCLCPP_INFO(_logger, "Configuring %s of type SmacPlannerLattice", name.c_str());
 
-  // General planner params
+
   double analytic_expansion_max_length_m;
   bool smooth_path;
 
@@ -81,7 +81,7 @@ void SmacPlannerLattice::configure(
     node, name + ".smooth_path", rclcpp::ParameterValue(true));
   node->get_parameter(name + ".smooth_path", smooth_path);
 
-  // Default to a well rounded model: 16 bin, 0.4m turning radius, ackermann model
+
   nav2_util::declare_parameter_if_not_declared(
     node, name + ".lattice_filepath", rclcpp::ParameterValue(
       ament_index_cpp::get_package_share_directory("nav2_smac_planner") +
@@ -150,10 +150,10 @@ void SmacPlannerLattice::configure(
     static_cast<float>(_lookup_table_size) /
     static_cast<float>(_costmap->getResolution());
 
-  // Make sure its a whole number
+
   lookup_table_dim = static_cast<float>(static_cast<int>(lookup_table_dim));
 
-  // Make sure its an odd number
+
   if (static_cast<int>(lookup_table_dim) % 2 == 0) {
     RCLCPP_INFO(
       _logger,
@@ -162,20 +162,20 @@ void SmacPlannerLattice::configure(
     lookup_table_dim += 1.0;
   }
 
-  // Initialize collision checker using 72 evenly sized bins instead of the lattice
-  // heading angles. This is done so that we have precomputed angles every 5 degrees.
-  // If we used the sparse lattice headings (usually 16), then when we attempt to collision
-  // check for intermediary points of the primitives, we're forced to round to one of the 16
-  // increments causing "wobbly" checks that could cause larger robots to virtually show collisions
-  // in valid configurations. This approximation helps to bound orientation error for all checks
-  // in exchange for slight inaccuracies in the collision headings in terminal search states.
+
+
+
+
+
+
+
   _collision_checker = GridCollisionChecker(_costmap, 72u);
   _collision_checker.setFootprint(
     costmap_ros->getRobotFootprint(),
     costmap_ros->getUseRadius(),
     findCircumscribedCost(costmap_ros));
 
-  // Initialize A* template
+
   _a_star = std::make_unique<AStarAlgorithm<NodeLattice>>(_motion_model, _search_info);
   _a_star->initialize(
     _allow_unknown,
@@ -185,7 +185,7 @@ void SmacPlannerLattice::configure(
     lookup_table_dim,
     _metadata.number_of_headings);
 
-  // Initialize path smoother
+
   if (smooth_path) {
     SmootherParams params;
     params.get(node, name);
@@ -209,7 +209,7 @@ void SmacPlannerLattice::activate()
     _name.c_str());
   _raw_plan_publisher->on_activate();
   auto node = _node.lock();
-  // Add callback for dynamic parameters
+
   _dyn_params_handler = node->add_on_set_parameters_callback(
     std::bind(&SmacPlannerLattice::dynamicParametersCallback, this, std::placeholders::_1));
 }
@@ -242,23 +242,23 @@ nav_msgs::msg::Path SmacPlannerLattice::createPlan(
 
   std::unique_lock<nav2_costmap_2d::Costmap2D::mutex_t> lock(*(_costmap->getMutex()));
 
-  // Set collision checker and costmap information
+
   _a_star->setCollisionChecker(&_collision_checker);
 
-  // Set starting point, in A* bin search coordinates
+
   unsigned int mx, my;
   _costmap->worldToMap(start.pose.position.x, start.pose.position.y, mx, my);
   _a_star->setStart(
     mx, my,
     NodeLattice::motion_table.getClosestAngularBin(tf2::getYaw(start.pose.orientation)));
 
-  // Set goal point, in A* bin search coordinates
+
   _costmap->worldToMap(goal.pose.position.x, goal.pose.position.y, mx, my);
   _a_star->setGoal(
     mx, my,
     NodeLattice::motion_table.getClosestAngularBin(tf2::getYaw(goal.pose.orientation)));
 
-  // Setup message
+
   nav_msgs::msg::Path plan;
   plan.header.stamp = _clock->now();
   plan.header.frame_id = _global_frame;
@@ -270,7 +270,7 @@ nav_msgs::msg::Path SmacPlannerLattice::createPlan(
   pose.pose.orientation.z = 0.0;
   pose.pose.orientation.w = 1.0;
 
-  // Compute plan
+
   NodeLattice::CoordinateVector path;
   int num_iterations = 0;
   std::string error;
@@ -297,7 +297,7 @@ nav_msgs::msg::Path SmacPlannerLattice::createPlan(
     return plan;
   }
 
-  // Convert to world coordinates
+
   plan.poses.reserve(path.size());
   geometry_msgs::msg::PoseStamped last_pose = pose;
   for (int i = path.size() - 1; i >= 0; --i) {
@@ -317,12 +317,12 @@ nav_msgs::msg::Path SmacPlannerLattice::createPlan(
     plan.poses.push_back(pose);
   }
 
-  // Publish raw path for debug
+
   if (_raw_plan_publisher->get_subscription_count() > 0) {
     _raw_plan_publisher->publish(plan);
   }
 
-  // Find how much time we have left to do smoothing
+
   steady_clock::time_point b = steady_clock::now();
   duration<double> time_span = duration_cast<duration<double>>(b - a);
   double time_remaining = _max_planning_time - static_cast<double>(time_span.count());
@@ -332,7 +332,7 @@ nav_msgs::msg::Path SmacPlannerLattice::createPlan(
     " milliseconds with " << num_iterations << " iterations." << std::endl;
 #endif
 
-  // Smooth plan
+
   if (_smoother && num_iterations > 1) {
     _smoother->smooth(plan, _costmap, time_remaining);
   }
@@ -443,19 +443,19 @@ SmacPlannerLattice::dynamicParametersCallback(std::vector<rclcpp::Parameter> par
     }
   }
 
-  // Re-init if needed with mutex lock (to avoid re-init while creating a plan)
+
   if (reinit_a_star || reinit_smoother) {
-    // convert to grid coordinates
+
     _search_info.minimum_turning_radius =
       _metadata.min_turning_radius / (_costmap->getResolution());
     float lookup_table_dim =
       static_cast<float>(_lookup_table_size) /
       static_cast<float>(_costmap->getResolution());
 
-    // Make sure its a whole number
+
     lookup_table_dim = static_cast<float>(static_cast<int>(lookup_table_dim));
 
-    // Make sure its an odd number
+
     if (static_cast<int>(lookup_table_dim) % 2 == 0) {
       RCLCPP_INFO(
         _logger,
@@ -464,7 +464,7 @@ SmacPlannerLattice::dynamicParametersCallback(std::vector<rclcpp::Parameter> par
       lookup_table_dim += 1.0;
     }
 
-    // Re-Initialize smoother
+
     if (reinit_smoother) {
       auto node = _node.lock();
       SmootherParams params;
@@ -473,7 +473,7 @@ SmacPlannerLattice::dynamicParametersCallback(std::vector<rclcpp::Parameter> par
       _smoother->initialize(_metadata.min_turning_radius);
     }
 
-    // Re-Initialize A* template
+
     if (reinit_a_star) {
       _a_star = std::make_unique<AStarAlgorithm<NodeLattice>>(_motion_model, _search_info);
       _a_star->initialize(
@@ -490,7 +490,7 @@ SmacPlannerLattice::dynamicParametersCallback(std::vector<rclcpp::Parameter> par
   return result;
 }
 
-}  // namespace nav2_smac_planner
+}
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(nav2_smac_planner::SmacPlannerLattice, nav2_core::GlobalPlanner)

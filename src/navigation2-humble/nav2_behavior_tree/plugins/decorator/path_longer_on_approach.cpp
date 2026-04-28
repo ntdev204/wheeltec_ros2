@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Neobotix GmbH
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <string>
 #include <memory>
@@ -63,15 +63,15 @@ inline BT::NodeStatus PathLongerOnApproach::tick()
   getInput("length_factor", length_factor_);
 
   if (status() == BT::NodeStatus::IDLE) {
-    // Reset the starting point since we're starting a new iteration of
-    // PathLongerOnApproach (moving from IDLE to RUNNING)
+
+
     first_time_ = true;
   }
 
   setStatus(BT::NodeStatus::RUNNING);
 
-  // Check if the path is updated and valid, compare the old and the new path length,
-  // given the goal proximity and check if the new path is longer
+
+
   if (isPathUpdated(new_path_, old_path_) && isRobotInGoalProximity(old_path_, prox_len_) &&
     isNewPathLonger(new_path_, old_path_, length_factor_) && !first_time_)
   {
@@ -95,7 +95,7 @@ inline BT::NodeStatus PathLongerOnApproach::tick()
   return BT::NodeStatus::SUCCESS;
 }
 
-}  // namespace nav2_behavior_tree
+}
 
 #include "behaviortree_cpp_v3/bt_factory.h"
 BT_REGISTER_NODES(factory)

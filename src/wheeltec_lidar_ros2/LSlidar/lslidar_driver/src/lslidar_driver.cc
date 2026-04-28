@@ -1,19 +1,5 @@
-/*
- * This file is part of lslidar driver.
- *
- * The driver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * The driver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with the driver.  If not, see <http://www.gnu.org/licenses/>.
- */
+
+
 #include <string>
 #include <cmath>
 #include <unistd.h>
@@ -31,12 +17,12 @@
 #include "lslidar_driver/lslidar_driver.h"
 #include <functional>
 
-int truncated_mode_=0;          //多角度屏蔽开关：默认为0，如果需要屏蔽多个角度，则truncated_mode_赋值为1。
+int truncated_mode_=0;
 
-int scan_crop_min[]={30,130,290}; 	//雷达屏蔽角度，这里屏蔽角度为135°到225°，
-                                //如果要多角度屏蔽，如10~30，50~60，改为：
-                                //scan_angle_min[]={10，50};scan_angle_max[]={30，60};
-int scan_crop_max[]={70,230,330};     //修改后编译即可
+int scan_crop_min[]={30,130,290};
+
+
+int scan_crop_max[]={70,230,330};
 
 
 namespace lslidar_driver
@@ -216,7 +202,7 @@ namespace lslidar_driver
 			degree_bits_start = 5;
 			end_degree_bits_start = 105;
 			baud_rate_ = 460800;
-			points_size_ = 800; // safety overflow: motor runs at 6Hz real, ~700pts/rev
+			points_size_ = 800;
 			use_gps_ts = false;
 			compensation = false;
 		}
@@ -238,7 +224,7 @@ namespace lslidar_driver
 			scan_pub = this->create_publisher<sensor_msgs::msg::LaserScan>(scan_topic, 10);
 		if (pubPointCloud2)
 			point_cloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(pointcloud_topic, 10);
-		difop_switch = this->create_subscription<std_msgs::msg::Int8>("lslidar_order", 1, std::bind(&LslidarDriver::lidar_order, this, std::placeholders::_1)); // 转速输入
+		difop_switch = this->create_subscription<std_msgs::msg::Int8>("lslidar_order", 1, std::bind(&LslidarDriver::lidar_order, this, std::placeholders::_1));
 		return true;
 	}
 
@@ -297,33 +283,33 @@ namespace lslidar_driver
 				if (lidar_name == "M10" || lidar_name == "M10_GPS" || lidar_name == "M10_P" || lidar_name == "M10_DOUBLE")
 				{
 					if (i <= 1)
-					{ // 雷达启停
+					{
 						data[184] = 0x01;
 						data[185] = char(i);
 					}
 					else if (i == 2)
-					{ // 雷达点云不滤波
+					{
 						data[181] = 0x0A;
 						data[184] = 0x06;
 						if (is_start)
 							data[185] = 0x01;
 					}
 					else if (i == 3)
-					{ // 雷达点云正常滤波
+					{
 						data[181] = 0x0B;
 						data[184] = 0x06;
 						if (is_start)
 							data[185] = 0x01;
 					}
 					else if (i == 4)
-					{ // 雷达近距离滤波
+					{
 						data[181] = 0x0C;
 						data[184] = 0x06;
 						if (is_start)
 							data[185] = 0x01;
 					}
 					else if (i == 100)
-					{ // 接收设备包
+					{
 						data[184] = 0x08;
 						data[185] = 0x01;
 					}
@@ -374,7 +360,7 @@ namespace lslidar_driver
 						data[184] = 0x01;
 						data[185] = char(i);
 					}
-					else if (i == 100) // 接收设备包
+					else if (i == 100)
 					{
 						data[184] = 0x08;
 						data[185] = 0x01;
@@ -404,7 +390,7 @@ namespace lslidar_driver
 				else
 				{
 					if (i == 1)
-						usleep(1000000); // 1.0s
+						usleep(1000000);
 					if (i == 0)
 						is_start = false;
 					if (i == 1)
@@ -443,7 +429,7 @@ namespace lslidar_driver
 		dump_file = std::string("");
 		this->declare_parameter<std::string>("pcap", "");
 		this->get_parameter("pcap", dump_file);
-		// ROS diagnostics
+
 		diagnostics.setHardwareID("Lslidar");
 
 		const double diag_freq = 12 * 24;
@@ -473,7 +459,7 @@ namespace lslidar_driver
 			msop_input_.reset(new lslidar_driver::InputSocket(this, UDP_PORT_NUMBER));
 		}
 
-		// Output
+
 		return true;
 	}
 
@@ -516,16 +502,16 @@ namespace lslidar_driver
 			if (in_file_name == "")
 			{
 				open_serial();
-				// N10_P: set motor speed to 10 Hz (default is 6 Hz)
+
 				if (lidar_name == "N10_P" || lidar_name == "N10")
 				{
-					usleep(100000); // 100ms — wait for serial port to stabilize
+					usleep(100000);
 					unsigned char data[188] = {0x00};
 					data[0] = 0xA5;
 					data[1] = 0x5A;
 					data[2] = 0x55;
-					data[172] = 10;   // target frequency: 10 Hz
-					data[184] = 0x0A; // command: set speed
+					data[172] = 10;
+					data[184] = 0x0A;
 					data[185] = 0x01;
 					data[186] = 0xFA;
 					data[187] = 0xFB;
@@ -534,7 +520,7 @@ namespace lslidar_driver
 						RCLCPP_WARN(this->get_logger(), "Failed to send 10Hz speed command");
 					else
 						RCLCPP_INFO(this->get_logger(), "Sent motor speed command: 10 Hz");
-					usleep(500000); // 500ms — wait for motor to reach target speed
+					usleep(500000);
 				}
 			}
 			else
@@ -559,7 +545,7 @@ namespace lslidar_driver
 		else
 			link_time = 0;
 
-		// Threshold: 50ms worth of empty reads at 460800 baud (much longer than one 108-byte packet = 2.35ms)
+
 		if (link_time > 50000)
 		{
 			serial_->close();
@@ -579,9 +565,9 @@ namespace lslidar_driver
 		int count = 0;
 		int rc;
 
-		// --- Step 1: Find sync byte 0xA5 ---
+
 		int attempts = 0;
-		const int MAX_SYNC_ATTEMPTS = 4000; // 4000 * 50μs = 200ms
+		const int MAX_SYNC_ATTEMPTS = 4000;
 		while (true)
 		{
 			rc = serial_->read(packet_bytes, 1);
@@ -594,7 +580,7 @@ namespace lslidar_driver
 			}
 			else if (rc < 0)
 				return 0;
-			// rc == 0: no data available
+
 			attempts++;
 			if (attempts > MAX_SYNC_ATTEMPTS)
 			{
@@ -610,7 +596,7 @@ namespace lslidar_driver
 		}
 		count = 1;
 
-		// --- Step 2: Read second sync byte 0x5A ---
+
 		attempts = 0;
 		while (true)
 		{
@@ -618,12 +604,12 @@ namespace lslidar_driver
 			if (rc > 0) { count++; break; }
 			else if (rc < 0) return 0;
 			attempts++;
-			if (attempts > 200) return 0; // 200 * 50μs = 10ms
+			if (attempts > 200) return 0;
 			usleep(50);
 		}
 		if (packet_bytes[1] != 0x5A) return 0;
 
-		// --- Step 3: Read header bytes [2] and [3] ---
+
 		while (count < 4)
 		{
 			rc = serial_->read(packet_bytes + count, 4 - count);
@@ -632,7 +618,7 @@ namespace lslidar_driver
 			else { usleep(50); }
 		}
 
-		// --- Step 4: Determine packet length ---
+
 		if (lidar_name == "M10")
 			len = 92;
 		else if (lidar_name == "M10_GPS")
@@ -659,7 +645,7 @@ namespace lslidar_driver
 		if (len < 4 || len > 500)
 			return 0;
 
-		// --- Step 5: Read body bytes ---
+
 		int body_timeout = 0;
 		while (count < len)
 		{
@@ -674,18 +660,18 @@ namespace lslidar_driver
 			else
 			{
 				body_timeout++;
-				if (body_timeout > 1000) // 1000 * 50μs = 50ms
+				if (body_timeout > 1000)
 					return 0;
 				usleep(50);
 			}
 		}
 
-		// --- Step 6: CRC check (bypass for N10_P with CH343 adapter) ---
+
 		if (lidar_name == "N10" || lidar_name == "L10" || lidar_name == "N10_P")
 		{
 			if (packet_bytes[PACKET_SIZE - 1] != N10_CalCRC8(packet_bytes, PACKET_SIZE - 1))
 			{
-				// For N10_P: accept packet despite CRC fail (CH343 adapter workaround)
+
 				if (lidar_name != "N10_P")
 					return 0;
 			}
@@ -707,7 +693,7 @@ namespace lslidar_driver
 		return crc;
 	}
 
-	void LslidarDriver::difop_processing(unsigned char *packet_bytes) // 处理设备包的数据
+	void LslidarDriver::difop_processing(unsigned char *packet_bytes)
 	{
 		int s = packet_bytes[173];
 		int z = packet_bytes[174];
@@ -721,7 +707,7 @@ namespace lslidar_driver
 		return;
 	}
 
-	void LslidarDriver::data_processing(unsigned char *packet_bytes, int len) // 处理每一包的数据
+	void LslidarDriver::data_processing(unsigned char *packet_bytes, int len)
 	{
 		double degree;
 		double end_degree;
@@ -749,7 +735,7 @@ namespace lslidar_driver
 				degree_interval = end_degree - degree;
 		}
 
-		// boost::unique_lock<boost::mutex> lock(mutex_);
+
 		if (lidar_name == "M10_PLUS" || lidar_name == "M10_P")
 		{
 			PACKET_SIZE = len;
@@ -781,12 +767,12 @@ namespace lslidar_driver
 
 		if (use_gps_ts && lidar_name != "N10")
 		{
-			pTime.tm_year = packet_bytes[PACKET_SIZE - 12] + 2000 - 1900; // x+2000
-			pTime.tm_mon = packet_bytes[PACKET_SIZE - 11] - 1;			  // 1-12
-			pTime.tm_mday = packet_bytes[PACKET_SIZE - 10];				  // 1-31
-			pTime.tm_hour = packet_bytes[PACKET_SIZE - 9];				  // 0-23
-			pTime.tm_min = packet_bytes[PACKET_SIZE - 8];				  // 0-59
-			pTime.tm_sec = packet_bytes[PACKET_SIZE - 7];				  // 0-59
+			pTime.tm_year = packet_bytes[PACKET_SIZE - 12] + 2000 - 1900;
+			pTime.tm_mon = packet_bytes[PACKET_SIZE - 11] - 1;
+			pTime.tm_mday = packet_bytes[PACKET_SIZE - 10];
+			pTime.tm_hour = packet_bytes[PACKET_SIZE - 9];
+			pTime.tm_min = packet_bytes[PACKET_SIZE - 8];
+			pTime.tm_sec = packet_bytes[PACKET_SIZE - 7];
 			sub_second = (packet_bytes[PACKET_SIZE - 6] * 256 + packet_bytes[PACKET_SIZE - 5]) * 1000000 + (packet_bytes[PACKET_SIZE - 4] * 256 + packet_bytes[PACKET_SIZE - 3]) * 1000;
 			sweep_end_time_gps = get_gps_stamp(pTime);
 			sweep_end_time_hardware = sub_second % 1000000000;
@@ -796,7 +782,7 @@ namespace lslidar_driver
 			invalidValue--;
 		if (invalidValue <= 1)
 		{
-			return; // polling() owns packet_bytes and will delete it
+			return;
 		}
 
 		for (int num = 0; num < package_points; num++)
@@ -875,7 +861,7 @@ namespace lslidar_driver
 		}
 	}
 
-	void LslidarDriver::data_processing_2(unsigned char *packet_bytes, int len) // 处理每一包的数据
+	void LslidarDriver::data_processing_2(unsigned char *packet_bytes, int len)
 	{
 		double degree;
 		double end_degree;
@@ -903,7 +889,7 @@ namespace lslidar_driver
 				degree_interval = end_degree - degree;
 		}
 
-		// boost::unique_lock<boost::mutex> lock(mutex_);
+
 		if (lidar_name == "M10_DOUBLE")
 		{
 			PACKET_SIZE = len;
@@ -924,40 +910,40 @@ namespace lslidar_driver
 
 		if (use_gps_ts)
 		{
-			pTime.tm_year = packet_bytes[PACKET_SIZE - 12] + 2000 - 1900; // x+2000
-			pTime.tm_mon = packet_bytes[PACKET_SIZE - 11] - 1;			  // 1-12
-			pTime.tm_mday = packet_bytes[PACKET_SIZE - 10];				  // 1-31
-			pTime.tm_hour = packet_bytes[PACKET_SIZE - 9];				  // 0-23
-			pTime.tm_min = packet_bytes[PACKET_SIZE - 8];				  // 0-59
-			pTime.tm_sec = packet_bytes[PACKET_SIZE - 7];				  // 0-59
+			pTime.tm_year = packet_bytes[PACKET_SIZE - 12] + 2000 - 1900;
+			pTime.tm_mon = packet_bytes[PACKET_SIZE - 11] - 1;
+			pTime.tm_mday = packet_bytes[PACKET_SIZE - 10];
+			pTime.tm_hour = packet_bytes[PACKET_SIZE - 9];
+			pTime.tm_min = packet_bytes[PACKET_SIZE - 8];
+			pTime.tm_sec = packet_bytes[PACKET_SIZE - 7];
 			sub_second = (packet_bytes[PACKET_SIZE - 6] * 256 + packet_bytes[PACKET_SIZE - 5]) * 1000000 + (packet_bytes[PACKET_SIZE - 4] * 256 + packet_bytes[PACKET_SIZE - 3]) * 1000;
 			sweep_end_time_gps = get_gps_stamp(pTime);
 			sweep_end_time_hardware = sub_second % 1000000000;
 		}
-		// Always use package_points for angle interpolation — never zero, never skips sync
+
 		double angle_step = (package_points > 1) ? (degree_interval / (package_points - 1)) : 0.0;
 
 		for (int num = 0; num < package_points; num++)
 		{
-			// Compute angle first — regardless of point validity
+
 			double pt_degree = degree + angle_step * num;
 			if (pt_degree >= 360.0) pt_degree -= 360.0;
 			if (pt_degree < 0.0)    pt_degree += 360.0;
 
-			// Safety: clamp idx to prevent buffer overflow
+
 			if (idx >= (int)scan_points_.size())
 			{
-				// Force wrap — idx has exceeded buffer, must reset
+
 				last_degree = pt_degree;
 				count_num = scan_points_.size() - 1;
 				idx = 0;
 				break;
 			}
 
-			// Near channel
+
 			int sn = packet_bytes[num * point_len + data_bits_start];
 			int zn = packet_bytes[num * point_len + data_bits_start + 1];
-			int yn = packet_bytes[num * point_len + data_bits_start + 2]; // intensity (N10_P always has it)
+			int yn = packet_bytes[num * point_len + data_bits_start + 2];
 
 			scan_points_[idx].degree = pt_degree;
 			if ((sn * 256 + zn) != 0xFFFF)
@@ -971,7 +957,7 @@ namespace lslidar_driver
 				scan_points_[idx].intensity = 0;
 			}
 
-			// Far channel
+
 			if ((idx + 3000) < (int)scan_points_.size())
 			{
 				int sf = packet_bytes[num * point_len + data_bits_start + point_len / 2];
@@ -990,9 +976,9 @@ namespace lslidar_driver
 				}
 			}
 
-			// Wrap detection — fires when a full rotation completes
-			// Wrap detection — fires when a full rotation completes
-			// idx > 200: prevents false wraps from corrupted degree data (CH343 adapter)
+
+
+
 			if (((pt_degree < last_degree && pt_degree < 5.0 && last_degree > 355.0) || idx >= points_size_) && idx > 200)
 			{
 				last_degree = pt_degree;
@@ -1062,10 +1048,10 @@ namespace lslidar_driver
 				if (pubScan)
 				{
 					auto scan = sensor_msgs::msg::LaserScan::UniquePtr(new sensor_msgs::msg::LaserScan());
-					// N10_P: use FIXED scan resolution for SLAM compatibility
-					// count_num varies per rotation (207-463), but SLAM toolbox
-					// expects a constant number of readings per scan.
-					const int FIXED_SCAN_NUM = 360; // 1° angular resolution
+
+
+
+					const int FIXED_SCAN_NUM = 360;
 					int scan_num = FIXED_SCAN_NUM;
 
 					std::vector<ScanPoint> points;
@@ -1079,7 +1065,7 @@ namespace lslidar_driver
 					}
 					else
 					{
-						scan->header.stamp = this->now(); // timestamp will obtained from sweep data stamp
+						scan->header.stamp = this->now();
 					}
 
 					scan->angle_min = 0;
@@ -1124,10 +1110,10 @@ namespace lslidar_driver
 					point_cloud->header.stamp = static_cast<uint64_t>(timestamp * 1e6);
 					point_cloud->header.frame_id = frame_id;
 					point_cloud->height = 1;
-					// printf("now = %f\n",timestamp);
+
 					for (uint16_t i = 0; i < count_num; i++)
 					{
-						// printf("degree = %f\n",points[i].degree);
+
 						double degree = 360.0 - points[i].degree;
 						bool pass_point = false;
 						if (angle_able_max < 360)
@@ -1144,12 +1130,12 @@ namespace lslidar_driver
 							pass_point = true;
 						if (!pass_point)
 						{
-							// printf("degree = %f\n",degree);
-							// printf("angle_able_min = %f\nangle_able_max=%f\n",angle_able_min,angle_able_max);
+
+
 							VPoint point;
 							int point_idx = round(degree * count_num / 360);
 							point.timestamp = timestamp - point_idx * (scan_time / count_num);
-							// printf("timestamp = %f\n",point.timestamp);
+
 							point.x = points[i].range * cos(M_PI / 180 * points[i].degree);
 							point.y = -points[i].range * sin(M_PI / 180 * points[i].degree);
 							point.z = 0;
@@ -1161,12 +1147,12 @@ namespace lslidar_driver
 							pass_point = true;
 						if (!pass_point)
 						{
-							// printf("degree = %f\n",degree);
-							// printf("angle_able_min = %f\nangle_able_max=%f\n",angle_able_min,angle_able_max);
+
+
 							VPoint point;
 							int point_idx = round(degree * count_num / 360);
 							point.timestamp = timestamp - point_idx * (scan_time / count_num);
-							// printf("timestamp = %f\n",point.timestamp);
+
 							point.x = points[i + 3000].range * cos(M_PI / 180 * points[i].degree);
 							point.y = -points[i + 3000].range * sin(M_PI / 180 * points[i].degree);
 							point.z = 0;
@@ -1197,7 +1183,7 @@ namespace lslidar_driver
 					}
 					else
 					{
-						scan->header.stamp = this->now(); // timestamp will obtained from sweep data stamp
+						scan->header.stamp = this->now();
 					}
 
 					if (angle_able_max > 360)
@@ -1288,12 +1274,12 @@ namespace lslidar_driver
 							pass_point = true;
 						if (!pass_point)
 						{
-							// printf("degree = %f\n",degree);
-							// printf("angle_able_min = %f\nangle_able_max=%f\n",angle_able_min,angle_able_max);
+
+
 							VPoint point;
 							int point_idx = round(degree * count_num / 360);
 							point.timestamp = timestamp - point_idx * (scan_time / count_num);
-							// printf("timestamp = %f\n",point.timestamp);
+
 							point.x = points[i].range * cos(M_PI / 180 * points[i].degree);
 							point.y = -points[i].range * sin(M_PI / 180 * points[i].degree);
 							point.z = 0;
@@ -1320,7 +1306,7 @@ namespace lslidar_driver
 	{
 		if (!is_start)
 			return true;
-		// Use stack buffer to avoid heap allocation/deallocation bugs
+
 		unsigned char packet_bytes_buf[500] = {0};
 		unsigned char *packet_bytes = packet_bytes_buf;
 		int len = 0;
@@ -1335,7 +1321,7 @@ namespace lslidar_driver
 			{
 				difop = false;
 				len = 0;
-				// keep reading until full packet received
+
 				len = msop_input_->getPacket(packet);
 				if (packet->data[0] == 0x5a)
 				{
@@ -1394,7 +1380,7 @@ namespace lslidar_driver
 		}
 		else
 		{
-			if (in_file_name != "") // 读txt文件功能
+			if (in_file_name != "")
 			{
 				int usleep_time = round(1000000 / 10 / 24) - 135;
 				while (true)
@@ -1465,8 +1451,8 @@ namespace lslidar_driver
 			else
 				LslidarDriver::data_processing(packet_bytes, len);
 		}
-		// packet_bytes is now a stack buffer — no delete needed
+
 		return true;
 	}
 
-} // namespace lslidar_driver
+}

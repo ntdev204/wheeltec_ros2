@@ -1,16 +1,16 @@
-// Copyright (c) 2021 RoboTech Vision
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <gtest/gtest.h>
 #include <memory>
@@ -45,7 +45,7 @@ public:
       factory_->registerBuilder<nav2_behavior_tree::TruncatePathLocal>(
         "TruncatePathLocal", builder);
     } catch (BT::BehaviorTreeException const &) {
-      // ignoring multiple registrations of TruncatePathLocal
+
     }
   }
 
@@ -70,23 +70,23 @@ public:
     path.header.stamp = node_->now();
     path.header.frame_id = "map";
 
-    // this is a loop to make it harder for robot to find the proper closest pose
+
     path.poses.push_back(poseMsg(-0.3, -1.2, -M_PI * 3 / 2));
-    // the position is closest to robot but orientation is different
+
     path.poses.push_back(poseMsg(-0.3, 0.0, -M_PI * 3 / 2));
     path.poses.push_back(poseMsg(-0.5, 1.0, -M_PI));
     path.poses.push_back(poseMsg(-1.5, 1.0, -M_PI / 2));
     path.poses.push_back(poseMsg(-1.5, 0.0, 0.0));
 
-    // this is the correct path section for the first match
+
     path.poses.push_back(poseMsg(-0.5, 0.0, 0.0));
     path.poses.push_back(poseMsg(0.4, 0.0, 0.0));
     path.poses.push_back(poseMsg(1.5, 0.0, 0.0));
 
-    // this is a loop to make it harder for robot to find the proper closest pose
+
     path.poses.push_back(poseMsg(1.5, 1.0, M_PI / 2));
     path.poses.push_back(poseMsg(0.5, 1.0, M_PI));
-    // the position is closest to robot but orientation is different
+
     path.poses.push_back(poseMsg(0.3, 0.0, M_PI * 3 / 2));
     path.poses.push_back(poseMsg(0.3, -1.0, M_PI * 3 / 2));
 
@@ -104,7 +104,7 @@ std::shared_ptr<BT::Tree> TruncatePathLocalTestFixture::tree_ = nullptr;
 
 TEST_F(TruncatePathLocalTestFixture, test_tick)
 {
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -124,13 +124,13 @@ TEST_F(TruncatePathLocalTestFixture, test_tick)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // create path and set it on blackboard
+
   nav_msgs::msg::Path path = createLoopCrossingTestPath();
   EXPECT_EQ(path.poses.size(), 12u);
 
   config_->blackboard->set("path", path);
 
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS &&
     tree_->rootNode()->status() != BT::NodeStatus::FAILURE)
   {
@@ -149,12 +149,12 @@ TEST_F(TruncatePathLocalTestFixture, test_tick)
   EXPECT_EQ(truncated_path.poses.back().pose.position.x, 1.5);
   EXPECT_EQ(truncated_path.poses.back().pose.position.y, 0.0);
 
-  /////////////////////////////////////////
-  // should match the first loop crossing
+
+
   config_->blackboard->set("pose", poseMsg(0.0, 0.0, M_PI / 2));
 
   tree_->haltTree();
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS &&
     tree_->rootNode()->status() != BT::NodeStatus::FAILURE)
   {
@@ -171,12 +171,12 @@ TEST_F(TruncatePathLocalTestFixture, test_tick)
   EXPECT_EQ(truncated_path.poses.back().pose.position.x, -0.5);
   EXPECT_EQ(truncated_path.poses.back().pose.position.y, 1.0);
 
-  /////////////////////////////////////////
-  // should match the last loop crossing
+
+
   config_->blackboard->set("pose", poseMsg(0.0, 0.0, -M_PI / 2));
 
   tree_->haltTree();
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS &&
     tree_->rootNode()->status() != BT::NodeStatus::FAILURE)
   {
@@ -198,7 +198,7 @@ TEST_F(TruncatePathLocalTestFixture, test_tick)
 
 TEST_F(TruncatePathLocalTestFixture, test_success_on_empty_path)
 {
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -219,14 +219,14 @@ TEST_F(TruncatePathLocalTestFixture, test_success_on_empty_path)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // create path and set it on blackboard
+
   nav_msgs::msg::Path path;
   path.header.stamp = node_->now();
   path.header.frame_id = "map";
 
   config_->blackboard->set("path", path);
 
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS &&
     tree_->rootNode()->status() != BT::NodeStatus::FAILURE)
   {
@@ -242,7 +242,7 @@ TEST_F(TruncatePathLocalTestFixture, test_success_on_empty_path)
 
 TEST_F(TruncatePathLocalTestFixture, test_failure_on_no_pose)
 {
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -262,14 +262,14 @@ TEST_F(TruncatePathLocalTestFixture, test_failure_on_no_pose)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // create path and set it on blackboard
+
   nav_msgs::msg::Path path;
   path.header.stamp = node_->now();
   path.header.frame_id = "map";
 
   config_->blackboard->set("path", path);
 
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS &&
     tree_->rootNode()->status() != BT::NodeStatus::FAILURE)
   {
@@ -284,7 +284,7 @@ TEST_F(TruncatePathLocalTestFixture, test_failure_on_no_pose)
 
 TEST_F(TruncatePathLocalTestFixture, test_failure_on_invalid_robot_frame)
 {
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -304,13 +304,13 @@ TEST_F(TruncatePathLocalTestFixture, test_failure_on_invalid_robot_frame)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // create new goal and set it on blackboard
+
   nav_msgs::msg::Path path = createLoopCrossingTestPath();
   EXPECT_EQ(path.poses.size(), 12u);
 
   config_->blackboard->set("path", path);
 
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS &&
     tree_->rootNode()->status() != BT::NodeStatus::FAILURE)
   {
@@ -325,7 +325,7 @@ TEST_F(TruncatePathLocalTestFixture, test_failure_on_invalid_robot_frame)
 
 TEST_F(TruncatePathLocalTestFixture, test_path_pruning)
 {
-  // create tree
+
   std::string xml_txt =
     R"(
       <root main_tree_to_execute = "MainTree" >
@@ -346,17 +346,17 @@ TEST_F(TruncatePathLocalTestFixture, test_path_pruning)
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
 
-  // create path and set it on blackboard
+
   nav_msgs::msg::Path path = createLoopCrossingTestPath();
   nav_msgs::msg::Path truncated_path;
 
   config_->blackboard->set("path", path);
 
-  /////////////////////////////////////////
-  // should match the first loop crossing
+
+
   config_->blackboard->set("pose", poseMsg(0.0, 0.0, 0.0));
 
-  // tick until node succeeds
+
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS &&
     tree_->rootNode()->status() != BT::NodeStatus::FAILURE)
   {
@@ -373,22 +373,22 @@ TEST_F(TruncatePathLocalTestFixture, test_path_pruning)
   EXPECT_EQ(truncated_path.poses.back().pose.position.x, -0.5);
   EXPECT_EQ(truncated_path.poses.back().pose.position.y, 1.0);
 
-  /////////////////////////////////////////
-  // move along the path to leave the first loop crossing behind
+
+
   config_->blackboard->set("pose", poseMsg(-1.5, 1.0, 0.0));
-  // tick until node succeeds
+
   tree_->haltTree();
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS &&
     tree_->rootNode()->status() != BT::NodeStatus::FAILURE)
   {
     tree_->rootNode()->executeTick();
   }
-  // this truncated_path is not interesting, let's proceed to the second loop crossing
 
-  /////////////////////////////////////////
-  // should match the second loop crossing
+
+
+
   config_->blackboard->set("pose", poseMsg(0.0, 0.0, 0.0));
-  // tick until node succeeds
+
   tree_->haltTree();
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS &&
     tree_->rootNode()->status() != BT::NodeStatus::FAILURE)
@@ -406,22 +406,22 @@ TEST_F(TruncatePathLocalTestFixture, test_path_pruning)
   EXPECT_EQ(truncated_path.poses.back().pose.position.x, 1.5);
   EXPECT_EQ(truncated_path.poses.back().pose.position.y, 0.0);
 
-  /////////////////////////////////////////
-  // move along the path to leave the second loop crossing behind
+
+
   config_->blackboard->set("pose", poseMsg(1.5, 1.0, 0.0));
-  // tick until node succeeds
+
   tree_->haltTree();
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS &&
     tree_->rootNode()->status() != BT::NodeStatus::FAILURE)
   {
     tree_->rootNode()->executeTick();
   }
-  // this truncated_path is not interesting, let's proceed to the last loop crossing
 
-  /////////////////////////////////////////
-  // should match the last loop crossing
+
+
+
   config_->blackboard->set("pose", poseMsg(0.0, 0.0, 0.0));
-  // tick until node succeeds
+
   tree_->haltTree();
   while (tree_->rootNode()->status() != BT::NodeStatus::SUCCESS &&
     tree_->rootNode()->status() != BT::NodeStatus::FAILURE)
@@ -446,12 +446,12 @@ int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
 
-  // initialize ROS
+
   rclcpp::init(argc, argv);
 
   int all_successful = RUN_ALL_TESTS();
 
-  // shutdown ROS
+
   rclcpp::shutdown();
 
   return all_successful;

@@ -1,16 +1,16 @@
-// Copyright (c) 2021, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <ompl/base/ScopedState.h>
 #include <ompl/base/spaces/DubinsStateSpace.h>
@@ -20,8 +20,8 @@
 
 namespace nav2_smac_planner
 {
-using namespace nav2_util::geometry_utils;  // NOLINT
-using namespace std::chrono;  // NOLINT
+using namespace nav2_util::geometry_utils;
+using namespace std::chrono;
 
 Smoother::Smoother(const SmootherParams & params)
 {
@@ -44,7 +44,7 @@ bool Smoother::smooth(
   const nav2_costmap_2d::Costmap2D * costmap,
   const double & max_time)
 {
-  // by-pass path orientations approximation when skipping smac smoother
+
   if (max_its_ == 0) {
     return false;
   }
@@ -59,31 +59,31 @@ bool Smoother::smooth(
 
   for (unsigned int i = 0; i != path_segments.size(); i++) {
     if (path_segments[i].end - path_segments[i].start > 10) {
-      // Populate path segment
+
       curr_path_segment.poses.clear();
       std::copy(
         path.poses.begin() + path_segments[i].start,
         path.poses.begin() + path_segments[i].end + 1,
         std::back_inserter(curr_path_segment.poses));
 
-      // Make sure we're still able to smooth with time remaining
+
       steady_clock::time_point now = steady_clock::now();
       time_remaining = max_time - duration_cast<duration<double>>(now - start).count();
 
-      // Smooth path segment naively
+
       const geometry_msgs::msg::Pose start_pose = curr_path_segment.poses.front().pose;
       const geometry_msgs::msg::Pose goal_pose = curr_path_segment.poses.back().pose;
       bool local_success =
         smoothImpl(curr_path_segment, reversing_segment, costmap, time_remaining);
       success = success && local_success;
 
-      // Enforce boundary conditions
+
       if (!is_holonomic_ && local_success) {
         enforceStartBoundaryConditions(start_pose, curr_path_segment, costmap, reversing_segment);
         enforceEndBoundaryConditions(goal_pose, curr_path_segment, costmap, reversing_segment);
       }
 
-      // Assemble the path changes to the main path
+
       std::copy(
         curr_path_segment.poses.begin(),
         curr_path_segment.poses.end(),
@@ -116,7 +116,7 @@ bool Smoother::smoothImpl(
     its += 1;
     change = 0.0;
 
-    // Make sure the smoothing function will converge
+
     if (its >= max_its_) {
       RCLCPP_DEBUG(
         rclcpp::get_logger("SmacPlannerSmoother"),
@@ -126,7 +126,7 @@ bool Smoother::smoothImpl(
       return false;
     }
 
-    // Make sure still have time left to process
+
     steady_clock::time_point b = steady_clock::now();
     rclcpp::Duration timespan(duration_cast<duration<double>>(b - a));
     if (timespan > max_dur) {
@@ -146,13 +146,13 @@ bool Smoother::smoothImpl(
         y_ip1 = getFieldByDim(new_path.poses[i + 1], j);
         y_i_org = y_i;
 
-        // Smooth based on local 3 point neighborhood and original data locations
+
         y_i += data_w_ * (x_i - y_i) + smooth_w_ * (y_ip1 + y_m1 - (2.0 * y_i));
         setFieldByDim(new_path.poses[i], j, y_i);
         change += abs(y_i - y_i_org);
       }
 
-      // validate update is admissible, only checks cost if a valid costmap pointer is provided
+
       float cost = 0.0;
       if (costmap) {
         costmap->worldToMap(
@@ -176,8 +176,8 @@ bool Smoother::smoothImpl(
     last_path = new_path;
   }
 
-  // Lets do additional refinement, it shouldn't take more than a couple milliseconds
-  // but really puts the path quality over the top.
+
+
   if (do_refinement_ && refinement_ctr_ < 4) {
     refinement_ctr_++;
     smoothImpl(new_path, reversing_segment, costmap, max_time);
@@ -219,17 +219,17 @@ std::vector<PathSegment> Smoother::findDirectionalPathSegments(const nav_msgs::m
   PathSegment curr_segment;
   curr_segment.start = 0;
 
-  // If holonomic, no directional changes and
-  // may have abrupt angular changes from naive grid search
+
+
   if (is_holonomic_) {
     curr_segment.end = path.poses.size() - 1;
     segments.push_back(curr_segment);
     return segments;
   }
 
-  // Iterating through the path to determine the position of the cusp
+
   for (unsigned int idx = 1; idx < path.poses.size() - 1; ++idx) {
-    // We have two vectors for the dot product OA and AB. Determining the vectors.
+
     double oa_x = path.poses[idx].pose.position.x -
       path.poses[idx - 1].pose.position.x;
     double oa_y = path.poses[idx].pose.position.y -
@@ -239,7 +239,7 @@ std::vector<PathSegment> Smoother::findDirectionalPathSegments(const nav_msgs::m
     double ab_y = path.poses[idx + 1].pose.position.y -
       path.poses[idx].pose.position.y;
 
-    // Checking for the existance of cusp, in the path, using the dot product.
+
     double dot_product = (oa_x * ab_x) + (oa_y * ab_y);
     if (dot_product < 0.0) {
       curr_segment.end = idx;
@@ -247,7 +247,7 @@ std::vector<PathSegment> Smoother::findDirectionalPathSegments(const nav_msgs::m
       curr_segment.start = idx;
     }
 
-    // Checking for the existance of a differential rotation in place.
+
     double cur_theta = tf2::getYaw(path.poses[idx].pose.orientation);
     double next_theta = tf2::getYaw(path.poses[idx + 1].pose.orientation);
     double dtheta = angles::shortest_angular_distance(cur_theta, next_theta);
@@ -270,7 +270,7 @@ void Smoother::updateApproximatePathOrientations(
   double dx, dy, theta, pt_yaw;
   reversing_segment = false;
 
-  // Find if this path segment is in reverse
+
   dx = path.poses[2].pose.position.x - path.poses[1].pose.position.x;
   dy = path.poses[2].pose.position.y - path.poses[1].pose.position.y;
   theta = atan2(dy, dx);
@@ -279,20 +279,20 @@ void Smoother::updateApproximatePathOrientations(
     reversing_segment = true;
   }
 
-  // Find the angle relative the path position vectors
+
   for (unsigned int i = 0; i != path.poses.size() - 1; i++) {
     dx = path.poses[i + 1].pose.position.x - path.poses[i].pose.position.x;
     dy = path.poses[i + 1].pose.position.y - path.poses[i].pose.position.y;
     theta = atan2(dy, dx);
 
-    // If points are overlapping, pass
+
     if (fabs(dx) < 1e-4 && fabs(dy) < 1e-4) {
       continue;
     }
 
-    // Flip the angle if this path segment is in reverse
+
     if (reversing_segment) {
-      theta += M_PI;  // orientationAroundZAxis will normalize
+      theta += M_PI;
     }
 
     path.poses[i].pose.orientation = orientationAroundZAxis(theta);
@@ -302,9 +302,9 @@ void Smoother::updateApproximatePathOrientations(
 unsigned int Smoother::findShortestBoundaryExpansionIdx(
   const BoundaryExpansions & boundary_expansions)
 {
-  // Check which is valid with the minimum integrated length such that
-  // shorter end-points away that are infeasible to achieve without
-  // a loop-de-loop are punished
+
+
+
   double min_length = 1e9;
   int shortest_boundary_expansion_idx = 1e9;
   for (unsigned int idx = 0; idx != boundary_expansions.size(); idx++) {
@@ -337,13 +337,13 @@ void Smoother::findBoundaryExpansion(
   to[2] = tf2::getYaw(end.orientation);
 
   double d = state_space_->distance(from(), to());
-  // If this path is too long compared to the original, then this is probably
-  // a loop-de-loop, treat as invalid as to not deviate too far from the original path.
-  // 2.0 selected from prinicipled choice of boundary test points
-  // r, 2 * r, r * PI, and 2 * PI * r. If there is a loop, it will be
-  // approximately 2 * PI * r, which is 2 * PI > r, PI > 2 * r, and 2 > r * PI.
-  // For all but the last backup test point, a loop would be approximately
-  // 2x greater than any of the selections.
+
+
+
+
+
+
+
   if (d > 2.0 * expansion.original_path_length) {
     return;
   }
@@ -353,29 +353,29 @@ void Smoother::findBoundaryExpansion(
   double x_m = start.position.x;
   double y_m = start.position.y;
 
-  // Get intermediary poses
+
   for (double i = 0; i <= expansion.path_end_idx; i++) {
     state_space_->interpolate(from(), to(), i / expansion.path_end_idx, s());
     reals = s.reals();
-    // Make sure in range [0, 2PI)
+
     theta = (reals[2] < 0.0) ? (reals[2] + 2.0 * M_PI) : reals[2];
     theta = (theta > 2.0 * M_PI) ? (theta - 2.0 * M_PI) : theta;
     x = reals[0];
     y = reals[1];
 
-    // Check for collision
+
     unsigned int mx, my;
     costmap->worldToMap(x, y, mx, my);
     if (static_cast<float>(costmap->getCost(mx, my)) >= INSCRIBED) {
       expansion.in_collision = true;
     }
 
-    // Integrate path length
+
     expansion.expansion_path_length += hypot(x - x_m, y - y_m);
     x_m = x;
     y_m = y;
 
-    // Store point
+
     expansion.pts.emplace_back(x, y, theta);
   }
 }
@@ -384,10 +384,10 @@ template<typename IteratorT>
 BoundaryExpansions Smoother::generateBoundaryExpansionPoints(IteratorT start, IteratorT end)
 {
   std::vector<double> distances = {
-    min_turning_rad_,  // Radius
-    2.0 * min_turning_rad_,  // Diameter
-    M_PI * min_turning_rad_,  // 50% Circumference
-    2.0 * M_PI * min_turning_rad_  // Circumference
+    min_turning_rad_,
+    2.0 * min_turning_rad_,
+    M_PI * min_turning_rad_,
+    2.0 * M_PI * min_turning_rad_
   };
 
   BoundaryExpansions boundary_expansions;
@@ -424,11 +424,11 @@ void Smoother::enforceStartBoundaryConditions(
   const nav2_costmap_2d::Costmap2D * costmap,
   const bool & reversing_segment)
 {
-  // Find range of points for testing
+
   BoundaryExpansions boundary_expansions =
     generateBoundaryExpansionPoints<PathIterator>(path.poses.begin(), path.poses.end());
 
-  // Generate the motion model and metadata from start -> test points
+
   for (unsigned int i = 0; i != boundary_expansions.size(); i++) {
     BoundaryExpansion & expansion = boundary_expansions[i];
     if (expansion.path_end_idx == 0.0) {
@@ -446,13 +446,13 @@ void Smoother::enforceStartBoundaryConditions(
     }
   }
 
-  // Find the shortest kinematically feasible boundary expansion
+
   unsigned int best_expansion_idx = findShortestBoundaryExpansionIdx(boundary_expansions);
   if (best_expansion_idx > boundary_expansions.size()) {
     return;
   }
 
-  // Override values to match curve
+
   BoundaryExpansion & best_expansion = boundary_expansions[best_expansion_idx];
   if (reversing_segment) {
     std::reverse(best_expansion.pts.begin(), best_expansion.pts.end());
@@ -470,11 +470,11 @@ void Smoother::enforceEndBoundaryConditions(
   const nav2_costmap_2d::Costmap2D * costmap,
   const bool & reversing_segment)
 {
-  // Find range of points for testing
+
   BoundaryExpansions boundary_expansions =
     generateBoundaryExpansionPoints<ReversePathIterator>(path.poses.rbegin(), path.poses.rend());
 
-  // Generate the motion model and metadata from start -> test points
+
   unsigned int expansion_starting_idx;
   for (unsigned int i = 0; i != boundary_expansions.size(); i++) {
     BoundaryExpansion & expansion = boundary_expansions[i];
@@ -489,13 +489,13 @@ void Smoother::enforceEndBoundaryConditions(
     }
   }
 
-  // Find the shortest kinematically feasible boundary expansion
+
   unsigned int best_expansion_idx = findShortestBoundaryExpansionIdx(boundary_expansions);
   if (best_expansion_idx > boundary_expansions.size()) {
     return;
   }
 
-  // Override values to match curve
+
   BoundaryExpansion & best_expansion = boundary_expansions[best_expansion_idx];
   if (reversing_segment) {
     std::reverse(best_expansion.pts.begin(), best_expansion.pts.end());
@@ -509,4 +509,4 @@ void Smoother::enforceEndBoundaryConditions(
   }
 }
 
-}  // namespace nav2_smac_planner
+}

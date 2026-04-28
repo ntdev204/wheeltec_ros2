@@ -1,16 +1,16 @@
-// Copyright (c) 2020, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <string>
 #include <memory>
@@ -21,11 +21,11 @@
 #include "nav2_smac_planner/smac_planner_2d.hpp"
 #include "nav2_util/geometry_utils.hpp"
 
-// #define BENCHMARK_TESTING
+
 
 namespace nav2_smac_planner
 {
-using namespace std::chrono;  // NOLINT
+using namespace std::chrono;
 using rcl_interfaces::msg::ParameterType;
 using std::placeholders::_1;
 
@@ -47,7 +47,7 @@ SmacPlanner2D::~SmacPlanner2D()
 
 void SmacPlanner2D::configure(
   const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-  std::string name, std::shared_ptr<tf2_ros::Buffer>/*tf*/,
+  std::string name, std::shared_ptr<tf2_ros::Buffer>,
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
 {
   _node = parent;
@@ -60,7 +60,7 @@ void SmacPlanner2D::configure(
 
   RCLCPP_INFO(_logger, "Configuring %s of type SmacPlanner2D", name.c_str());
 
-  // General planner params
+
   nav2_util::declare_parameter_if_not_declared(
     node, name + ".tolerance", rclcpp::ParameterValue(0.125));
   _tolerance = static_cast<float>(node->get_parameter(name + ".tolerance").as_double());
@@ -107,31 +107,31 @@ void SmacPlanner2D::configure(
     _max_iterations = std::numeric_limits<int>::max();
   }
 
-  // Initialize collision checker
-  _collision_checker = GridCollisionChecker(_costmap, 1 /*for 2D, most be 1*/);
+
+  _collision_checker = GridCollisionChecker(_costmap, 1 );
   _collision_checker.setFootprint(
     costmap_ros->getRobotFootprint(),
-    true /*for 2D, most use radius*/,
-    0.0 /*for 2D cost at inscribed isn't relevent*/);
+    true ,
+    0.0 );
 
-  // Initialize A* template
+
   _a_star = std::make_unique<AStarAlgorithm<Node2D>>(_motion_model, _search_info);
   _a_star->initialize(
     _allow_unknown,
     _max_iterations,
     _max_on_approach_iterations,
     _max_planning_time,
-    0.0 /*unused for 2D*/,
-    1.0 /*unused for 2D*/);
+    0.0 ,
+    1.0 );
 
-  // Initialize path smoother
+
   SmootherParams params;
   params.get(node, name);
-  params.holonomic_ = true;  // So smoother will treat this as a grid search
+  params.holonomic_ = true;
   _smoother = std::make_unique<Smoother>(params);
-  _smoother->initialize(1e-50 /*No valid minimum turning radius for 2D*/);
+  _smoother->initialize(1e-50 );
 
-  // Initialize costmap downsampler
+
   if (_downsample_costmap && _downsampling_factor > 1) {
     std::string topic_name = "downsampled_costmap";
     _costmap_downsampler = std::make_unique<CostmapDownsampler>();
@@ -159,7 +159,7 @@ void SmacPlanner2D::activate()
     _costmap_downsampler->on_activate();
   }
   auto node = _node.lock();
-  // Add callback for dynamic parameters
+
   _dyn_params_handler = node->add_on_set_parameters_callback(
     std::bind(&SmacPlanner2D::dynamicParametersCallback, this, _1));
 }
@@ -199,26 +199,26 @@ nav_msgs::msg::Path SmacPlanner2D::createPlan(
 
   std::unique_lock<nav2_costmap_2d::Costmap2D::mutex_t> lock(*(_costmap->getMutex()));
 
-  // Downsample costmap, if required
+
   nav2_costmap_2d::Costmap2D * costmap = _costmap;
   if (_costmap_downsampler) {
     costmap = _costmap_downsampler->downsample(_downsampling_factor);
     _collision_checker.setCostmap(costmap);
   }
 
-  // Set collision checker and costmap information
+
   _a_star->setCollisionChecker(&_collision_checker);
 
-  // Set starting point
+
   unsigned int mx_start, my_start, mx_goal, my_goal;
   costmap->worldToMap(start.pose.position.x, start.pose.position.y, mx_start, my_start);
   _a_star->setStart(mx_start, my_start, 0);
 
-  // Set goal point
+
   costmap->worldToMap(goal.pose.position.x, goal.pose.position.y, mx_goal, my_goal);
   _a_star->setGoal(mx_goal, my_goal, 0);
 
-  // Setup message
+
   nav_msgs::msg::Path plan;
   plan.header.stamp = _clock->now();
   plan.header.frame_id = _global_frame;
@@ -230,16 +230,16 @@ nav_msgs::msg::Path SmacPlanner2D::createPlan(
   pose.pose.orientation.z = 0.0;
   pose.pose.orientation.w = 1.0;
 
-  // Corner case of start and goal beeing on the same cell
+
   if (mx_start == mx_goal && my_start == my_goal) {
     if (costmap->getCost(mx_start, my_start) == nav2_costmap_2d::LETHAL_OBSTACLE) {
       RCLCPP_WARN(_logger, "Failed to create a unique pose path because of obstacles");
       return plan;
     }
     pose.pose = start.pose;
-    // if we have a different start and goal orientation, set the unique path pose to the goal
-    // orientation, unless use_final_approach_orientation=true where we need it to be the start
-    // orientation to avoid movement from the local planner
+
+
+
     if (start.pose.orientation != goal.pose.orientation && !_use_final_approach_orientation) {
       pose.pose.orientation = goal.pose.orientation;
     }
@@ -247,7 +247,7 @@ nav_msgs::msg::Path SmacPlanner2D::createPlan(
     return plan;
   }
 
-  // Compute plan
+
   Node2D::CoordinateVector path;
   int num_iterations = 0;
   std::string error;
@@ -274,19 +274,19 @@ nav_msgs::msg::Path SmacPlanner2D::createPlan(
     return plan;
   }
 
-  // Convert to world coordinates
+
   plan.poses.reserve(path.size());
   for (int i = path.size() - 1; i >= 0; --i) {
     pose.pose = getWorldCoords(path[i].x, path[i].y, costmap);
     plan.poses.push_back(pose);
   }
 
-  // Publish raw path for debug
+
   if (_raw_plan_publisher->get_subscription_count() > 0) {
     _raw_plan_publisher->publish(plan);
   }
 
-  // Find how much time we have left to do smoothing
+
   steady_clock::time_point b = steady_clock::now();
   duration<double> time_span = duration_cast<duration<double>>(b - a);
   double time_remaining = _max_planning_time - static_cast<double>(time_span.count());
@@ -296,14 +296,14 @@ nav_msgs::msg::Path SmacPlanner2D::createPlan(
     " milliseconds with " << num_iterations << " iterations." << std::endl;
 #endif
 
-  // Smooth plan
+
   _smoother->smooth(plan, costmap, time_remaining);
 
-  // If use_final_approach_orientation=true, interpolate the last pose orientation from the
-  // previous pose to set the orientation to the 'final approach' orientation of the robot so
-  // it does not rotate.
-  // And deal with corner case of plan of length 1
-  // If use_final_approach_orientation=false (default), override last pose orientation to match goal
+
+
+
+
+
   size_t plan_size = plan.poses.size();
   if (_use_final_approach_orientation) {
     if (plan_size == 1) {
@@ -384,9 +384,9 @@ SmacPlanner2D::dynamicParametersCallback(std::vector<rclcpp::Parameter> paramete
     }
   }
 
-  // Re-init if needed with mutex lock (to avoid re-init while creating a plan)
+
   if (reinit_a_star || reinit_downsampler) {
-    // Re-Initialize A* template
+
     if (reinit_a_star) {
       _a_star = std::make_unique<AStarAlgorithm<Node2D>>(_motion_model, _search_info);
       _a_star->initialize(
@@ -394,11 +394,11 @@ SmacPlanner2D::dynamicParametersCallback(std::vector<rclcpp::Parameter> paramete
         _max_iterations,
         _max_on_approach_iterations,
         _max_planning_time,
-        0.0 /*unused for 2D*/,
-        1.0 /*unused for 2D*/);
+        0.0 ,
+        1.0 );
     }
 
-    // Re-Initialize costmap downsampler
+
     if (reinit_downsampler) {
       if (_downsample_costmap && _downsampling_factor > 1) {
         auto node = _node.lock();
@@ -413,7 +413,7 @@ SmacPlanner2D::dynamicParametersCallback(std::vector<rclcpp::Parameter> paramete
   return result;
 }
 
-}  // namespace nav2_smac_planner
+}
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(nav2_smac_planner::SmacPlanner2D, nav2_core::GlobalPlanner)

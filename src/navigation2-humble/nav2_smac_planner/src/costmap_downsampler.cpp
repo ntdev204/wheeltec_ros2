@@ -1,17 +1,17 @@
-// Copyright (c) 2020, Carlos Luis
-// Copyright (c) 2020, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_smac_planner/costmap_downsampler.hpp"
 
@@ -83,7 +83,7 @@ nav2_costmap_2d::Costmap2D * CostmapDownsampler::downsample(
   _downsampling_factor = downsampling_factor;
   updateCostmapSize();
 
-  // Adjust costmap size if needed
+
   if (_downsampled_costmap->getSizeInCellsX() != _downsampled_size_x ||
     _downsampled_costmap->getSizeInCellsY() != _downsampled_size_y ||
     _downsampled_costmap->getResolution() != _downsampled_resolution)
@@ -91,7 +91,7 @@ nav2_costmap_2d::Costmap2D * CostmapDownsampler::downsample(
     resizeCostmap();
   }
 
-  // Assign costs
+
   for (unsigned int i = 0; i < _downsampled_size_x; ++i) {
     for (unsigned int j = 0; j < _downsampled_size_y; ++j) {
       setCostOfCell(i, j);
@@ -151,4 +151,4 @@ void CostmapDownsampler::setCostOfCell(
   _downsampled_costmap->setCost(new_mx, new_my, cost);
 }
 
-}  // namespace nav2_smac_planner
+}

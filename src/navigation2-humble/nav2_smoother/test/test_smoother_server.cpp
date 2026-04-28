@@ -1,16 +1,16 @@
-// Copyright (c) 2021 RoboTech Vision
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <string>
 #include <memory>
@@ -36,7 +36,7 @@ using ClientGoalHandle = rclcpp_action::ClientGoalHandle<SmoothAction>;
 
 using namespace std::chrono_literals;
 
-// A smoother for testing the base class
+
 
 class DummySmoother : public nav2_core::Smoother
 {
@@ -71,7 +71,7 @@ public:
     auto max_time_ms = max_time.to_chrono<std::chrono::milliseconds>();
     std::this_thread::sleep_for(std::min(max_time_ms, 100ms));
 
-    // place dummy pose in the middle of the path
+
     geometry_msgs::msg::PoseStamped pose;
     pose.pose.position.x =
       (path.poses.front().pose.position.x + path.poses.back().pose.position.x) / 2;
@@ -89,7 +89,7 @@ private:
   std::chrono::system_clock::time_point start_time_;
 };
 
-// Mocked class loader
+
 void onPluginDeletion(nav2_core::Smoother * obj)
 {
   if (nullptr != obj) {
@@ -102,7 +102,7 @@ pluginlib::UniquePtr<nav2_core::Smoother> pluginlib::ClassLoader<nav2_core::Smoo
 createUniqueInstance(const std::string & lookup_name)
 {
   if (lookup_name != "DummySmoother") {
-    // original method body
+
     if (!isClassLoaded(lookup_name)) {
       loadLibraryForClass(lookup_name);
     }
@@ -116,7 +116,7 @@ createUniqueInstance(const std::string & lookup_name)
     }
   }
 
-  // mocked plugin creation
+
   return std::unique_ptr<nav2_core::Smoother,
            class_loader::ClassLoader::DeleterType<nav2_core::Smoother>>(
     new DummySmoother(),
@@ -165,7 +165,7 @@ public:
   : FootprintSubscriber(node, topic_name, tf_)
   {
     auto footprint = std::make_shared<geometry_msgs::msg::PolygonStamped>();
-    footprint->header.frame_id = "base_link";  // global frame = robot frame to avoid tf lookup
+    footprint->header.frame_id = "base_link";
     footprint->header.stamp = node->get_clock()->now();
     geometry_msgs::msg::Point32 point;
     point.x = -0.2f;
@@ -192,7 +192,7 @@ class DummySmootherServer : public nav2_smoother::SmootherServer
 public:
   DummySmootherServer()
   {
-    // Override defaults
+
     default_ids_.clear();
     default_ids_.resize(1, "SmoothPath");
     set_parameter(rclcpp::Parameter("smoother_plugins", default_ids_));
@@ -208,7 +208,7 @@ public:
       return result;
     }
 
-    // Create dummy subscribers and collision checker
+
     auto node = shared_from_this();
     costmap_sub_ =
       std::make_shared<DummyCostmapSubscriber>(
@@ -225,7 +225,7 @@ public:
   }
 };
 
-// Define a test class to hold the context for the tests
+
 
 class SmootherConfigTest : public ::testing::Test
 {
@@ -298,7 +298,7 @@ protected:
       rclcpp::FutureReturnCode::SUCCESS)
     {
       std::cout << "failed sending goal" << std::endl;
-      // failed sending the goal
+
       return false;
     }
 
@@ -306,7 +306,7 @@ protected:
 
     if (!goal_handle_) {
       std::cout << "goal was rejected" << std::endl;
-      // goal was rejected by the action server
+
       return false;
     }
 
@@ -329,7 +329,7 @@ protected:
   std::shared_ptr<rclcpp_action::ClientGoalHandle<SmoothAction>> goal_handle_;
 };
 
-// Define the tests
+
 
 TEST_F(SmootherTest, testingSuccess)
 {
@@ -401,7 +401,7 @@ TEST_F(SmootherConfigTest, testingConfigureSuccessWithValidSmootherPlugin)
     "DummySmoothPath.plugin",
     rclcpp::ParameterValue(std::string("DummySmoother")));
   auto state = smoother_server->configure();
-  EXPECT_EQ(state.id(), 2);  // 1 on failure, 2 on success
+  EXPECT_EQ(state.id(), 2);
   SUCCEED();
 }
 
@@ -416,7 +416,7 @@ TEST_F(SmootherConfigTest, testingConfigureFailureWithInvalidSmootherPlugin)
     "DummySmoothPath.plugin",
     rclcpp::ParameterValue(std::string("InvalidSmootherPlugin")));
   auto state = smoother_server->configure();
-  EXPECT_EQ(state.id(), 1);  // 1 on failure, 2 on success
+  EXPECT_EQ(state.id(), 1);
   SUCCEED();
 }
 
@@ -424,7 +424,7 @@ TEST_F(SmootherConfigTest, testingConfigureSuccessWithDefaultPlugin)
 {
   auto smoother_server = std::make_shared<DummySmootherServer>();
   auto state = smoother_server->configure();
-  EXPECT_EQ(state.id(), 2);  // 1 on failure, 2 on success
+  EXPECT_EQ(state.id(), 2);
   SUCCEED();
 }
 
@@ -432,12 +432,12 @@ int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
 
-  // initialize ROS
+
   rclcpp::init(argc, argv);
 
   bool all_successful = RUN_ALL_TESTS();
 
-  // shutdown ROS
+
   rclcpp::shutdown();
 
   return all_successful;

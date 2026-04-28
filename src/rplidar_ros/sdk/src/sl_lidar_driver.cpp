@@ -1,34 +1,7 @@
-/*
- * Slamtec LIDAR SDK
- *
- *  Copyright (c) 2014 - 2020 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- *
- */
- /*
-  * Redistribution and use in source and binary forms, with or without
-  * modification, are permitted provided that the following conditions are met:
-  *
-  * 1. Redistributions of source code must retain the above copyright notice,
-  *    this list of conditions and the following disclaimer.
-  *
-  * 2. Redistributions in binary form must reproduce the above copyright notice,
-  *    this list of conditions and the following disclaimer in the documentation
-  *    and/or other materials provided with the distribution.
-  *
-  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-  * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
-  * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-  * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-  * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
-  */
+
+
+ 
+
 
 #include "sdkcommon.h"
 #include "hal/abs_rxtx.h"
@@ -64,7 +37,7 @@
 #define _GXX_NULLPTR_T
 typedef decltype(nullptr) nullptr_t;
 #endif
-#endif /* C++11.  */
+#endif 
 
 namespace sl {
     static void printDeprecationWarn(const char* fn, const char* replacement)
@@ -74,10 +47,10 @@ namespace sl {
 
     static void convert(const sl_lidar_response_measurement_node_t& from, sl_lidar_response_measurement_node_hq_t& to)
     {
-        to.angle_z_q14 = (((from.angle_q6_checkbit) >> SL_LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) << 8) / 90;  //transfer to q14 Z-angle
+        to.angle_z_q14 = (((from.angle_q6_checkbit) >> SL_LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) << 8) / 90;
         to.dist_mm_q2 = from.distance_q2;
-        to.flag = (from.sync_quality & SL_LIDAR_RESP_MEASUREMENT_SYNCBIT);  // trasfer syncbit to HQ flag field
-        to.quality = (from.sync_quality >> SL_LIDAR_RESP_MEASUREMENT_QUALITY_SHIFT) << SL_LIDAR_RESP_MEASUREMENT_QUALITY_SHIFT;  //remove the last two bits and then make quality from 0-63 to 0-255
+        to.flag = (from.sync_quality & SL_LIDAR_RESP_MEASUREMENT_SYNCBIT);
+        to.quality = (from.sync_quality >> SL_LIDAR_RESP_MEASUREMENT_QUALITY_SHIFT) << SL_LIDAR_RESP_MEASUREMENT_QUALITY_SHIFT;
     }
 
     static void convert(const sl_lidar_response_measurement_node_hq_t& from, sl_lidar_response_measurement_node_t& to)
@@ -131,7 +104,7 @@ namespace sl {
         float inc_origin_angle = 360.f / count;
         size_t i = 0;
 
-        //Tune head
+
         for (i = 0; i < count; i++) {
             if (getDistanceQ2(nodebuffer[i]) == 0) {
                 continue;
@@ -147,12 +120,12 @@ namespace sl {
             }
         }
 
-        // all the data is invalid
+
         if (i == count) return SL_RESULT_OPERATION_FAIL;
 
-        //Tune tail
+
         for (i = count - 1; i < count; i--) {
-            // To avoid array overruns, use the i < count condition
+
             if (getDistanceQ2(nodebuffer[i]) == 0) {
                 continue;
             }
@@ -167,7 +140,7 @@ namespace sl {
             }
         }
 
-        //Fill invalid angle in the scan
+
         float frontAngle = getAngle(nodebuffer[0]);
         for (i = 1; i < count; i++) {
             if (getDistanceQ2(nodebuffer[i]) == 0) {
@@ -177,7 +150,7 @@ namespace sl {
             }
         }
 
-        // Reorder the scan according to the angle value
+
         std::sort(nodebuffer, nodebuffer + count, &angleLessThan<TNode>);
 
         return SL_RESULT_OK;
@@ -281,7 +254,7 @@ namespace sl {
                     operationBufID = _finishCurrentScanAndSwap_locked();
                     operationalBuf = &_scanbuffer[operationBufID];
 
-                    // publish the available scan
+
                     _new_scan_ready = true;
                     _data_waiter.set();
 
@@ -289,18 +262,18 @@ namespace sl {
                 
                 assert(operationalBuf->size() == 0);
 
-                //store the timestamp info
+
                 _scan_begin_timestamp_uS[operationBufID] = currentSampleTsUs;
             }
             else {
                 if (operationalBuf->size() == 0) {
-                    //discard the data, do not form partial scan
+
                     return;
                 }
             }
 
             if (operationalBuf->size() >= _scan_node_buffer_size) {
-                //replace the last entry if buffer is full
+
                 operationalBuf->at(operationalBuf->size() - 1) = *hqNode;
             }
             else {
@@ -445,7 +418,7 @@ namespace sl {
         {
             rp::hal::AutoLocker l(_op_locker);
             u_result ans;
-            // fetch alias (commerical) name if asked:
+
             if (fetchAliasName) {
                 std::vector<_u8> replyData;
                 ans = getLidarConf(SL_LIDAR_CONF_MODEL_NAME_ALIAS, replyData, nullptr, 0, timeout);
@@ -485,7 +458,7 @@ namespace sl {
 
             if (IS_OK(ans)) {
                 _isConnected = true;
-                // the first dev info local cache will be taken here
+
                 checkMotorCtrlSupport(_isSupportingMotorCtrl, 500);
             }
             
@@ -511,7 +484,7 @@ namespace sl {
         sl_result reset(sl_u32 timeoutInMs = DEFAULT_TIMEOUT)
         {
             rp::hal::AutoLocker l(_op_locker);
-            // send reset message 
+
             return (sl_result)_sendCommandWithoutResponse(SL_LIDAR_CMD_RESET);
         }
 
@@ -527,11 +500,11 @@ namespace sl {
             if (!ans) return SL_RESULT_INVALID_DATA;
 
             if (confProtocolSupported) {
-                // 1. get scan mode count
+
                 sl_u16 modeCount;
                 ans = getScanModeCount(modeCount, timeoutInMs);
                 if (!ans) return ans;
-                // 2. for loop to get all fields of each scan mode
+
                 for (sl_u16 i = 0; i < modeCount; i++) {
                     LidarScanMode scanModeInfoTmp;
                     memset(&scanModeInfoTmp, 0, sizeof(scanModeInfoTmp));
@@ -574,7 +547,7 @@ namespace sl {
                 outMode = *p_answer;
                 return ans;
             }
-            //old version of triangle lidar
+
             else {
                 outMode = SL_LIDAR_CONF_SCAN_COMMAND_EXPRESS;
                 return ans;
@@ -605,18 +578,18 @@ namespace sl {
                 ans = getTypicalScanMode(typicalMode);
                 if (!ans) return ans;
 
-                //call startScanExpress to do the job
+
                 return startScanExpress(false, typicalMode, 0, outUsedScanMode);
             }
 
-            // 'useTypicalScan' is false, just use normal scan mode
+
 
 
             return startScanNormal_commonpath(force, ifSupportLidarConf , *outUsedScanMode, DEFAULT_TIMEOUT);
         }
 
 
-        // this path make sure the working mode has always been retrieved
+
         sl_result startScanNormal_commonpath(bool force, bool ifSupportLidarConf, LidarScanMode& outUsedScanMode, sl_u32 timeout)
         {
 
@@ -636,7 +609,7 @@ namespace sl {
 
             }
             else {
-                // a legacy device
+
                 rplidar_response_sample_rate_t sampleRateTmp;
                 ans = _getLegacySampleDuration_uS(sampleRateTmp, timeout);
 
@@ -656,7 +629,7 @@ namespace sl {
             _dataunpacker->enable();
 
             ans = _sendCommandWithoutResponse(force ? SL_LIDAR_CMD_FORCE_SCAN : SL_LIDAR_CMD_SCAN, nullptr, 0, true);
-            if (ans) delay(10); // wait rplidar to handle it
+            if (ans) delay(10);
             return ans;
         }
 
@@ -687,7 +660,7 @@ namespace sl {
 
             Result<nullptr_t> ans = SL_RESULT_OK;
             if (!isConnected()) return SL_RESULT_OPERATION_FAIL;
-            stop(); //force the previous operation to stop
+            stop();
 
             LidarScanMode localMode;
 
@@ -714,7 +687,7 @@ namespace sl {
                 if (!ans) return SL_RESULT_INVALID_DATA;
             }
             else {
-                // legacy device support
+
                 if (scanMode != RPLIDAR_CONF_SCAN_COMMAND_STD) {
                     rplidar_response_sample_rate_t sampleRateTmp;
                     ans = _getLegacySampleDuration_uS(sampleRateTmp, timeout);
@@ -732,7 +705,7 @@ namespace sl {
 
             if (outUsedScanMode->ans_type == SL_LIDAR_ANS_TYPE_MEASUREMENT)
             {
-                // redirect to the correct function...
+
                 return startScanNormal(force, timeout);
             }
             
@@ -755,7 +728,7 @@ namespace sl {
             scanReq.working_flags = options;
 
             ans = _sendCommandWithoutResponse(SL_LIDAR_CMD_EXPRESS_SCAN, &scanReq, sizeof(scanReq), true);
-            if (ans) delay(10); // wait rplidar to handle it
+            if (ans) delay(10);
             return ans;
 
         }
@@ -900,7 +873,7 @@ namespace sl {
 
 
             Result<nullptr_t> ans = SL_RESULT_OK;
-            std::vector<sl_u8> reserve(2); //keep backward compatibility
+            std::vector<sl_u8> reserve(2);
 
             std::vector<sl_u8> answer;
             ans = getLidarConf(SL_LIDAR_CONF_LIDAR_STATIC_IP_ADDR, answer, &reserve[0], 2, timeout);
@@ -983,7 +956,7 @@ namespace sl {
                         speed = desired_speed.rpm;
                 }
                 else {
-                    //set a dummy default value
+
                     speed = 600;
                 }
             }
@@ -1057,7 +1030,7 @@ namespace sl {
 
         sl_result negotiateSerialBaudRate(sl_u32 requiredBaudRate, sl_u32* baudRateDetected)
         {
-            // ask the LIDAR to stop working first...
+
             stop();
 
             rp::hal::AutoLocker l(_op_locker);
@@ -1066,33 +1039,33 @@ namespace sl {
             if (!cachedChannel) return SL_RESULT_OPERATION_FAIL;
             if (cachedChannel->getChannelType() != CHANNEL_TYPE_SERIALPORT)
             {
-                // only works for UART connection
+
                 return RESULT_OPERATION_NOT_SUPPORT;
             }
 
-            // disable the transeiver as it may interrupt the operation...
+
             _transeiver->unbindAndClose();
 
             sl_result ans = SL_RESULT_OK;
 
             do {
-                // reopen the channel...
+
 
                 if (!cachedChannel->open()) {
-                    // failed to reopen
-                    // try to revert back...
+
+
                     ans = SL_RESULT_OPERATION_FAIL;
                     break;
                 }
 
                 cachedChannel->flush();
 
-                // wait for a while
+
                 delay(10);
                 cachedChannel->clearReadCache();
 
-                // sending magic byte to let the target LIDAR start baudrate measurement
-                // More than 100 bytes per second datarate is required to trigger the measurements
+
+
                 {
 
 
@@ -1102,7 +1075,7 @@ namespace sl {
 
                     sl_u64 startTS = getms();
 
-                    while (getms() - startTS < 1500) //lasting for 1.5sec
+                    while (getms() - startTS < 1500)
                     {
                         if (cachedChannel->write(magicByteSeq, sizeof(magicByteSeq)) < 0)
                         {
@@ -1112,7 +1085,7 @@ namespace sl {
 
                         size_t dataCountGot;
                         if (cachedChannel->waitForData(1, 1, &dataCountGot)) {
-                            //got reply, stop
+
                             ans = SL_RESULT_OK;
                             break;
                         }
@@ -1121,22 +1094,22 @@ namespace sl {
 
                 if (IS_FAIL(ans)) break;
 
-                // getback the bps measured
+
                 _u32 bpsDetected = 0;
                 size_t dataCountGot;
                 if (cachedChannel->waitForData(4, 500, &dataCountGot)) {
-                    //got reply, stop
+
                     cachedChannel->read(&bpsDetected, 4);
                     if (baudRateDetected) *baudRateDetected = bpsDetected;
 
 
                     cachedChannel->close();
-                    // restart the transiever 
+
                     ans = _transeiver->openChannelAndBind(cachedChannel);
                     if (IS_FAIL(ans)) return ans;
 
 
-                    // send a confirmation to the LIDAR, otherwise, the previous baudrate will be reverted back
+
                     sl_lidar_payload_new_bps_confirmation_t confirmation;
                     confirmation.flag = 0x5F5F;
                     confirmation.required_bps = requiredBaudRate;
@@ -1189,7 +1162,7 @@ namespace sl {
                 outSupport = true;
             }
             else {
-                // if lidar firmware >= 1.24
+
                 outSupport = (devinfo.firmware_version >= ((0x1 << 8) | 24));
             }
             return RESULT_OK;
@@ -1236,7 +1209,7 @@ namespace sl {
                 return ans;
             }
 
-            //check if returned size is even less than sizeof(type) 
+
             if (ans_frame->getPayloadSize() < sizeof(rplidar_response_set_lidar_conf_t)) {
                 return RESULT_INVALID_DATA;
             }
@@ -1246,7 +1219,7 @@ namespace sl {
 
 
             if (ans_frame->getPayloadSize() == 4) {
-                // legacy device?
+
                 return *(const u_result*)(ans_frame->getDataBuf());
             }
             else {
@@ -1277,12 +1250,12 @@ namespace sl {
             if (IS_FAIL(ans)) {
                 return ans;
             }
-            //check if returned size is even less than sizeof(type) 
+
             if (ans_frame->getPayloadSize() < offsetof(rplidar_response_get_lidar_conf_t, payload)) {
                 return SL_RESULT_INVALID_DATA;
             }
 
-            //check if returned type is same as asked type
+
             const rplidar_response_get_lidar_conf_t* replied =
                 reinterpret_cast<const rplidar_response_get_lidar_conf_t*>(ans_frame->getDataBuf());
 
@@ -1290,13 +1263,13 @@ namespace sl {
             if (replied->type != type) {
                 return SL_RESULT_INVALID_DATA;
             }
-            //copy all the payload into &outputBuf
+
             int payLoadLen = (int)ans_frame->getPayloadSize() - (int)offsetof(rplidar_response_get_lidar_conf_t, payload);
-            //do consistency check
+
             if (payLoadLen < 0) {
                 return SL_RESULT_INVALID_DATA;
             }
-            //copy all payLoadLen bytes to outputBuf
+
             outputBuf.resize(payLoadLen);
             if (payLoadLen)
                 memcpy(&outputBuf[0], replied->payload, payLoadLen);
@@ -1382,7 +1355,7 @@ namespace sl {
         static LIDARTechnologyType ParseLIDARTechnologyTypeByModelID(_u8 modelID)
         {
             _u8 majorModelID = (modelID >> 4);
-            // FIXME: stupid implementation here
+
             if (majorModelID < NEWDESIGN_MINUM_MAJOR_ID) {
                 return LIDAR_TECHNOLOGY_TRIANGULATION;
             }
@@ -1459,7 +1432,7 @@ namespace sl {
         void _disableDataGrabbing()
         {
             _dataunpacker->disable();
-            _protocolHandler->exitLoopMode(); // exit loop mode
+            _protocolHandler->exitLoopMode();
         }
         
 
@@ -1492,11 +1465,11 @@ namespace sl {
 
             case LIDAR_MAJOR_TYPE_S_SERIES:
             {
-                // ethernet version exists, check whether it is
+
                 _u8 macAddr[6];
                 u_result ans = getDeviceMacAddr(macAddr, timeout);
                 if (IS_FAIL(ans)) {
-                    // cannot retrieve the device mac address, consider a UART interface version
+
                     outputType = LIDAR_INTERFACE_UART;
                 }
                 else {
@@ -1520,18 +1493,18 @@ namespace sl {
             {
             case 1:
             case 2:
-            case 3: //A1..A3 series
+            case 3:
                 return (devInfo.hardware_version >= 6) ? 256000 : 115200;
-            case 4: //C series
+            case 4:
                 return 460800;
-            case 6: //model ID of S1
+            case 6:
                 return 256000;
-            case 7: //model ID of S2
-            case 8: //model ID of S3
+            case 7:
+            case 8:
                 if (devInfo.model == (0x82)) return 460800; 
                 return 1000000;
             default:
-                return 0; //0 as unknown
+                return 0;
             }
         }
 
@@ -1542,12 +1515,12 @@ namespace sl {
             
             _timing_desc.sample_duration_uS = (_u64)(selectedSampleDuration + 0.5f);
 
-            //FIXME: will be changed in future releases
+
             _timing_desc.native_timestamp_support = false; 
             _timing_desc.linkage_delay_uS = 0;
 
 
-            // notify the data unpacker
+
             _dataunpacker->updateUnpackerContext(internal::LIDARSampleDataUnpacker::UNPACKER_CONTEXT_TYPE_LIDAR_TIMING ,&_timing_desc, sizeof(_timing_desc));
             return true;
 
@@ -1559,7 +1532,7 @@ namespace sl {
             static const _u32 LEGACY_SAMPLE_DURATION = 476;
 
             rplidar_response_device_info_t devinfo;
-            // 1. fetch the device version first...
+
             u_result ans = getDeviceInfo(devinfo, timeout);
 
             rateInfo.express_sample_duration_us = LEGACY_SAMPLE_DURATION;
@@ -1571,7 +1544,7 @@ namespace sl {
 
             if (getLIDARMajorType(&devinfo) == LIDAR_MAJOR_TYPE_A_SERIES) {
                 if (devinfo.firmware_version < ((0x1 << 8) | 17)) {
-                    // very very rare and old model found!!
+
                     return SL_RESULT_OK;
                 }
             }

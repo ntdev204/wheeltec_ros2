@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <chrono>
 #include <thread>
@@ -20,7 +20,7 @@
 #include "nav2_mppi_controller/tools/path_handler.hpp"
 #include "tf2_ros/transform_broadcaster.h"
 
-// Tests path handling
+
 
 class RosLockGuard
 {
@@ -30,7 +30,7 @@ public:
 };
 RosLockGuard g_rclcpp;
 
-using namespace mppi;  // NOLINT
+using namespace mppi;
 
 class PathHandlerWrapper : public PathHandler
 {
@@ -116,11 +116,11 @@ TEST(PathHandlerTests, TestBounds)
   rclcpp_lifecycle::State state;
   costmap_ros->on_configure(state);
 
-  // Test initialization and getting costmap basic metadata
+
   handler.initialize(node, "dummy", costmap_ros, costmap_ros->getTfBuffer(), &param_handler);
   EXPECT_EQ(handler.getMaxCostmapDistWrapper(), 2.5);
 
-  // Set tf between map odom and base_link
+
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_ =
     std::make_unique<tf2_ros::TransformBroadcaster>(node);
   geometry_msgs::msg::TransformStamped t;
@@ -131,7 +131,7 @@ TEST(PathHandlerTests, TestBounds)
   t.child_frame_id = "odom";
   tf_broadcaster_->sendTransform(t);
 
-  // Test getting the global plans within a bounds window
+
   nav_msgs::msg::Path path;
   path.header.frame_id = "map";
   path.poses.resize(100);
@@ -164,10 +164,10 @@ TEST(PathHandlerTests, TestTransforms)
   rclcpp_lifecycle::State state;
   costmap_ros->on_configure(state);
 
-  // Test basic transformations and path handling
+
   handler.initialize(node, "dummy", costmap_ros, costmap_ros->getTfBuffer(), &param_handler);
 
-  // Set tf between map odom and base_link
+
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_ =
     std::make_unique<tf2_ros::TransformBroadcaster>(node);
   geometry_msgs::msg::TransformStamped t;
@@ -200,7 +200,7 @@ TEST(PathHandlerTests, TestTransforms)
   auto [path_out, closest] =
     handler.getGlobalPlanConsideringBoundsInCostmapFrameWrapper(robot_pose);
 
-  // Put it all together
+
   auto final_path = handler.transformPath(robot_pose);
   EXPECT_EQ(final_path.poses.size(), path_out.poses.size());
 }
@@ -218,32 +218,32 @@ TEST(PathHandlerTests, TestInversionToleranceChecks)
   PathHandlerWrapper handler;
   handler.setGlobalPlanUpToInversion(path);
 
-  // Not near (0,0)
+
   geometry_msgs::msg::PoseStamped robot_pose;
   EXPECT_FALSE(handler.isWithinInversionTolerancesWrapper(robot_pose));
 
-  // Exactly on top of it
+
   robot_pose.pose.position.x = 9;
   robot_pose.pose.orientation.w = 1.0;
   EXPECT_TRUE(handler.isWithinInversionTolerancesWrapper(robot_pose));
 
-  // Laterally of it
+
   robot_pose.pose.position.y = 9;
   EXPECT_FALSE(handler.isWithinInversionTolerancesWrapper(robot_pose));
 
-  // On top but off angled
+
   robot_pose.pose.position.y = 0;
   robot_pose.pose.orientation.z = 0.8509035;
   robot_pose.pose.orientation.w = 0.525322;
   EXPECT_FALSE(handler.isWithinInversionTolerancesWrapper(robot_pose));
 
-  // On top but off angled within tolerances
+
   robot_pose.pose.position.y = 0;
   robot_pose.pose.orientation.w = 0.9961947;
   robot_pose.pose.orientation.z = 0.0871558;
   EXPECT_TRUE(handler.isWithinInversionTolerancesWrapper(robot_pose));
 
-  // Offset spatially + off angled but both within tolerances
+
   robot_pose.pose.position.x = 9.10;
   EXPECT_TRUE(handler.isWithinInversionTolerancesWrapper(robot_pose));
 }

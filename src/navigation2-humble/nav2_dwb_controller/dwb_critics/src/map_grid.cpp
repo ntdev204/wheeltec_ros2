@@ -1,36 +1,5 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2017, Locus Robotics
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of the copyright holder nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- */
+
+
 
 #include "dwb_critics/map_grid.hpp"
 #include <cmath>
@@ -49,8 +18,8 @@ using costmap_queue::CellData;
 namespace dwb_critics
 {
 
-// Customization of the CostmapQueue validCellToQueue method
-bool MapGridCritic::MapGridQueue::validCellToQueue(const costmap_queue::CellData & /*cell*/)
+
+bool MapGridCritic::MapGridQueue::validCellToQueue(const costmap_queue::CellData & )
 {
   return true;
 }
@@ -60,7 +29,7 @@ void MapGridCritic::onInit()
   costmap_ = costmap_ros_->getCostmap();
   queue_ = std::make_shared<MapGridQueue>(*costmap_, *this);
 
-  // Always set to true, but can be overriden by subclasses
+
   stop_on_failure_ = true;
 
   auto node = node_.lock();
@@ -158,7 +127,7 @@ double MapGridCritic::scoreTrajectory(const dwb_msgs::msg::Trajectory2D & traj)
 double MapGridCritic::scorePose(const geometry_msgs::msg::Pose2D & pose)
 {
   unsigned int cell_x, cell_y;
-  // we won't allow trajectories that go off the map... shouldn't happen that often anyways
+
   if (!costmap_->worldToMap(pose.x, pose.y, cell_x, cell_y)) {
     throw dwb_core::
           IllegalTrajectoryException(name_, "Trajectory Goes Off Grid.");
@@ -186,4 +155,4 @@ void MapGridCritic::addCriticVisualization(
   cost_channels.push_back(grid_scores);
 }
 
-}  // namespace dwb_critics
+}

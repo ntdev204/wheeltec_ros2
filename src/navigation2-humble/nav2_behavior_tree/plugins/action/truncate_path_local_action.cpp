@@ -1,16 +1,16 @@
-// Copyright (c) 2021 RoboTech Vision
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <limits>
 #include <memory>
@@ -76,7 +76,7 @@ inline BT::NodeStatus TruncatePathLocal::tick()
       closest_pose_detection_begin_, path_.poses.end(), max_robot_pose_search_dist);
   }
 
-  // find the closest pose on the path
+
   auto current_pose = nav2_util::geometry_utils::min_by(
     closest_pose_detection_begin_, closest_pose_detection_end,
     [&pose, angular_distance_weight](const geometry_msgs::msg::PoseStamped & ps) {
@@ -87,12 +87,12 @@ inline BT::NodeStatus TruncatePathLocal::tick()
     closest_pose_detection_begin_ = current_pose;
   }
 
-  // expand forwards to extract desired length
+
   auto forward_pose_it = nav2_util::geometry_utils::first_after_integrated_distance(
     current_pose, path_.poses.end(), distance_forward);
 
-  // expand backwards to extract desired length
-  // Note: current_pose + 1 is used because reverse iterator points to a cell before it
+
+
   auto backward_pose_it = nav2_util::geometry_utils::first_after_integrated_distance(
     std::reverse_iterator(current_pose + 1), path_.poses.rend(), distance_backward);
 
@@ -138,8 +138,8 @@ TruncatePathLocal::poseDistance(
 {
   double dx = pose1.pose.position.x - pose2.pose.position.x;
   double dy = pose1.pose.position.y - pose2.pose.position.y;
-  // taking angular distance into account in addition to spatial distance
-  // (to improve picking a correct pose near cusps and loops)
+
+
   tf2::Quaternion q1;
   tf2::convert(pose1.pose.orientation, q1);
   tf2::Quaternion q2;
@@ -148,7 +148,7 @@ TruncatePathLocal::poseDistance(
   return std::sqrt(dx * dx + dy * dy + da * da);
 }
 
-}  // namespace nav2_behavior_tree
+}
 
 #include "behaviortree_cpp_v3/bt_factory.h"
 BT_REGISTER_NODES(factory) {

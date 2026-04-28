@@ -1,12 +1,5 @@
-/*
- *  SLLIDAR ROS2 CLIENT
- *
- *  Copyright (c) 2009 - 2014 RoboPeak Team
- *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2022 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- *
- */
+
+
 
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"

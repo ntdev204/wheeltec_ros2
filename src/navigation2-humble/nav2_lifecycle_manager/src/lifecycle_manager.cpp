@@ -1,17 +1,17 @@
-// Copyright (c) 2019 Intel Corporation
-// Copyright (c) 2022 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_lifecycle_manager/lifecycle_manager.hpp"
 
@@ -37,8 +37,8 @@ LifecycleManager::LifecycleManager(const rclcpp::NodeOptions & options)
 {
   RCLCPP_INFO(get_logger(), "Creating");
 
-  // The list of names is parameterized, allowing this module to be used with a different set
-  // of nodes
+
+
   declare_parameter("node_names", rclcpp::PARAMETER_STRING_ARRAY);
   declare_parameter("autostart", rclcpp::ParameterValue(false));
   declare_parameter("bond_timeout", 4.0);
@@ -115,7 +115,7 @@ LifecycleManager::~LifecycleManager()
 
 void
 LifecycleManager::managerCallback(
-  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
+  const std::shared_ptr<rmw_request_id_t>,
   const std::shared_ptr<ManageLifecycleNodes::Request> request,
   std::shared_ptr<ManageLifecycleNodes::Response> response)
 {
@@ -140,8 +140,8 @@ LifecycleManager::managerCallback(
 
 void
 LifecycleManager::isActiveCallback(
-  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
-  const std::shared_ptr<std_srvs::srv::Trigger::Request>/*request*/,
+  const std::shared_ptr<rmw_request_id_t>,
+  const std::shared_ptr<std_srvs::srv::Trigger::Request>,
   std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
   response->success = system_active_;
@@ -230,7 +230,7 @@ LifecycleManager::changeStateForNode(const std::string & node_name, std::uint8_t
 bool
 LifecycleManager::changeStateForAllNodes(std::uint8_t transition, bool hard_change)
 {
-  // Hard change will continue even if a node fails
+
   if (transition == Transition::TRANSITION_CONFIGURE ||
     transition == Transition::TRANSITION_ACTIVATE)
   {
@@ -309,7 +309,7 @@ LifecycleManager::reset(bool hard_reset)
   destroyBondTimer();
 
   message("Resetting managed nodes...");
-  // Should transition in reverse order
+
   if (!changeStateForAllNodes(Transition::TRANSITION_DEACTIVATE, hard_reset) ||
     !changeStateForAllNodes(Transition::TRANSITION_CLEANUP, hard_reset))
   {
@@ -395,18 +395,18 @@ LifecycleManager::checkBondConnections()
         std::string(
           "Have not received a heartbeat from " + node_name + "."));
 
-      // if one is down, bring them all down
+
       RCLCPP_ERROR(
         get_logger(),
         "CRITICAL FAILURE: SERVER %s IS DOWN after not receiving a heartbeat for %i ms."
         " Shutting down related nodes.",
         node_name.c_str(), static_cast<int>(bond_timeout_.count()));
-      reset(true);  // hard reset to transition all still active down
-      // if a server crashed, it won't get cleared due to failed transition, clear manually
+      reset(true);
+
       bond_map_.clear();
 
-      // Initialize the bond respawn timer to check if server comes back online
-      // after a failure, within a maximum timeout period.
+
+
       if (attempt_respawn_reconnection_) {
         bond_respawn_timer_ = this->create_wall_timer(
           1s,
@@ -421,20 +421,20 @@ LifecycleManager::checkBondConnections()
 void
 LifecycleManager::checkBondRespawnConnection()
 {
-  // First attempt in respawn, start maximum duration to respawn
+
   if (bond_respawn_start_time_.nanoseconds() == 0) {
     bond_respawn_start_time_ = now();
   }
 
-  // Note: system_active_ is inverted since this should be in a failure
-  // condition. If another outside user actives the system again, this should not process.
+
+
   if (system_active_ || !rclcpp::ok() || node_names_.empty()) {
     bond_respawn_start_time_ = rclcpp::Time(0);
     bond_respawn_timer_.reset();
     return;
   }
 
-  // Check number of live connections after a bond failure
+
   int live_servers = 0;
   const int max_live_servers = node_names_.size();
   for (auto & node_name : node_names_) {
@@ -443,15 +443,15 @@ LifecycleManager::checkBondRespawnConnection()
     }
 
     try {
-      node_map_[node_name]->get_state();  // Only won't throw if the server exists
+      node_map_[node_name]->get_state();
       live_servers++;
     } catch (...) {
       break;
     }
   }
 
-  // If all are alive, kill timer and retransition system to active
-  // Else, check if maximum timeout has occurred
+
+
   if (live_servers == max_live_servers) {
     message("Successfully re-established connections from server respawns, starting back up.");
     bond_respawn_start_time_ = rclcpp::Time(0);
@@ -473,7 +473,7 @@ LifecycleManager::message(const std::string & msg)
   RCLCPP_INFO(get_logger(), ANSI_COLOR_BLUE "\33[1m%s\33[0m" ANSI_COLOR_RESET, msg.c_str());
 }
 
-}  // namespace nav2_lifecycle_manager
+}
 
 #include "rclcpp_components/register_node_macro.hpp"
 RCLCPP_COMPONENTS_REGISTER_NODE(nav2_lifecycle_manager::LifecycleManager)

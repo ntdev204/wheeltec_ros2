@@ -1,39 +1,5 @@
-/*********************************************************************
- *
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2008, Willow Garage, Inc.
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- * Author: Eitan Marder-Eppstein
- *********************************************************************/
+
+
 #ifndef NAV2_VOXEL_GRID__VOXEL_GRID_HPP_
 #define NAV2_VOXEL_GRID__VOXEL_GRID_HPP_
 
@@ -46,12 +12,8 @@
 #include <algorithm>
 #include "rclcpp/rclcpp.hpp"
 
-/**
- * @class VoxelGrid
- * @brief A 3D grid structure that stores points as an integer array.
- *        X and Y index the array and Z selects which bit of the integer
- *        is used giving a limit of 16 vertical cells.
- */
+
+
 namespace nav2_voxel_grid
 {
 
@@ -65,22 +27,14 @@ enum VoxelStatus
 class VoxelGrid
 {
 public:
-  /**
-   * @brief  Constructor for a voxel grid
-   * @param size_x The x size of the grid
-   * @param size_y The y size of the grid
-   * @param size_z The z size of the grid, only sizes <= 16 are supported
-   */
+  
+
   VoxelGrid(unsigned int size_x, unsigned int size_y, unsigned int size_z);
 
   ~VoxelGrid();
 
-  /**
-   * @brief  Resizes a voxel grid to the desired size
-   * @param size_x The x size of the grid
-   * @param size_y The y size of the grid
-   * @param size_z The z size of the grid, only sizes <= 16 are supported
-   */
+  
+
   void resize(unsigned int size_x, unsigned int size_y, unsigned int size_z);
 
   void reset();
@@ -93,7 +47,7 @@ public:
       return;
     }
     uint32_t full_mask = ((uint32_t)1 << z << 16) | (1 << z);
-    data_[y * size_x_ + x] |= full_mask;  // clear unknown and mark cell
+    data_[y * size_x_ + x] |= full_mask;
   }
 
   inline bool markVoxelInMap(
@@ -108,11 +62,11 @@ public:
     int index = y * size_x_ + x;
     uint32_t * col = &data_[index];
     uint32_t full_mask = ((uint32_t)1 << z << 16) | (1 << z);
-    *col |= full_mask;  // clear unknown and mark cell
+    *col |= full_mask;
 
     unsigned int marked_bits = *col >> 16;
 
-    // make sure the number of bits in each is below our thesholds
+
     return !bitsBelowThreshold(marked_bits, marked_threshold);
   }
 
@@ -123,7 +77,7 @@ public:
       return;
     }
     uint32_t full_mask = ((uint32_t)1 << z << 16) | (1 << z);
-    data_[y * size_x_ + x] &= ~(full_mask);  // clear unknown and clear cell
+    data_[y * size_x_ + x] &= ~(full_mask);
   }
 
   inline void clearVoxelColumn(unsigned int index)
@@ -141,12 +95,12 @@ public:
     int index = y * size_x_ + x;
     uint32_t * col = &data_[index];
     uint32_t full_mask = ((uint32_t)1 << z << 16) | (1 << z);
-    *col &= ~(full_mask);  // clear unknown and clear cell
+    *col &= ~(full_mask);
 
     unsigned int unknown_bits = uint16_t(*col >> 16) ^ uint16_t(*col);
     unsigned int marked_bits = *col >> 16;
 
-    // make sure the number of bits in each is below our thesholds
+
     if (bitsBelowThreshold(unknown_bits, 1) && bitsBelowThreshold(marked_bits, 1)) {
       costmap[index] = 0;
     }
@@ -160,7 +114,7 @@ public:
       if (bit_count > bit_threshold) {
         return false;
       }
-      n &= n - 1;  // clear the least significant bit set
+      n &= n - 1;
     }
     return true;
   }
@@ -169,7 +123,7 @@ public:
   {
     unsigned int bit_count;
     for (bit_count = 0; n; ++bit_count) {
-      n &= n - 1;  // clear the least significant bit set
+      n &= n - 1;
     }
     return bit_count;
   }
@@ -185,7 +139,7 @@ public:
     uint32_t result = data[y * size_x + x] & full_mask;
     unsigned int bits = numBits(result);
 
-    // known marked: 11 = 2 bits, unknown: 01 = 1 bit, known free: 00 = 0 bits
+
     if (bits < 2) {
       if (bits < 1) {
         return FREE;
@@ -209,7 +163,7 @@ public:
 
   VoxelStatus getVoxel(unsigned int x, unsigned int y, unsigned int z);
 
-  // Are there any obstacles at that (x, y) location in the grid?
+
   VoxelStatus getVoxelColumn(
     unsigned int x, unsigned int y,
     unsigned int unknown_threshold = 0, unsigned int marked_threshold = 0);
@@ -226,8 +180,8 @@ public:
     double x1, double y1, double z1, unsigned int max_length = UINT_MAX,
     unsigned int min_length = 0)
   {
-    // we need to chose how much to scale our dominant dimension, based on the
-    // maximum length of the line
+
+
     double dist = sqrt((x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1) + (z0 - z1) * (z0 - z1));
     if ((unsigned int)(dist) < min_length) {
       return;
@@ -236,22 +190,22 @@ public:
     if (dist > 0.0) {
       scale = std::min(1.0, max_length / dist);
 
-      // Updating starting point to the point at distance min_length from the initial point
+
       min_x0 = x0 + (x1 - x0) / dist * min_length;
       min_y0 = y0 + (y1 - y0) / dist * min_length;
       min_z0 = z0 + (z1 - z0) / dist * min_length;
     } else {
-      // dist can be 0 if [x0, y0, z0]==[x1, y1, z1].
-      // In this case only this voxel should be processed.
+
+
       scale = 1.0;
       min_x0 = x0;
       min_y0 = y0;
       min_z0 = z0;
     }
 
-    int dx = int(x1) - int(min_x0);  // NOLINT
-    int dy = int(y1) - int(min_y0);  // NOLINT
-    int dz = int(z1) - int(min_z0);  // NOLINT
+    int dx = int(x1) - int(min_x0);
+    int dy = int(y1) - int(min_y0);
+    int dz = int(z1) - int(min_z0);
 
     unsigned int abs_dx = abs(dx);
     unsigned int abs_dy = abs(dy);
@@ -267,7 +221,7 @@ public:
     GridOffset grid_off(offset);
     ZOffset z_off(z_mask);
 
-    // is x dominant
+
     if (abs_dx >= max(abs_dy, abs_dz)) {
       int error_y = abs_dx / 2;
       int error_z = abs_dx / 2;
@@ -278,7 +232,7 @@ public:
       return;
     }
 
-    // y is dominant
+
     if (abs_dy >= abs_dz) {
       int error_x = abs_dy / 2;
       int error_z = abs_dy / 2;
@@ -289,7 +243,7 @@ public:
       return;
     }
 
-    // otherwise, z is dominant
+
     int error_x = abs_dz / 2;
     int error_y = abs_dz / 2;
 
@@ -299,7 +253,7 @@ public:
   }
 
 private:
-  // the real work is done here... 3D bresenham implementation
+
   template<class ActionType, class OffA, class OffB, class OffC>
   inline void bresenham3D(
     ActionType at, OffA off_a, OffB off_b, OffC off_c,
@@ -340,8 +294,8 @@ private:
   unsigned char * costmap;
   rclcpp::Logger logger;
 
-  // Aren't functors so much fun... used to recreate the Bresenham macro Eric
-  // wrote in the original version, but in "proper" c++
+
+
   class MarkVoxel
   {
 public:
@@ -349,7 +303,7 @@ public:
     : data_(data) {}
     inline void operator()(unsigned int offset, unsigned int z_mask)
     {
-      data_[offset] |= z_mask;  // clear unknown and mark cell
+      data_[offset] |= z_mask;
     }
 
 private:
@@ -363,7 +317,7 @@ public:
     : data_(data) {}
     inline void operator()(unsigned int offset, unsigned int z_mask)
     {
-      data_[offset] &= ~(z_mask);  // clear unknown and clear cell
+      data_[offset] &= ~(z_mask);
     }
 
 private:
@@ -387,12 +341,12 @@ public:
     inline void operator()(unsigned int offset, unsigned int z_mask)
     {
       uint32_t * col = &data_[offset];
-      *col &= ~(z_mask);  // clear unknown and clear cell
+      *col &= ~(z_mask);
 
       unsigned int unknown_bits = uint16_t(*col >> 16) ^ uint16_t(*col);
       unsigned int marked_bits = *col >> 16;
 
-      // make sure the number of bits in each is below our thesholds
+
       if (bitsBelowThreshold(marked_bits, marked_clear_threshold_)) {
         if (bitsBelowThreshold(unknown_bits, unknown_clear_threshold_)) {
           costmap_[offset] = free_cost_;
@@ -411,7 +365,7 @@ private:
         if (bit_count > bit_threshold) {
           return false;
         }
-        n &= n - 1;  // clear the least significant bit set
+        n &= n - 1;
       }
       return true;
     }
@@ -451,6 +405,6 @@ private:
   };
 };
 
-}  // namespace nav2_voxel_grid
+}
 
-#endif  // NAV2_VOXEL_GRID__VOXEL_GRID_HPP_
+#endif

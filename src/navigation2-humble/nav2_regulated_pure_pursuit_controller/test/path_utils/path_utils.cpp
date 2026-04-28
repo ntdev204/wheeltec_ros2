@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Adam Aposhian
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <memory>
 
@@ -25,13 +25,13 @@ void append_transform_to_path(
   nav_msgs::msg::Path & path,
   tf2::Transform & relative_transform)
 {
-  // Add a new empty pose
+
   path.poses.emplace_back();
-  // Get the previous, last pose (after the emplace_back so the reference isn't invalidated)
+
   auto & previous_pose = *(path.poses.end() - 2);
   auto & new_pose = path.poses.back();
 
-  // get map_transform of previous_pose
+
   tf2::Transform map_transform;
   tf2::fromMsg(previous_pose.pose, map_transform);
 
@@ -85,4 +85,4 @@ nav_msgs::msg::Path generate_path(
   return path;
 }
 
-}  // namespace path_utils
+}

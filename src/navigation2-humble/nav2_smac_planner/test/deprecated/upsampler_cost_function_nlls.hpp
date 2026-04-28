@@ -1,16 +1,16 @@
-// Copyright (c) 2020, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef DEPRECATED__UPSAMPLER_COST_FUNCTION_NLLS_HPP_
 #define DEPRECATED__UPSAMPLER_COST_FUNCTION_NLLS_HPP_
@@ -32,18 +32,13 @@
 
 namespace nav2_smac_planner
 {
-/**
- * @struct nav2_smac_planner::UpsamplerConstrainedCostFunction
- * @brief Cost function for path upsampling with multiple terms using NLLS
- * including curvature, smoothness, collision, and avoid obstacles.
- */
+
+
 class UpsamplerConstrainedCostFunction : public ceres::SizedCostFunction<1, 1, 1>
 {
 public:
-  /**
-   * @brief A constructor for nav2_smac_planner::UpsamplerConstrainedCostFunction
-   * @param num_points Number of path points to consider
-   */
+  
+
   UpsamplerConstrainedCostFunction(
     const std::vector<Eigen::Vector2d> & path,
     const SmootherParams & params,
@@ -56,25 +51,20 @@ public:
   {
   }
 
-  /**
-   * @struct CurvatureComputations
-   * @brief Cache common computations between the curvature terms to minimize recomputations
-   */
+  
+
   struct CurvatureComputations
   {
-    /**
-     * @brief A constructor for nav2_smac_planner::CurvatureComputations
-     */
+    
+
     CurvatureComputations()
     {
       valid = true;
     }
 
     bool valid;
-    /**
-     * @brief Check if result is valid for penalty
-     * @return is valid (non-nan, non-inf, and turning angle > max)
-     */
+    
+
     bool isValid()
     {
       return valid;
@@ -89,13 +79,8 @@ public:
     double ki_minus_kmax{0};
   };
 
-  /**
-   * @brief Smoother cost function evaluation
-   * @param parameters X,Y pairs of points
-   * @param cost total cost of path
-   * @param gradient of path at each X,Y pair from cost function derived analytically
-   * @return if successful in computing values
-   */
+  
+
 
   bool Evaluate(
     double const * const * parameters,
@@ -108,12 +93,12 @@ public:
     CurvatureComputations curvature_params;
     double grad_x_raw = 0, grad_y_raw = 0, cost_raw = 0;
 
-    // compute cost
+
     addSmoothingResidual(15000, xi, xi_p1, xi_m1, cost_raw);
     addCurvatureResidual(60.0, xi, xi_p1, xi_m1, curvature_params, cost_raw);
 
     residuals[0] = 0;
-    residuals[0] = cost_raw;  // objective function value x
+    residuals[0] = cost_raw;
 
     if (jacobians != NULL && jacobians[0] != NULL) {
       addSmoothingJacobian(15000, xi, xi_p1, xi_m1, grad_x_raw, grad_y_raw);
@@ -121,8 +106,8 @@ public:
 
       jacobians[0][0] = 0;
       jacobians[1][0] = 0;
-      jacobians[0][0] = grad_x_raw;  // x derivative
-      jacobians[1][0] = grad_y_raw;  // y derivative
+      jacobians[0][0] = grad_x_raw;
+      jacobians[1][0] = grad_y_raw;
       jacobians[0][1] = 0.0;
       jacobians[1][1] = 0.0;
     }
@@ -131,14 +116,8 @@ public:
   }
 
 protected:
-  /**
-   * @brief Cost function term for smooth paths
-   * @param weight Weight to apply to function
-   * @param pt Point Xi for evaluation
-   * @param pt Point Xi+1 for calculating Xi's cost
-   * @param pt Point Xi-1 for calculating Xi's cost
-   * @param r Residual (cost) of term
-   */
+  
+
   inline void addSmoothingResidual(
     const double & weight,
     const Eigen::Vector2d & pt,
@@ -152,18 +131,11 @@ protected:
       2 * pt_p.dot(pt_m) +
       4 * pt.dot(pt) -
       4 * pt.dot(pt_m) +
-      pt_m.dot(pt_m));    // objective function value
+      pt_m.dot(pt_m));
   }
 
-  /**
-   * @brief Cost function derivative term for smooth paths
-   * @param weight Weight to apply to function
-   * @param pt Point Xi for evaluation
-   * @param pt Point Xi+1 for calculating Xi's cost
-   * @param pt Point Xi-1 for calculating Xi's cost
-   * @param j0 Gradient of X term
-   * @param j1 Gradient of Y term
-   */
+  
+
   inline void addSmoothingJacobian(
     const double & weight,
     const Eigen::Vector2d & pt,
@@ -173,18 +145,13 @@ protected:
     double & j1) const
   {
     j0 += weight *
-      (-4 * pt_m[0] + 8 * pt[0] - 4 * pt_p[0]);   // xi x component of partial-derivative
+      (-4 * pt_m[0] + 8 * pt[0] - 4 * pt_p[0]);
     j1 += weight *
-      (-4 * pt_m[1] + 8 * pt[1] - 4 * pt_p[1]);   // xi y component of partial-derivative
+      (-4 * pt_m[1] + 8 * pt[1] - 4 * pt_p[1]);
   }
 
-  /**
-   * @brief Get path curvature information
-   * @param pt Point Xi for evaluation
-   * @param pt Point Xi+1 for calculating Xi's cost
-   * @param pt Point Xi-1 for calculating Xi's cost
-   * @param curvature_params A struct to cache computations for the jacobian to use
-   */
+  
+
   inline void getCurvatureParams(
     const Eigen::Vector2d & pt,
     const Eigen::Vector2d & pt_p,
@@ -201,7 +168,7 @@ protected:
       std::isnan(curvature_params.delta_xi_p_norm) || std::isnan(curvature_params.delta_xi_norm) ||
       std::isinf(curvature_params.delta_xi_p_norm) || std::isinf(curvature_params.delta_xi_norm))
     {
-      // ensure we have non-nan values returned
+
       curvature_params.valid = false;
       return;
     }
@@ -221,20 +188,13 @@ protected:
       _params.max_curvature;
 
     if (curvature_params.ki_minus_kmax <= EPSILON) {
-      // Quadratic penalty need not apply
+
       curvature_params.valid = false;
     }
   }
 
-  /**
-   * @brief Cost function term for maximum curved paths
-   * @param weight Weight to apply to function
-   * @param pt Point Xi for evaluation
-   * @param pt Point Xi+1 for calculating Xi's cost
-   * @param pt Point Xi-1 for calculating Xi's cost
-   * @param curvature_params A struct to cache computations for the jacobian to use
-   * @param r Residual (cost) of term
-   */
+  
+
   inline void addCurvatureResidual(
     const double & weight,
     const Eigen::Vector2d & pt,
@@ -249,26 +209,18 @@ protected:
       return;
     }
 
-    // objective function value
+
     r += weight *
       curvature_params.ki_minus_kmax * curvature_params.ki_minus_kmax;
   }
 
-  /**
-   * @brief Cost function derivative term for maximum curvature paths
-   * @param weight Weight to apply to function
-   * @param pt Point Xi for evaluation
-   * @param pt Point Xi+1 for calculating Xi's cost
-   * @param pt Point Xi-1 for calculating Xi's cost
-   * @param curvature_params A struct with cached values to speed up Jacobian computation
-   * @param j0 Gradient of X term
-   * @param j1 Gradient of Y term
-   */
+  
+
   inline void addCurvatureJacobian(
     const double & weight,
     const Eigen::Vector2d & pt,
     const Eigen::Vector2d & pt_p,
-    const Eigen::Vector2d & /*pt_m*/,
+    const Eigen::Vector2d & ,
     CurvatureComputations & curvature_params,
     double & j0,
     double & j1) const
@@ -279,7 +231,7 @@ protected:
 
     const double & partial_delta_phi_i_wrt_cost_delta_phi_i =
       -1 / std::sqrt(1 - std::pow(std::cos(curvature_params.delta_phi_i), 2));
-    // const Eigen::Vector2d ones = Eigen::Vector2d(1.0, 1.0);
+
     auto neg_pt_plus = -1 * pt_p;
     Eigen::Vector2d p1 = normalizedOrthogonalComplement(
       pt, neg_pt_plus, curvature_params.delta_xi_norm, curvature_params.delta_xi_p_norm);
@@ -299,21 +251,15 @@ protected:
     const Eigen::Vector2d jacobian_im1 = u *
       (common_prefix * p2 + (common_suffix * d_delta_xi_d_xi));
     const Eigen::Vector2d jacobian_ip1 = u * (common_prefix * p1);
-    j0 += weight * jacobian[0];  // xi x component of partial-derivative
-    j1 += weight * jacobian[1];  // xi y component of partial-derivative
-    // j0 += weight *
-    //   (jacobian_im1[0] + 2 * jacobian[0] + jacobian_ip1[0]);
-    // j1 += weight *
-    //   (jacobian_im1[1] + 2 * jacobian[1] + jacobian_ip1[1]);
+    j0 += weight * jacobian[0];
+    j1 += weight * jacobian[1];
+
+
+
+
   }
-  /**
-   * @brief Computing the normalized orthogonal component of 2 vectors
-   * @param a Vector
-   * @param b Vector
-   * @param norm a Vector's norm
-   * @param norm b Vector's norm
-   * @return Normalized vector of orthogonal components
-   */
+  
+
   inline Eigen::Vector2d normalizedOrthogonalComplement(
     const Eigen::Vector2d & a,
     const Eigen::Vector2d & b,
@@ -329,6 +275,6 @@ protected:
   int index;
 };
 
-}  // namespace nav2_smac_planner
+}
 
-#endif  // DEPRECATED__UPSAMPLER_COST_FUNCTION_NLLS_HPP_
+#endif

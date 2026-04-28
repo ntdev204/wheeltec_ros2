@@ -1,16 +1,16 @@
-// Copyright (c) 2021 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <math.h>
 #include <memory>
@@ -87,11 +87,11 @@ TEST(RotationShimControllerTest, lifecycleTransitions)
   rclcpp_lifecycle::State state;
   costmap->on_configure(state);
 
-  // Should not populate primary controller, does not exist
+
   EXPECT_THROW(ctrl->configure(node, name, tf, costmap), std::runtime_error);
   EXPECT_EQ(ctrl->getPrimaryController(), nullptr);
 
-  // Add a controller to the setup
+
   auto rec_param = std::make_shared<rclcpp::AsyncParametersClient>(
     node->get_node_base_interface(), node->get_node_topics_interface(),
     node->get_node_graph_interface(),
@@ -125,7 +125,7 @@ TEST(RotationShimControllerTest, setPlanAndSampledPointsTests)
   rclcpp_lifecycle::State state;
   costmap->on_configure(state);
 
-  // set a valid primary controller so we can do lifecycle
+
   node->declare_parameter(
     "PathFollower.primary_controller",
     std::string("nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"));
@@ -134,7 +134,7 @@ TEST(RotationShimControllerTest, setPlanAndSampledPointsTests)
   controller->configure(node, name, tf, costmap);
   controller->activate();
 
-  // Test state update and path setting
+
   nav_msgs::msg::Path path;
   path.header.frame_id = "hi mate!";
   path.poses.resize(10);
@@ -150,9 +150,9 @@ TEST(RotationShimControllerTest, setPlanAndSampledPointsTests)
   EXPECT_EQ(controller->getPath().poses.size(), 10u);
   EXPECT_EQ(controller->isPathUpdated(), true);
 
-  // Test getting a sampled point
+
   auto pose = controller->getSampledPathPtWrapper();
-  EXPECT_EQ(pose.pose.position.x, 1.0);  // default forward sampling is 0.5
+  EXPECT_EQ(pose.pose.position.x, 1.0);
   EXPECT_EQ(pose.pose.position.y, 1.0);
 
   nav_msgs::msg::Path path_invalid_leng;
@@ -175,7 +175,7 @@ TEST(RotationShimControllerTest, rotationAndTransformTests)
   rclcpp_lifecycle::State state;
   costmap->on_configure(state);
 
-  // set a valid primary controller so we can do lifecycle
+
   node->declare_parameter(
     "PathFollower.primary_controller",
     std::string("nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"));
@@ -184,7 +184,7 @@ TEST(RotationShimControllerTest, rotationAndTransformTests)
   controller->configure(node, name, tf, costmap);
   controller->activate();
 
-  // Test state update and path setting
+
   nav_msgs::msg::Path path;
   path.header.frame_id = "fake_frame";
   path.poses.resize(10);
@@ -208,7 +208,7 @@ TEST(RotationShimControllerTest, rotationAndTransformTests)
     controller->computeRotateToHeadingCommandWrapper(
       0.87, path.poses[0], velocity).twist.angular.z, 1.8);
 
-  // in base_link, so should pass through values without issue
+
   geometry_msgs::msg::PoseStamped pt;
   pt.pose.position.x = 100.0;
   pt.header.frame_id = "base_link";
@@ -216,7 +216,7 @@ TEST(RotationShimControllerTest, rotationAndTransformTests)
   auto rtn = controller->transformPoseToBaseFrameWrapper(pt);
   EXPECT_EQ(rtn.position.x, 100.0);
 
-  // in frame that doesn't exist, shouldn't throw, but should fail
+
   geometry_msgs::msg::PoseStamped pt2;
   pt.pose.position.x = 100.0;
   pt.header.frame_id = "fake_frame2";
@@ -245,7 +245,7 @@ TEST(RotationShimControllerTest, computeVelocityTests)
   transform.transform.rotation.w = 1.0;
   tf_broadcaster->sendTransform(transform);
 
-  // set a valid primary controller so we can do lifecycle
+
   node->declare_parameter(
     "PathFollower.primary_controller",
     std::string("nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"));
@@ -254,7 +254,7 @@ TEST(RotationShimControllerTest, computeVelocityTests)
   controller->configure(node, name, tf, costmap);
   controller->activate();
 
-  // Test state update and path setting
+
   nav_msgs::msg::Path path;
   path.header.frame_id = "fake_frame";
   path.poses.resize(10);
@@ -265,12 +265,12 @@ TEST(RotationShimControllerTest, computeVelocityTests)
   nav2_controller::SimpleGoalChecker checker;
   checker.initialize(node, "checker", costmap);
 
-  // send without setting a path - should go to RPP immediately
-  // then it should throw an exception because the path is empty and invalid
+
+
   EXPECT_THROW(controller->computeVelocityCommands(pose, velocity, &checker), std::runtime_error);
 
-  // Set with a path -- should attempt to find a sampled point but throw exception
-  // because it cannot be found, then go to RPP and throw exception because it cannot be transformed
+
+
   controller->setPlan(path);
   EXPECT_THROW(controller->computeVelocityCommands(pose, velocity, &checker), std::runtime_error);
 
@@ -283,9 +283,9 @@ TEST(RotationShimControllerTest, computeVelocityTests)
   path.poses[3].pose.position.x = 10.0;
   path.poses[3].pose.position.y = 10.0;
 
-  // this should allow it to find the sampled point, then transform to base_link
-  // validly because we setup the TF for it. The -1.0 should be selected since default min
-  // is 0.5 and that should cause a rotation in place
+
+
+
   controller->setPlan(path);
   tf_broadcaster->sendTransform(transform);
   auto effort = controller->computeVelocityCommands(pose, velocity, &checker);
@@ -300,10 +300,10 @@ TEST(RotationShimControllerTest, computeVelocityTests)
   path.poses[3].pose.position.x = 10.0;
   path.poses[3].pose.position.y = 10.0;
 
-  // this should allow it to find the sampled point, then transform to base_link
-  // validly because we setup the TF for it. The 1.0 should be selected since default min
-  // is 0.5 and that should cause a pass off to the RPP controller which will throw
-  // and exception because the costmap is bogus
+
+
+
+
   controller->setPlan(path);
   tf_broadcaster->sendTransform(transform);
   EXPECT_THROW(controller->computeVelocityCommands(pose, velocity, &checker), std::runtime_error);
@@ -318,7 +318,7 @@ TEST(RotationShimControllerTest, testDynamicParameter)
   rclcpp_lifecycle::State state;
   costmap->on_configure(state);
 
-  // set a valid primary controller so we can do lifecycle
+
   node->declare_parameter(
     "test.primary_controller",
     std::string("nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"));

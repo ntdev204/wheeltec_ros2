@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_mppi_controller/critics/path_align_critic.hpp"
 
@@ -20,7 +20,7 @@
 namespace mppi::critics
 {
 
-using namespace xt::placeholders;  // NOLINT
+using namespace xt::placeholders;
 using xt::evaluation_strategy::immediate;
 
 void PathAlignCritic::initialize()
@@ -45,20 +45,20 @@ void PathAlignCritic::initialize()
 
 void PathAlignCritic::score(CriticData & data)
 {
-  // Don't apply close to goal, let the goal critics take over
+
   if (!enabled_ ||
     utils::withinPositionGoalTolerance(threshold_to_consider_, data.state.pose.pose, data.path))
   {
     return;
   }
 
-  // Don't apply when first getting bearing w.r.t. the path
+
   utils::setPathFurthestPointIfNotSet(data);
   if (*data.furthest_reached_path_point < offset_from_furthest_) {
     return;
   }
 
-  // Don't apply when dynamic obstacles are blocking significant proportions of the local path
+
   utils::setPathCostsIfNotSet(data, costmap_ros_);
   const size_t closest_initial_path_point = utils::findPathTrajectoryInitialPoint(data);
   unsigned int invalid_ctr = 0;
@@ -74,9 +74,9 @@ void PathAlignCritic::score(CriticData & data)
   const auto & T_y = data.trajectories.y;
   const auto & T_yaw = data.trajectories.yaws;
 
-  const auto P_x = xt::view(data.path.x, xt::range(_, -1));  // path points
-  const auto P_y = xt::view(data.path.y, xt::range(_, -1));  // path points
-  const auto P_yaw = xt::view(data.path.yaws, xt::range(_, -1));  // path points
+  const auto P_x = xt::view(data.path.x, xt::range(_, -1));
+  const auto P_y = xt::view(data.path.y, xt::range(_, -1));
+  const auto P_yaw = xt::view(data.path.yaws, xt::range(_, -1));
 
   const size_t batch_size = T_x.shape(0);
   const size_t time_steps = T_x.shape(1);
@@ -98,7 +98,7 @@ void PathAlignCritic::score(CriticData & data)
       min_dist_sq = std::numeric_limits<float>::max();
       min_s = 0;
 
-      // Find closest path segment to the trajectory point
+
       for (size_t s = 0; s < path_segments_count - 1; s++) {
         xt::xtensor_fixed<float, xt::xshape<2>> P;
         dx = P_x(s) - T_x(t, p);
@@ -115,8 +115,8 @@ void PathAlignCritic::score(CriticData & data)
         }
       }
 
-      // The nearest path point to align to needs to be not in collision, else
-      // let the obstacle critic take over in this region due to dynamic obstacles
+
+
       if (min_s != 0 && (*data.path_pts_valid)[min_s]) {
         summed_dist += std::sqrt(min_dist_sq);
       }
@@ -128,7 +128,7 @@ void PathAlignCritic::score(CriticData & data)
   data.costs += xt::pow(std::move(cost) * weight_, power_);
 }
 
-}  // namespace mppi::critics
+}
 
 #include <pluginlib/class_list_macros.hpp>
 

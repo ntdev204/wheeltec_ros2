@@ -1,16 +1,16 @@
-// Copyright (c) 2020 Sarthak Mittal
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef TEST_ACTION_SERVER_HPP_
 #define TEST_ACTION_SERVER_HPP_
@@ -30,7 +30,7 @@ public:
     const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : Node("test_action_server", options)
   {
-    using namespace std::placeholders;  // NOLINT
+    using namespace std::placeholders;
 
     this->action_server_ = rclcpp_action::create_server<ActionT>(
       this->get_node_base_interface(),
@@ -85,8 +85,8 @@ protected:
   void handle_accepted(
     const std::shared_ptr<rclcpp_action::ServerGoalHandle<ActionT>> goal_handle)
   {
-    using namespace std::placeholders;  // NOLINT
-    // this needs to return quickly to avoid blocking the executor, so spin up a new thread
+    using namespace std::placeholders;
+
     std::thread{std::bind(&TestActionServer::execute, this, _1), goal_handle}.detach();
   }
 
@@ -97,4 +97,4 @@ private:
   bool goal_cancelled_ = false;
 };
 
-#endif  // TEST_ACTION_SERVER_HPP_
+#endif

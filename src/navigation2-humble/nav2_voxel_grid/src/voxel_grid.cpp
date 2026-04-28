@@ -1,39 +1,5 @@
-/*********************************************************************
-*
-* Software License Agreement (BSD License)
-*
-*  Copyright (c) 2008, Willow Garage, Inc.
-*  All rights reserved.
-*
-*  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-*
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of the Willow Garage nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
-*
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-*  POSSIBILITY OF SUCH DAMAGE.
-*
-* Author: Eitan Marder-Eppstein
-*********************************************************************/
+
+
 #include <nav2_voxel_grid/voxel_grid.hpp>
 
 namespace nav2_voxel_grid
@@ -63,7 +29,7 @@ VoxelGrid::VoxelGrid(unsigned int size_x, unsigned int size_y, unsigned int size
 
 void VoxelGrid::resize(unsigned int size_x, unsigned int size_y, unsigned int size_z)
 {
-  // if we're not actually changing the size, we can just reset things
+
   if (size_x == size_x_ && size_y == size_y_ && size_z == size_z_) {
     reset();
     return;
@@ -179,7 +145,7 @@ VoxelStatus VoxelGrid::getVoxel(unsigned int x, unsigned int y, unsigned int z)
   uint32_t result = data_[y * size_x_ + x] & full_mask;
   unsigned int bits = numBits(result);
 
-  // known marked: 11 = 2 bits, unknown: 01 = 1 bit, known free: 00 = 0 bits
+
   if (bits < 2) {
     if (bits < 1) {
       return FREE;
@@ -205,12 +171,12 @@ VoxelStatus VoxelGrid::getVoxelColumn(
   unsigned int unknown_bits = uint16_t(*col >> 16) ^ uint16_t(*col);
   unsigned int marked_bits = *col >> 16;
 
-  // check if the number of marked bits qualifies the col as marked
+
   if (!bitsBelowThreshold(marked_bits, marked_threshold)) {
     return MARKED;
   }
 
-  // check if the number of unkown bits qualifies the col as unknown
+
   if (!bitsBelowThreshold(unknown_bits, unknown_threshold)) {
     return UNKNOWN;
   }
@@ -256,4 +222,4 @@ void VoxelGrid::printColumnGrid()
     printf("|\n");
   }
 }
-}  // namespace nav2_voxel_grid
+}

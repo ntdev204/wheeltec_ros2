@@ -1,36 +1,7 @@
-/*
- *  RPLIDAR ROS2 NODE
- *
- *  Copyright (c) 2009 - 2014 RoboPeak Team
- *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2022 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- *
- */
-/*
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- */
+
+
+
+
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
@@ -93,7 +64,7 @@ class RPlidarNode : public rclcpp::Node
         this->get_parameter_or<std::string>("udp_ip", udp_ip, "192.168.11.2"); 
         this->get_parameter_or<int>("udp_port", udp_port, 8089);
         this->get_parameter_or<std::string>("serial_port", serial_port, "/dev/ttyUSB0"); 
-        this->get_parameter_or<int>("serial_baudrate", serial_baudrate, 1000000/*256000*/);//ros run for A1 A2, change to 256000 if A3
+        this->get_parameter_or<int>("serial_baudrate", serial_baudrate, 1000000);
         this->get_parameter_or<std::string>("frame_id", frame_id, "laser_frame");
         this->get_parameter_or<bool>("inverted", inverted, false);
         this->get_parameter_or<bool>("angle_compensate", angle_compensate, false);
@@ -122,7 +93,7 @@ class RPlidarNode : public rclcpp::Node
             return false;
         }
 
-        // print out the device serial number, firmware and hardware version number..
+
         char sn_str[37] = {'\0'}; 
         for (int pos = 0; pos < 16 ;++pos) {
             sprintf(sn_str + (pos * 2),"%02X", devinfo.serialnum[pos]);
@@ -175,9 +146,9 @@ class RPlidarNode : public rclcpp::Node
 
         RCLCPP_DEBUG(this->get_logger(), "Call to '%s'", __FUNCTION__);
         
-        //RCLCPP_DEBUG(this->get_logger(),"Stop motor");
+
         this->stop();
-        //drv->setMotorSpeed(0);
+
         return true;
     }
 
@@ -255,7 +226,7 @@ class RPlidarNode : public rclcpp::Node
         scan_msg->scan_time = scan_time;
         scan_msg->time_increment = scan_time / (double)(node_count-1);
         scan_msg->range_min = 0.15;
-        scan_msg->range_max = max_distance;//8.0;
+        scan_msg->range_max = max_distance;
 
         scan_msg->intensities.resize(node_count);
         scan_msg->ranges.resize(node_count);
@@ -289,7 +260,7 @@ class RPlidarNode : public rclcpp::Node
         sl_result     op_result;
         LidarScanMode current_scan_mode;
         if (scan_mode.empty()) {
-            op_result = drv->startScan(false /* not force scan */, true /* use typical scan mode */, 0, &current_scan_mode);
+            op_result = drv->startScan(false , true , 0, &current_scan_mode);
         }
         else {
             std::vector<LidarScanMode> allSupportedScanModes;
@@ -313,14 +284,14 @@ class RPlidarNode : public rclcpp::Node
                     op_result = SL_RESULT_OPERATION_FAIL;
                 }
                 else {
-                    op_result = drv->startScanExpress(false /* not force scan */, selectedScanMode, 0, &current_scan_mode);
+                    op_result = drv->startScanExpress(false , selectedScanMode, 0, &current_scan_mode);
                 }
             }
         }
 
         if (SL_IS_OK(op_result))
         {
-            //default frequent is 10 hz (by motor pwm value),  current_scan_mode.us_per_sample is the number of scan point per us
+
             int points_per_circle = (int)(1000 * 1000 / current_scan_mode.us_per_sample / scan_frequency);
             angle_compensate_multiple = points_per_circle / 360.0 + 1;
             if (angle_compensate_multiple < 1)
@@ -375,10 +346,10 @@ public:
         RCLCPP_INFO(this->get_logger(),"RPLidar running on ROS2 package rplidar_ros. RPLIDAR SDK Version:%d.%d.%d",ver_major,ver_minor,ver_patch);
     
         sl_result     op_result;
-        // create the driver instance
+
         drv = *createLidarDriver();
         if (nullptr == drv) {
-            /* don't start spinning without a driver object */
+            
             RCLCPP_ERROR(this->get_logger(), "Failed to construct driver");
             return -1;
         }
@@ -406,13 +377,13 @@ public:
             return -1;
         }
         
-        // get rplidar device info
+
         if (!getRPLIDARDeviceInfo(drv)) {
             delete drv; drv = nullptr;
             return -1;
         }
 
-        // check health...
+
         if (!checkRPLIDARHealth(drv)) {
             delete drv; drv = nullptr;
             return -1;
@@ -426,12 +397,12 @@ public:
             scan_frequency_tunning_after_scan = true;
         }
 
-        if(!scan_frequency_tunning_after_scan){ //for RPLIDAR A serials
-            //start RPLIDAR A serials  rotate by pwm
+        if(!scan_frequency_tunning_after_scan){
+
             drv->setMotorSpeed(600);
         }
 
-        /* start motor and scanning */
+        
         if (!auto_standby && !this->start()) {
             delete drv; drv = nullptr;
             return -1;
@@ -444,7 +415,7 @@ public:
         start_motor_service = this->create_service<std_srvs::srv::Empty>("start_motor", 
                                 std::bind(&RPlidarNode::start_motor,this,std::placeholders::_1,std::placeholders::_2));
 
-        //drv->setMotorSpeed();
+
 
         rclcpp::Time start_scan_time;
         rclcpp::Time end_scan_time;
@@ -470,9 +441,9 @@ public:
             scan_duration = (end_scan_time - start_scan_time).seconds();
 
             if (op_result == SL_RESULT_OK) {
-                if(scan_frequency_tunning_after_scan) { //Set scan frequency(For Slamtec Tof lidar)
+                if(scan_frequency_tunning_after_scan) {
                     RCLCPP_INFO(this->get_logger(), "set lidar scan frequency to %.1f Hz(%.1f Rpm) ",scan_frequency,scan_frequency*60);
-                    drv->setMotorSpeed(scan_frequency*60); //rpm 
+                    drv->setMotorSpeed(scan_frequency*60);
                     scan_frequency_tunning_after_scan = false;
                     continue;
                 }
@@ -481,7 +452,7 @@ public:
                 float angle_max = DEG2RAD(359.0f);
                 if (op_result == SL_RESULT_OK) {
                     if (angle_compensate) {
-                        //const int angle_compensate_multiple = 1;
+
                         const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
                         int angle_compensate_offset = 0;
                         auto angle_compensate_nodes = new sl_lidar_response_measurement_node_hq_t[angle_compensate_nodes_count];
@@ -514,7 +485,7 @@ public:
                     } else {
                         int start_node = 0, end_node = 0;
                         int i = 0;
-                        // find the first valid node and last valid node
+
                         while (nodes[i++].dist_mm_q2 == 0);
                         start_node = i-1;
                         i = count -1;
@@ -530,7 +501,7 @@ public:
                                 frame_id);
                     }
                 } else if (op_result == SL_RESULT_OPERATION_FAIL) {
-                    // All the data is invalid, just publish them
+
                     float angle_min = DEG2RAD(0.0f);
                     float angle_max = DEG2RAD(359.0f);
                     publish_scan(scan_pub, nodes, count,
@@ -543,7 +514,7 @@ public:
             rclcpp::spin_some(shared_from_this());
         }
 
-        // done!
+
         drv->setMotorSpeed(0);
         drv->stop();
         RCLCPP_INFO(this->get_logger(),"Stop motor");
@@ -570,10 +541,10 @@ public:
     bool flip_x_axis = false;
     bool auto_standby = false;
     float max_distance = 8.0;
-    size_t angle_compensate_multiple = 1;//it stand of angle compensate at per 1 degree
+    size_t angle_compensate_multiple = 1;
     std::string scan_mode;
     float scan_frequency;
-    /* State */
+    
     bool is_scanning = false;
 
     ILidarDriver *drv = nullptr;

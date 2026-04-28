@@ -1,36 +1,5 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2017, Locus Robotics
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of the copyright holder nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- */
+
+
 
 #include "dwb_plugins/standard_traj_generator.hpp"
 #include <string>
@@ -75,14 +44,8 @@ void StandardTrajectoryGenerator::initialize(
     nh,
     plugin_name + ".include_last_point", rclcpp::ParameterValue(true));
 
-  /*
-   * If discretize_by_time, then sim_granularity represents the amount of time that should be between
-   *  two successive points on the trajectory.
-   *
-   * If discretize_by_time is false, then sim_granularity is the maximum amount of distance between
-   *  two successive points on the trajectory, and angular_sim_granularity is the maximum amount of
-   *  angular distance between two successive points.
-   */
+  
+
   nh->get_parameter(plugin_name + ".sim_time", sim_time_);
   nh->get_parameter(plugin_name + ".discretize_by_time", discretize_by_time_);
   nh->get_parameter(plugin_name + ".time_granularity", time_granularity_);
@@ -120,16 +83,16 @@ std::vector<double> StandardTrajectoryGenerator::getTimeSteps(
   std::vector<double> steps;
   if (discretize_by_time_) {
     steps.resize(ceil(sim_time_ / time_granularity_));
-  } else {  // discretize by distance
+  } else {
     double vmag = hypot(cmd_vel.x, cmd_vel.y);
 
-    // the distance the robot would travel in sim_time if it did not change velocity
+
     double projected_linear_distance = vmag * sim_time_;
 
-    // the angle the robot would rotate in sim_time
+
     double projected_angular_distance = fabs(cmd_vel.theta) * sim_time_;
 
-    // Pick the maximum of the two
+
     int num_steps = ceil(
       std::max(
         projected_linear_distance / linear_granularity_,
@@ -150,23 +113,23 @@ dwb_msgs::msg::Trajectory2D StandardTrajectoryGenerator::generateTrajectory(
 {
   dwb_msgs::msg::Trajectory2D traj;
   traj.velocity = cmd_vel;
-  //  simulate the trajectory
+
   geometry_msgs::msg::Pose2D pose = start_pose;
   nav_2d_msgs::msg::Twist2D vel = start_vel;
   double running_time = 0.0;
   std::vector<double> steps = getTimeSteps(cmd_vel);
   traj.poses.push_back(start_pose);
   for (double dt : steps) {
-    //  calculate velocities
+
     vel = computeNewVelocity(cmd_vel, vel, dt);
 
-    //  update the position of the robot using the velocities passed in
+
     pose = computeNewPosition(pose, vel, dt);
 
     traj.poses.push_back(pose);
     traj.time_offsets.push_back(rclcpp::Duration::from_seconds(running_time));
     running_time += dt;
-  }  //  end for simulation steps
+  }
 
   if (include_last_point_) {
     traj.poses.push_back(pose);
@@ -176,9 +139,8 @@ dwb_msgs::msg::Trajectory2D StandardTrajectoryGenerator::generateTrajectory(
   return traj;
 }
 
-/**
- * change vel using acceleration limits to converge towards sample_target-vel
- */
+
+
 nav_2d_msgs::msg::Twist2D StandardTrajectoryGenerator::computeNewVelocity(
   const nav_2d_msgs::msg::Twist2D & cmd_vel,
   const nav_2d_msgs::msg::Twist2D & start_vel, const double dt)
@@ -211,7 +173,7 @@ geometry_msgs::msg::Pose2D StandardTrajectoryGenerator::computeNewPosition(
   return new_pose;
 }
 
-}  // namespace dwb_plugins
+}
 
 PLUGINLIB_EXPORT_CLASS(
   dwb_plugins::StandardTrajectoryGenerator,

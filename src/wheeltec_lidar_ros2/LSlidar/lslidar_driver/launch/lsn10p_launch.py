@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
@@ -18,8 +17,8 @@ def generate_launch_description():
                        emulate_tty=True,
                        namespace='',
                        parameters=[driver_dir],
-                       respawn=True,           # tự restart khi crash
-                       respawn_delay=3.0,      # chờ 3s trước khi restart (cho USB re-enumerate)
+                       respawn=True,
+                       respawn_delay=3.0,
                        )
 
     return LaunchDescription([

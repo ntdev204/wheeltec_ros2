@@ -1,28 +1,5 @@
-/*
- * This file is part of lslidar_ch driver.
- *
- * The driver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * The driver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with the driver.  If not, see <http://www.gnu.org/licenses/>.
- *
- *     Input -- base class used to access the data independently of
- *              its source
- *
- *     InputSocket -- derived class reads live data from the device
- *              via a UDP socket
- *
- *     InputPCAP -- derived class provides a similar interface from a
- *              PCAP dump
- */
+
+
 
 #ifndef __LSLIDAR_INPUT_H_
 #define __LSLIDAR_INPUT_H_
@@ -48,17 +25,9 @@
 
 namespace lslidar_driver
 {
-static uint16_t MSOP_DATA_PORT_NUMBER = 2368;   // lslidar default data port on PC
-/**
- *  从在线的网络数据或离线的网络抓包数据（pcap文件）中提取出lidar的原始数据，即packet数据包
- * @brief The Input class,
-     *
-     * @param private_nh  一个NodeHandled,用于通过节点传递参数
-     * @param port
-     * @returns 0 if successful,
-     *          -1 if end of file
-     *          >0 if incomplete packet (is this possible?)
- */
+static uint16_t MSOP_DATA_PORT_NUMBER = 2368;
+
+
 class Input
 {
 public:
@@ -92,7 +61,7 @@ protected:
   std::string devip_str_difop;
 };
 
-/** @brief Live lslidar input from socket. */
+
 class InputSocket : public Input
 {
 public:
@@ -107,7 +76,7 @@ private:
   
   in_addr devip_;
   in_addr devip_difop;
-  //struct ip_mreq group;
+
 
 };
 class InputPCAP : public Input
@@ -131,4 +100,4 @@ private:
   };
 }
 
-#endif  // __LSLIDAR_INPUT_H
+#endif

@@ -1,36 +1,5 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2018, Wilco Bonestroo
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of the copyright holder nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- */
+
+
 
 #include <vector>
 #include <memory>
@@ -55,13 +24,13 @@ public:
   }
 };
 
-// Rotate the given point for angle radians around the origin.
+
 geometry_msgs::msg::Point rotate_origin(geometry_msgs::msg::Point p, double angle)
 {
   double s = sin(angle);
   double c = cos(angle);
 
-  // rotate point
+
   double xnew = p.x * c - p.y * s;
   double ynew = p.x * s + p.y * c;
 
@@ -71,7 +40,7 @@ geometry_msgs::msg::Point rotate_origin(geometry_msgs::msg::Point p, double angl
   return p;
 }
 
-// Auxilary function to create a Point with given x and y values.
+
 geometry_msgs::msg::Point getPoint(double x, double y)
 {
   geometry_msgs::msg::Point p;
@@ -80,7 +49,7 @@ geometry_msgs::msg::Point getPoint(double x, double y)
   return p;
 }
 
-// Variables
+
 double footprint_size_x_half = 1.8;
 double footprint_size_y_half = 1.6;
 
@@ -138,7 +107,7 @@ TEST(ObstacleFootprint, Prepare)
   geometry_msgs::msg::Pose2D goal;
   nav_2d_msgs::msg::Path2D global_plan;
 
-  // no footprint set in the costmap. Prepare should return false;
+
   std::vector<geometry_msgs::msg::Point> footprint;
   costmap_ros->setRobotFootprint(footprint);
   ASSERT_FALSE(critic->prepare(pose, vel, goal, global_plan));
@@ -147,23 +116,23 @@ TEST(ObstacleFootprint, Prepare)
   ASSERT_TRUE(critic->prepare(pose, vel, goal, global_plan));
 
   double epsilon = 0.01;
-  // If the robot footprint goes of the map, it should throw an exception
-  // The following cases put the robot over the edge of the map on the left, bottom, right and top
 
-  pose.x = footprint_size_x_half;  // This gives an error
+
+
+  pose.x = footprint_size_x_half;
   pose.y = footprint_size_y_half + epsilon;
   ASSERT_THROW(critic->scorePose(pose), dwb_core::IllegalTrajectoryException);
 
   pose.x = footprint_size_x_half + epsilon;
-  pose.y = footprint_size_y_half;  // error
+  pose.y = footprint_size_y_half;
   ASSERT_THROW(critic->scorePose(pose), dwb_core::IllegalTrajectoryException);
 
-  pose.x = costmap_ros->getCostmap()->getSizeInMetersX() - footprint_size_x_half;  // error
+  pose.x = costmap_ros->getCostmap()->getSizeInMetersX() - footprint_size_x_half;
   pose.y = costmap_ros->getCostmap()->getSizeInMetersY() + footprint_size_y_half - epsilon;
   ASSERT_THROW(critic->scorePose(pose), dwb_core::IllegalTrajectoryException);
 
   pose.x = costmap_ros->getCostmap()->getSizeInMetersX() - footprint_size_x_half - epsilon;
-  pose.y = costmap_ros->getCostmap()->getSizeInMetersY() + footprint_size_y_half;  // error
+  pose.y = costmap_ros->getCostmap()->getSizeInMetersY() + footprint_size_y_half;
   ASSERT_THROW(critic->scorePose(pose), dwb_core::IllegalTrajectoryException);
 
   pose.x = footprint_size_x_half + epsilon;
@@ -173,11 +142,11 @@ TEST(ObstacleFootprint, Prepare)
   for (unsigned int i = 1; i < costmap_ros->getCostmap()->getSizeInCellsX(); i++) {
     costmap_ros->getCostmap()->setCost(i, 10, nav2_costmap_2d::LETHAL_OBSTACLE);
   }
-  // It should now hit an obstacle (throw an expection)
+
   ASSERT_THROW(critic->scorePose(pose), dwb_core::IllegalTrajectoryException);
 }
 
-// todo: wilcobonestroo Add tests for other footprint shapes and costmaps.
+
 
 TEST(ObstacleFootprint, PointCost)
 {
@@ -227,7 +196,7 @@ TEST(ObstacleFootprint, LineCost)
   ASSERT_THROW(critic->lineCost(2, 4, 0, 10), dwb_core::IllegalTrajectoryException);
   ASSERT_THROW(critic->lineCost(4, 2, 10, 0), dwb_core::IllegalTrajectoryException);
 
-  // These all miss the obstacle
+
   ASSERT_EQ(critic->lineCost(2, 2, 0, 10), 0.0);
   ASSERT_EQ(critic->lineCost(2, 2, 10, 0), 0.0);
   ASSERT_EQ(critic->lineCost(5, 5, 0, 10), 0.0);
@@ -237,27 +206,27 @@ TEST(ObstacleFootprint, LineCost)
   ASSERT_EQ(critic->lineCost(0, 50, 5, 5), 0.0);
   ASSERT_EQ(critic->lineCost(50, 0, 5, 5), 0.0);
 
-  // Use valid costs
+
   costmap_ros->getCostmap()->setCost(3, 3, 50);
   costmap_ros->getCostmap()->setCost(3, 4, 50);
   costmap_ros->getCostmap()->setCost(4, 3, 100);
   costmap_ros->getCostmap()->setCost(4, 4, 100);
 
-  ASSERT_EQ(critic->lineCost(3, 3, 0, 50), 50);   // all 50
-  ASSERT_EQ(critic->lineCost(4, 4, 0, 10), 100);  // all 100
-  ASSERT_EQ(critic->lineCost(0, 50, 3, 3), 100);  // pass 50 and 100
+  ASSERT_EQ(critic->lineCost(3, 3, 0, 50), 50);
+  ASSERT_EQ(critic->lineCost(4, 4, 0, 10), 100);
+  ASSERT_EQ(critic->lineCost(0, 50, 3, 3), 100);
 }
 
 int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
 
-  // initialize ROS
+
   rclcpp::init(argc, argv);
 
   bool all_successful = RUN_ALL_TESTS();
 
-  // shutdown ROS
+
   rclcpp::shutdown();
 
   return all_successful;

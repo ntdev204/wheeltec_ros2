@@ -1,24 +1,8 @@
-#!/usr/bin/python3
-# Copyright (c) 2019 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
-# This tool converts a behavior tree XML file to a PNG image. Run bt2img.py -h
-# for instructions
 
 import argparse
 import xml.etree.ElementTree
-import graphviz  # pip3 install graphviz
+import graphviz
 
 control_nodes = [
     "Fallback",
@@ -121,7 +105,6 @@ def find_behavior_tree(xml_tree, tree_name):
 
     raise RuntimeError(f'No behavior tree for name {tree_name} found in the XML file')
 
-# Generate a dot description of the root of the behavior tree.
 def convert2dot(behavior_tree):
     dot = graphviz.Digraph()
     root = behavior_tree
@@ -130,9 +113,6 @@ def convert2dot(behavior_tree):
     convert_subtree(dot, root, parent_dot_name)
     return dot
 
-# Recursive function. We add the children to the dot file, and then recursively
-# call this function on the children. Nodes are given an ID that is the hash
-# of the node to ensure each is unique.
 def convert_subtree(dot, parent_node, parent_dot_name):
     if parent_node.tag == "SubTree":
         add_sub_tree(dot, parent_dot_name, parent_node)
@@ -153,8 +133,6 @@ def add_nodes(dot, parent_dot_name, parent_node):
         dot.edge(parent_dot_name, dot_name)
         convert_subtree(dot, node, dot_name)
 
-# The node label contains the:
-# type, the name if provided, and the parameters.
 def make_label(node):
     label = '< <table border="0" cellspacing="0" cellpadding="0">'
     label += '<tr><td align="text"><i>' + node.tag + '</i></td></tr>'
@@ -178,10 +156,8 @@ def node_color(type):
         return "darkorange1"
     if type in subtree_nodes:
         return "darkorchid1"
-    #else it's unknown
     return "grey"
 
-# creates a legend which can be provided with the other images.
 def make_legend():
     legend = graphviz.Digraph(graph_attr={'rankdir': 'LR'})
     legend.attr(label='Legend')

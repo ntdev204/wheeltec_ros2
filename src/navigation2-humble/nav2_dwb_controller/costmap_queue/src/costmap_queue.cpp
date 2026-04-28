@@ -1,36 +1,5 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2017, Locus Robotics
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of the copyright holder nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- */
+
+
 #include "costmap_queue/costmap_queue.hpp"
 #include <algorithm>
 #include <cmath>
@@ -71,8 +40,8 @@ void CostmapQueue::enqueueCell(
 {
   if (seen_[index]) {return;}
 
-  // we compute our distance table one cell further than the inflation radius
-  // dictates so we can make the check below
+
+
   double distance = distanceLookup(cur_x, cur_y, src_x, src_y);
   CellData data(distance, index, cur_x, cur_y, src_x, src_y);
   if (validCellToQueue(data)) {
@@ -83,7 +52,7 @@ void CostmapQueue::enqueueCell(
 
 CellData CostmapQueue::getNextCell()
 {
-  // get the highest priority cell and pop it off the priority queue
+
   CellData current_cell = front();
   pop();
 
@@ -93,7 +62,7 @@ CellData CostmapQueue::getNextCell()
   unsigned int sx = current_cell.src_x_;
   unsigned int sy = current_cell.src_y_;
 
-  // attempt to put the neighbors of the current cell onto the queue
+
   unsigned int size_x = costmap_.getSizeInCellsX();
   if (mx > 0) {
     enqueueCell(index - 1, mx - 1, my, sx, sy);
@@ -134,4 +103,4 @@ void CostmapQueue::computeCache()
   cached_max_distance_ = max_distance_;
 }
 
-}  // namespace costmap_queue
+}

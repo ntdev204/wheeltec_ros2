@@ -1,8 +1,5 @@
-/*
- * For synchronize asynchrous operations
- *
- * Copyright 2010 Robopeak Team
- */
+
+
 #pragma once
 
 #ifdef _AVR_

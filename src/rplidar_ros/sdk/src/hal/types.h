@@ -1,15 +1,14 @@
-/*
- *      Common Data Types for RP
- */
+
+
 
 #ifndef _INFRA_HAL_TYPES_H_
 #define _INFRA_HAL_TYPES_H_
 
-//Basic types
-//
+
+
 #ifdef WIN32
 
-//fake stdint.h for VC only
+
 
 typedef signed   char     int8_t;
 typedef unsigned char     uint8_t;
@@ -37,7 +36,7 @@ typedef unsigned __int64  uint64_t;
 #endif
 
 
-//based on stdint.h
+
 typedef int8_t         _s8;
 typedef uint8_t        _u8;
 
@@ -57,7 +56,7 @@ typedef uint64_t       _u64;
 #endif
 
 
-// The _word_size_t uses actual data bus width of the current CPU
+
 #ifdef _AVR_
 typedef _u8            _word_size_t;
 #define THREAD_PROC    
@@ -77,8 +76,8 @@ typedef _u32            _word_size_t;
 
 
 
-//#define __le 
-//#define __be
+
+
 
 #define _multi_thread
 #define _single_thread

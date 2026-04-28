@@ -1,10 +1,5 @@
-/*
- *  RoboPeak Project
- *  HAL Layer - Socket Interface
- *  Copyright 2009 - 2013 RoboPeak Project
- *
- *  Win32 Implementation
- */
+
+
 
 #define _WINSOCKAPI_
 
@@ -134,7 +129,7 @@ SocketAddress::SocketAddress(const char * addrString, int port, SocketAddress::a
     _platform_data = reinterpret_cast<void *>(new sockaddr_storage);
     memset(_platform_data, 0, sizeof(sockaddr_storage));
     
-    // default to ipv4 in case the following operation fails
+
     reinterpret_cast<sockaddr_storage *>(_platform_data)->ss_family = AF_INET;
 
     setAddressFromString(addrString, type);
@@ -269,7 +264,7 @@ size_t SocketAddress::LoopUpHostName(const char * hostname, const char * sevicen
     addresspool.clear();
 
     if (ans != 0) {
-        // hostname loopup failed
+
         return 0;
     }
 
@@ -383,7 +378,7 @@ void SocketAddress::setAnyAddress(SocketAddress::address_type_t type)
 
 
 
-///--------------------------------
+
 
 
 namespace rp { namespace arch { namespace net{ 
@@ -430,7 +425,7 @@ public:
 
     virtual u_result getLocalAddress(SocketAddress & localaddr)
     {
-        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>( const_cast<void *>(localaddr.getPlatformData())); //donnot do this at home...
+        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>( const_cast<void *>(localaddr.getPlatformData()));
         assert(addr);
 
         int actualsize =  sizeof(sockaddr_storage);
@@ -467,7 +462,7 @@ public:
         u_long mode_block = 0;
         u_long mode_notBlock = 1;
         
-        //set to non block mode
+
         if (SOCKET_ERROR == ioctlsocket(_socket_fd, (long)FIONBIO, &mode_notBlock))
         {
             return RESULT_OPERATION_FAIL;
@@ -488,7 +483,7 @@ public:
 
         if (select(-1, NULL, &set, NULL, &tm) <= 0)  
         {  
-            ret = -1; // error(select error or timeout)  
+            ret = -1;
             return RESULT_OPERATION_TIMEOUT;
         }  
         
@@ -498,14 +493,14 @@ public:
 
         if (0 != error)  
         {  
-            ret = -1; // error  
+            ret = -1;
         }  
         else  
         {  
-            ret = 1;  // correct  
+            ret = 1;
         }  
 
-        //set back to block mode
+
         if (SOCKET_ERROR == ioctlsocket(_socket_fd, (long)FIONBIO, &mode_block))
         {
             return RESULT_OPERATION_FAIL;
@@ -568,8 +563,8 @@ public:
     virtual u_result recv(void *buf, size_t len, size_t & recv_len)
     {
         int ans = ::recv( _socket_fd, (char *)buf, (int)len, 0);
-		//::setsockopt(_socket_fd, IPPROTO_TCP, TCP_QUICKACK,  (const char *)1, sizeof(int));
-		//::setsockopt(_socket_fd, IPPROTO_TCP, TCP_QUICKACK, (int[]){1}, sizeof(int))
+
+
         if (ans == SOCKET_ERROR) {
             recv_len = 0;  
                 switch(WSAGetLastError()) {
@@ -586,7 +581,7 @@ public:
 
     virtual u_result getPeerAddress(SocketAddress & peerAddr)
     {
-        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>(const_cast<void *>(peerAddr.getPlatformData())); //donnot do this at home...
+        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>(const_cast<void *>(peerAddr.getPlatformData()));
         assert(addr);
         int actualsize =  (int)sizeof(sockaddr_storage);
         int ans = ::getpeername(_socket_fd, addr, &actualsize);
@@ -643,13 +638,13 @@ public:
 
         switch (ans) {
             case 1:
-                // fired
+
                 return RESULT_OK;
             case 0:
-                // timeout
+
                 return RESULT_OPERATION_TIMEOUT;
             default:
-                delay(0); //relax cpu
+                delay(0);
                 return RESULT_OPERATION_FAIL;
         }
     }
@@ -667,13 +662,13 @@ public:
 
         switch (ans) {
             case 1:
-                // fired
+
                 return RESULT_OK;
             case 0:
-                // timeout
+
                 return RESULT_OPERATION_TIMEOUT;
             default:
-                delay(0); //relax cpu
+                delay(0);
                 return RESULT_OPERATION_FAIL;
         }
     }
@@ -724,7 +719,7 @@ public:
 
     virtual u_result getLocalAddress(SocketAddress & localaddr)
     {
-        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>(const_cast<void *>((localaddr.getPlatformData()))); //donnot do this at home...
+        struct sockaddr * addr = reinterpret_cast<struct sockaddr *>(const_cast<void *>((localaddr.getPlatformData())));
         assert(addr);
 
         int actualsize =  (int)sizeof(sockaddr_storage);
@@ -770,13 +765,13 @@ public:
 
         switch (ans) {
             case 1:
-                // fired
+
                 return RESULT_OK;
             case 0:
-                // timeout
+
                 return RESULT_OPERATION_TIMEOUT;
             default:
-                delay(0); //relax cpu
+                delay(0);
                 return RESULT_OPERATION_FAIL;
         }
     }
@@ -794,13 +789,13 @@ public:
 
         switch (ans) {
             case 1:
-                // fired
+
                 return RESULT_OK;
             case 0:
-                // timeout
+
                 return RESULT_OPERATION_TIMEOUT;
             default:
-                delay(0); //relax cpu
+                delay(0);
                 return RESULT_OPERATION_FAIL;
         }
     }
@@ -904,10 +899,10 @@ static inline int _socketHalFamilyToOSFamily(SocketBase::socket_family_t family)
         case SocketBase::SOCKET_FAMILY_INET6:
             return AF_INET6;
         case SocketBase::SOCKET_FAMILY_RAW:
-            return AF_UNSPEC; //win32 doesn't support RAW Packet
+            return AF_UNSPEC;
         default:
             assert(!"should not reach here");
-            return AF_INET; // force treating as IPv4 in release mode
+            return AF_INET;
     }
 
 }

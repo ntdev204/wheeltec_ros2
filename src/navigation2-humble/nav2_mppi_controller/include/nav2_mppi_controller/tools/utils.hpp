@@ -1,17 +1,17 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-// Copyright (c) 2023 Open Navigation LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef NAV2_MPPI_CONTROLLER__TOOLS__UTILS_HPP_
 #define NAV2_MPPI_CONTROLLER__TOOLS__UTILS_HPP_
@@ -53,13 +53,8 @@ namespace mppi::utils
 {
 using xt::evaluation_strategy::immediate;
 
-/**
- * @brief Convert data into pose
- * @param x X position
- * @param y Y position
- * @param z Z position
- * @return Pose object
- */
+
+
 inline geometry_msgs::msg::Pose createPose(double x, double y, double z)
 {
   geometry_msgs::msg::Pose pose;
@@ -73,13 +68,8 @@ inline geometry_msgs::msg::Pose createPose(double x, double y, double z)
   return pose;
 }
 
-/**
- * @brief Convert data into scale
- * @param x X scale
- * @param y Y scale
- * @param z Z scale
- * @return Scale object
- */
+
+
 inline geometry_msgs::msg::Vector3 createScale(double x, double y, double z)
 {
   geometry_msgs::msg::Vector3 scale;
@@ -89,14 +79,8 @@ inline geometry_msgs::msg::Vector3 createScale(double x, double y, double z)
   return scale;
 }
 
-/**
- * @brief Convert data into color
- * @param r Red component
- * @param g Green component
- * @param b Blue component
- * @param a Alpha component (transparency)
- * @return Color object
- */
+
+
 inline std_msgs::msg::ColorRGBA createColor(float r, float g, float b, float a)
 {
   std_msgs::msg::ColorRGBA color;
@@ -107,15 +91,8 @@ inline std_msgs::msg::ColorRGBA createColor(float r, float g, float b, float a)
   return color;
 }
 
-/**
- * @brief Convert data into a Maarker
- * @param id Marker ID
- * @param pose Marker pose
- * @param scale Marker scale
- * @param color Marker color
- * @param frame Reference frame to use
- * @return Visualization Marker
- */
+
+
 inline visualization_msgs::msg::Marker createMarker(
   int id, const geometry_msgs::msg::Pose & pose, const geometry_msgs::msg::Vector3 & scale,
   const std_msgs::msg::ColorRGBA & color, const std::string & frame_id, const std::string & ns)
@@ -135,13 +112,8 @@ inline visualization_msgs::msg::Marker createMarker(
   return marker;
 }
 
-/**
- * @brief Convert data into TwistStamped
- * @param vx X velocity
- * @param wz Angular velocity
- * @param stamp Timestamp
- * @param frame Reference frame to use
- */
+
+
 inline geometry_msgs::msg::TwistStamped toTwistStamped(
   float vx, float wz, const builtin_interfaces::msg::Time & stamp, const std::string & frame)
 {
@@ -154,14 +126,8 @@ inline geometry_msgs::msg::TwistStamped toTwistStamped(
   return twist;
 }
 
-/**
- * @brief Convert data into TwistStamped
- * @param vx X velocity
- * @param vy Y velocity
- * @param wz Angular velocity
- * @param stamp Timestamp
- * @param frame Reference frame to use
- */
+
+
 inline geometry_msgs::msg::TwistStamped toTwistStamped(
   float vx, float vy, float wz, const builtin_interfaces::msg::Time & stamp,
   const std::string & frame)
@@ -172,11 +138,8 @@ inline geometry_msgs::msg::TwistStamped toTwistStamped(
   return twist;
 }
 
-/**
- * @brief Convert path to a tensor
- * @param path Path to convert
- * @return Path tensor
- */
+
+
 inline models::Path toTensor(const nav_msgs::msg::Path & path)
 {
   auto result = models::Path{};
@@ -191,13 +154,8 @@ inline models::Path toTensor(const nav_msgs::msg::Path & path)
   return result;
 }
 
-/**
- * @brief Check if the robot pose is within the Goal Checker's tolerances to goal
- * @param global_checker Pointer to the goal checker
- * @param robot Pose of robot
- * @param path Path to retreive goal pose from
- * @return bool If robot is within goal checker tolerances to the goal
- */
+
+
 inline bool withinPositionGoalTolerance(
   nav2_core::GoalChecker * goal_checker,
   const geometry_msgs::msg::Pose & robot,
@@ -227,13 +185,8 @@ inline bool withinPositionGoalTolerance(
   return false;
 }
 
-/**
- * @brief Check if the robot pose is within tolerance to the goal
- * @param pose_tolerance Pose tolerance to use
- * @param robot Pose of robot
- * @param path Path to retreive goal pose from
- * @return bool If robot is within tolerance to the goal
- */
+
+
 inline bool withinPositionGoalTolerance(
   float pose_tolerance,
   const geometry_msgs::msg::Pose & robot,
@@ -257,13 +210,8 @@ inline bool withinPositionGoalTolerance(
   return false;
 }
 
-/**
-  * @brief normalize
-  * Normalizes the angle to be -M_PI circle to +M_PI circle
-  * It takes and returns radians.
-  * @param angles Angles to normalize
-  * @return normalized angles
-  */
+
+
 template<typename T>
 auto normalize_angles(const T & angles)
 {
@@ -271,19 +219,8 @@ auto normalize_angles(const T & angles)
   return xt::eval(xt::where(theta <= 0.0, theta + M_PI, theta - M_PI));
 }
 
-/**
-  * @brief shortest_angular_distance
-  *
-  * Given 2 angles, this returns the shortest angular
-  * difference.  The inputs and ouputs are of course radians.
-  *
-  * The result
-  * would always be -pi <= result <= pi.  Adding the result
-  * to "from" will always get you an equivelent angle to "to".
-  * @param from Start angle
-  * @param to End angle
-  * @return Shortest distance between angles
-  */
+
+
 template<typename F, typename T>
 auto shortest_angular_distance(
   const F & from,
@@ -292,12 +229,8 @@ auto shortest_angular_distance(
   return normalize_angles(to - from);
 }
 
-/**
- * @brief Evaluate furthest point idx of data.path which is
- * nearset to some trajectory in data.trajectories
- * @param data Data to use
- * @return Idx of furthest path point reached by a set of trajectories
- */
+
+
 inline size_t findPathFurthestReachedPoint(const CriticData & data)
 {
   const auto traj_x = xt::view(data.trajectories.x, xt::all(), -1, xt::newaxis());
@@ -324,15 +257,11 @@ inline size_t findPathFurthestReachedPoint(const CriticData & data)
   return max_id_by_trajectories;
 }
 
-/**
- * @brief Evaluate closest point idx of data.path which is
- * nearset to the start of the trajectory in data.trajectories
- * @param data Data to use
- * @return Idx of closest path point at start of the trajectories
- */
+
+
 inline size_t findPathTrajectoryInitialPoint(const CriticData & data)
 {
-  // First point should be the same for all trajectories from initial conditions
+
   const auto dx = data.path.x - data.trajectories.x(0, 0);
   const auto dy = data.path.y - data.trajectories.y(0, 0);
   const auto dists = dx * dx + dy * dy;
@@ -349,10 +278,8 @@ inline size_t findPathTrajectoryInitialPoint(const CriticData & data)
   return min_id;
 }
 
-/**
- * @brief evaluate path furthest point if it is not set
- * @param data Data to use
- */
+
+
 inline void setPathFurthestPointIfNotSet(CriticData & data)
 {
   if (!data.furthest_reached_path_point) {
@@ -360,10 +287,8 @@ inline void setPathFurthestPointIfNotSet(CriticData & data)
   }
 }
 
-/**
- * @brief evaluate path costs
- * @param data Data to use
- */
+
+
 inline void findPathCosts(
   CriticData & data,
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
@@ -381,7 +306,7 @@ inline void findPathCosts(
     }
 
     switch (costmap->getCost(map_x, map_y)) {
-      using namespace nav2_costmap_2d; // NOLINT
+      using namespace nav2_costmap_2d;
       case (LETHAL_OBSTACLE):
         (*data.path_pts_valid)[idx] = false;
         continue;
@@ -399,10 +324,8 @@ inline void findPathCosts(
   }
 }
 
-/**
- * @brief evaluate path costs if it is not set
- * @param data Data to use
- */
+
+
 inline void setPathCostsIfNotSet(
   CriticData & data,
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
@@ -412,14 +335,8 @@ inline void setPathCostsIfNotSet(
   }
 }
 
-/**
- * @brief evaluate angle from pose (have angle) to point (no angle)
- * @param pose pose
- * @param point_x Point to find angle relative to X axis
- * @param point_y Point to find angle relative to Y axis
- * @param forward_preference If reversing direction is valid
- * @return Angle between two points
- */
+
+
 inline double posePointAngle(
   const geometry_msgs::msg::Pose & pose, double point_x, double point_y, bool forward_preference)
 {
@@ -429,7 +346,7 @@ inline double posePointAngle(
 
   double yaw = atan2(point_y - pose_y, point_x - pose_x);
 
-  // If no preference for forward, return smallest angle either in heading or 180 of heading
+
   if (!forward_preference) {
     return std::min(
       abs(angles::shortest_angular_distance(yaw, pose_yaw)),
@@ -439,24 +356,20 @@ inline double posePointAngle(
   return abs(angles::shortest_angular_distance(yaw, pose_yaw));
 }
 
-/**
- * @brief Apply Savisky-Golay filter to optimal trajectory
- * @param control_sequence Sequence to apply filter to
- * @param control_history Recent set of controls for edge-case handling
- * @param Settings Settings to use
- */
+
+
 inline void savitskyGolayFilter(
   models::ControlSequence & control_sequence,
   std::array<mppi::models::Control, 4> & control_history,
   const models::OptimizerSettings & settings)
 {
-  // Savitzky-Golay Quadratic, 9-point Coefficients
+
   xt::xarray<float> filter = {-21.0, 14.0, 39.0, 54.0, 59.0, 54.0, 39.0, 14.0, -21.0};
   filter /= 231.0;
 
   const unsigned int num_sequences = control_sequence.vx.shape(0) - 1;
 
-  // Too short to smooth meaningfully
+
   if (num_sequences < 20) {
     return;
   }
@@ -588,7 +501,7 @@ inline void savitskyGolayFilter(
         sequence(idx)});
     };
 
-  // Filter trajectories
+
   applyFilterOverAxis(
     control_sequence.vx, control_history[0].vx,
     control_history[1].vx, control_history[2].vx, control_history[3].vx);
@@ -599,7 +512,7 @@ inline void savitskyGolayFilter(
     control_sequence.wz, control_history[0].wz,
     control_history[1].wz, control_history[2].wz, control_history[3].wz);
 
-  // Update control history
+
   unsigned int offset = settings.shift_control_sequence ? 1 : 0;
   control_history[0] = control_history[1];
   control_history[1] = control_history[2];
@@ -610,21 +523,18 @@ inline void savitskyGolayFilter(
     control_sequence.wz(offset)};
 }
 
-/**
- * @brief Find the iterator of the first pose at which there is an inversion on the path,
- * @param path to check for inversion
- * @return the first point after the inversion found in the path
- */
+
+
 inline unsigned int findFirstPathInversion(nav_msgs::msg::Path & path)
 {
-  // At least 3 poses for a possible inversion
+
   if (path.poses.size() < 3) {
     return path.poses.size();
   }
 
-  // Iterating through the path to determine the position of the path inversion
+
   for (unsigned int idx = 1; idx < path.poses.size() - 1; ++idx) {
-    // We have two vectors for the dot product OA and AB. Determining the vectors.
+
     double oa_x = path.poses[idx].pose.position.x -
       path.poses[idx - 1].pose.position.x;
     double oa_y = path.poses[idx].pose.position.y -
@@ -634,7 +544,7 @@ inline unsigned int findFirstPathInversion(nav_msgs::msg::Path & path)
     double ab_y = path.poses[idx + 1].pose.position.y -
       path.poses[idx].pose.position.y;
 
-    // Checking for the existance of cusp, in the path, using the dot product.
+
     double dot_product = (oa_x * ab_x) + (oa_y * ab_y);
     if (dot_product < 0.0) {
       return idx + 1;
@@ -644,11 +554,8 @@ inline unsigned int findFirstPathInversion(nav_msgs::msg::Path & path)
   return path.poses.size();
 }
 
-/**
- * @brief Find and remove poses after the first inversion in the path
- * @param path to check for inversion
- * @return The location of the inversion, return 0 if none exist
- */
+
+
 inline unsigned int removePosesAfterFirstInversion(nav_msgs::msg::Path & path)
 {
   nav_msgs::msg::Path cropped_path = path;
@@ -663,6 +570,6 @@ inline unsigned int removePosesAfterFirstInversion(nav_msgs::msg::Path & path)
   return first_after_inversion;
 }
 
-}  // namespace mppi::utils
+}
 
-#endif  // NAV2_MPPI_CONTROLLER__TOOLS__UTILS_HPP_
+#endif

@@ -1,23 +1,5 @@
-/**
- * @file lipkg.cpp
- * @author LDRobot (support@ldrobot.com)
- * @brief  LiDAR data protocol processing App
- *         This code is only applicable to LDROBOT LiDAR LD06 products 
- * sold by Shenzhen LDROBOT Co., LTD  
- * @version 0.1
- * @date 2021-10-28
- *
- * @copyright Copyright (c) 2021  SHENZHEN LDROBOT CO., LTD. All rights
- * reserved.
- * Licensed under the MIT License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License in the file LICENSE
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
+
 
 #include "lipkg.h"
 
@@ -125,13 +107,13 @@ bool LiPkg::AnalysisOne(uint8_t byte) {
 bool LiPkg::Parse(const uint8_t *data, long len) {
   for (int i = 0; i < len; i++) {
     if (AnalysisOne(data[i])) {
-      // parse a package is success
+
       float diff = (pkg_.end_angle / 100 - pkg_.start_angle / 100 + 360) % 360;
       if (diff > (float)(pkg_.speed * POINT_PER_PACK / kPointFrequence * 1.5)) {
         error_times_++;
       } else {
-        speed_ = pkg_.speed; // Degrees per second
-        timestamp_ = pkg_.timestamp; // In milliseconds
+        speed_ = pkg_.speed;
+        timestamp_ = pkg_.timestamp;
         uint32_t diff = ((uint32_t)pkg_.end_angle + 36000 - (uint32_t)pkg_.start_angle) % 36000;
         float step = diff / (POINT_PER_PACK - 1) / 100.0;
         float start = (float)pkg_.start_angle / 100.0;
@@ -158,8 +140,8 @@ bool LiPkg::AssemblePacket() {
   int count = 0;
 
   for (auto n : frame_tmp_) {
-    // wait for enough data, need enough data to show a circle
-    // enough data has been obtained
+
+
     if ((n.angle < 20.0) && (last_angle > 340.0)) {
       if ((count * GetSpeed()) > (kPointFrequence * 1.4)) {
         frame_tmp_.erase(frame_tmp_.begin(), frame_tmp_.begin() + count - 1);
@@ -184,7 +166,7 @@ bool LiPkg::AssemblePacket() {
 }
 
 double LiPkg::GetSpeed(void) {
-  return (speed_ / 360.0);  // unit is hz
+  return (speed_ / 360.0);
 }
 
 uint16_t LiPkg::GetSpeedOrigin(void) {
@@ -232,5 +214,4 @@ void LiPkg::CommReadCallback(const char *byte, size_t len) {
 
 }
 
-/********************* (C) COPYRIGHT SHENZHEN LDROBOT CO., LTD *******END OF
- * FILE ********/
+

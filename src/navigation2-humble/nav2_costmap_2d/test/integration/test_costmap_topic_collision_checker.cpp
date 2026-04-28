@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Intel Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <string>
 #include <vector>
@@ -91,7 +91,7 @@ public:
   : LifecycleNode(name),
     global_frame_("map")
   {
-    // Declare non-plugin specific costmap parameters
+
     declare_parameter("map_topic", rclcpp::ParameterValue(std::string("map")));
     declare_parameter("track_unknown_space", rclcpp::ParameterValue(true));
     declare_parameter("use_maximum", rclcpp::ParameterValue(false));
@@ -103,7 +103,7 @@ public:
   }
 
   nav2_util::CallbackReturn
-  on_configure(const rclcpp_lifecycle::State & /*state*/)
+  on_configure(const rclcpp_lifecycle::State & )
   {
     RCLCPP_INFO(get_logger(), "Configuring");
     callback_group_ = create_callback_group(
@@ -133,14 +133,14 @@ public:
       *costmap_sub_, *footprint_sub_, get_name());
 
     layers_ = new nav2_costmap_2d::LayeredCostmap("map", false, false);
-    // Add Static Layer
+
     std::shared_ptr<nav2_costmap_2d::StaticLayer> slayer = nullptr;
     addStaticLayer(*layers_, *tf_buffer_, shared_from_this(), slayer, callback_group_);
 
     while (!slayer->isCurrent()) {
       rclcpp::spin_some(this->get_node_base_interface());
     }
-    // Add Inflation Layer
+
     std::shared_ptr<nav2_costmap_2d::InflationLayer> ilayer = nullptr;
     addInflationLayer(*layers_, *tf_buffer_, shared_from_this(), ilayer, callback_group_);
 
@@ -151,21 +151,21 @@ public:
   }
 
   nav2_util::CallbackReturn
-  on_activate(const rclcpp_lifecycle::State & /*state*/)
+  on_activate(const rclcpp_lifecycle::State & )
   {
     RCLCPP_INFO(get_logger(), "Activating");
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
   nav2_util::CallbackReturn
-  on_deactivate(const rclcpp_lifecycle::State & /*state*/)
+  on_deactivate(const rclcpp_lifecycle::State & )
   {
     RCLCPP_INFO(get_logger(), "Deactivating");
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
   nav2_util::CallbackReturn
-  on_cleanup(const rclcpp_lifecycle::State & /*state*/)
+  on_cleanup(const rclcpp_lifecycle::State & )
   {
     RCLCPP_INFO(get_logger(), "Cleaning Up");
     delete layers_;
@@ -239,7 +239,7 @@ protected:
       std::make_shared<nav2_msgs::msg::Costmap>(toCostmapMsg(layers_->getCostmap())));
   }
 
-  void publishPose(double x, double y, double /*theta*/, const rclcpp::Time & stamp)
+  void publishPose(double x, double y, double , const rclcpp::Time & stamp)
   {
     geometry_msgs::msg::TransformStamped tf_stamped;
     tf_stamped.header.frame_id = "map";
@@ -326,13 +326,13 @@ TEST_F(TestNode, unknownSpace)
 {
   collision_checker_->setFootprint(0, 1);
 
-  // Completely off map
+
   ASSERT_EQ(collision_checker_->testPose(5, 13, 0), false);
 
-  // Partially off map
+
   ASSERT_EQ(collision_checker_->testPose(5, 9.5, 0), false);
 
-  // In unknown region inside map
+
   ASSERT_EQ(collision_checker_->testPose(2, 4, 0), false);
 }
 
@@ -340,10 +340,10 @@ TEST_F(TestNode, FreeSpace)
 {
   collision_checker_->setFootprint(0, 1);
 
-  // In complete free space
+
   ASSERT_EQ(collision_checker_->testPose(2, 8.5, 0), true);
 
-  // Partially in inscribed space
+
   ASSERT_EQ(collision_checker_->testPose(2.5, 7, 0), true);
 }
 
@@ -351,9 +351,9 @@ TEST_F(TestNode, CollisionSpace)
 {
   collision_checker_->setFootprint(0, 1);
 
-  // Completely in obstacle
+
   ASSERT_EQ(collision_checker_->testPose(8.5, 6.5, 0), false);
 
-  // Partially in obstacle
+
   ASSERT_EQ(collision_checker_->testPose(4.5, 4.5, 0), false);
 }

@@ -17,7 +17,6 @@ async def get_voltage_history(hours: int = 24):
 
 @router.get("/summary")
 async def get_dashboard_summary():
-    # Gather KPIs for the dashboard
     session = await SessionService.get_current_session()
     log_stats = await LogService.get_log_stats()
     

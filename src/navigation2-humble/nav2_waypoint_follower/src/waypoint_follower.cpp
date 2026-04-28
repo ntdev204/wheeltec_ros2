@@ -1,16 +1,16 @@
-// Copyright (c) 2019 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_waypoint_follower/waypoint_follower.hpp"
 
@@ -49,7 +49,7 @@ WaypointFollower::~WaypointFollower()
 }
 
 nav2_util::CallbackReturn
-WaypointFollower::on_configure(const rclcpp_lifecycle::State & /*state*/)
+WaypointFollower::on_configure(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Configuring");
 
@@ -98,39 +98,39 @@ WaypointFollower::on_configure(const rclcpp_lifecycle::State & /*state*/)
 }
 
 nav2_util::CallbackReturn
-WaypointFollower::on_activate(const rclcpp_lifecycle::State & /*state*/)
+WaypointFollower::on_activate(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Activating");
 
   action_server_->activate();
 
   auto node = shared_from_this();
-  // Add callback for dynamic parameters
+
   dyn_params_handler_ = node->add_on_set_parameters_callback(
     std::bind(&WaypointFollower::dynamicParametersCallback, this, _1));
 
-  // create bond connection
+
   createBond();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn
-WaypointFollower::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
+WaypointFollower::on_deactivate(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Deactivating");
 
   action_server_->deactivate();
   dyn_params_handler_.reset();
 
-  // destroy bond connection
+
   destroyBond();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn
-WaypointFollower::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
+WaypointFollower::on_cleanup(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Cleaning up");
 
@@ -141,7 +141,7 @@ WaypointFollower::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
 }
 
 nav2_util::CallbackReturn
-WaypointFollower::on_shutdown(const rclcpp_lifecycle::State & /*state*/)
+WaypointFollower::on_shutdown(const rclcpp_lifecycle::State & )
 {
   RCLCPP_INFO(get_logger(), "Shutting down");
   return nav2_util::CallbackReturn::SUCCESS;
@@ -154,7 +154,7 @@ WaypointFollower::followWaypoints()
   auto feedback = std::make_shared<ActionT::Feedback>();
   auto result = std::make_shared<ActionT::Result>();
 
-  // Check if request is valid
+
   if (!action_server_ || !action_server_->is_server_active()) {
     RCLCPP_DEBUG(get_logger(), "Action server inactive. Stopping.");
     return;
@@ -174,17 +174,17 @@ WaypointFollower::followWaypoints()
   bool new_goal = true;
 
   while (rclcpp::ok()) {
-    // Check if asked to stop processing action
+
     if (action_server_->is_cancel_requested()) {
       auto cancel_future = nav_to_pose_client_->async_cancel_all_goals();
       callback_group_executor_.spin_until_future_complete(cancel_future);
-      // for result callback processing
+
       callback_group_executor_.spin_some();
       action_server_->terminate_all();
       return;
     }
 
-    // Check if asked to process another action
+
     if (action_server_->is_preempt_requested()) {
       RCLCPP_INFO(get_logger(), "Preempting the goal pose.");
       goal = action_server_->accept_pending_goal();
@@ -192,7 +192,7 @@ WaypointFollower::followWaypoints()
       new_goal = true;
     }
 
-    // Check if we need to send a new goal
+
     if (new_goal) {
       new_goal = false;
       ClientT::Goal client_goal;
@@ -237,7 +237,7 @@ WaypointFollower::followWaypoints()
       RCLCPP_INFO(
         get_logger(), "Task execution at waypoint %i %s", goal_index,
         is_task_executed ? "succeeded" : "failed!");
-      // if task execution was failed and stop_on_failure_ is on , terminate action
+
       if (!is_task_executed && stop_on_failure_) {
         failed_ids_.push_back(goal_index);
         RCLCPP_WARN(
@@ -258,7 +258,7 @@ WaypointFollower::followWaypoints()
     if (current_goal_status_ != ActionStatus::PROCESSING &&
       current_goal_status_ != ActionStatus::UNKNOWN)
     {
-      // Update server state
+
       goal_index++;
       new_goal = true;
       if (goal_index >= goal->poses.size()) {
@@ -325,7 +325,7 @@ WaypointFollower::goalResponseCallback(
 rcl_interfaces::msg::SetParametersResult
 WaypointFollower::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters)
 {
-  // No locking required as action server is running on same single threaded executor
+
   rcl_interfaces::msg::SetParametersResult result;
 
   for (auto parameter : parameters) {
@@ -347,11 +347,11 @@ WaypointFollower::dynamicParametersCallback(std::vector<rclcpp::Parameter> param
   return result;
 }
 
-}  // namespace nav2_waypoint_follower
+}
 
 #include "rclcpp_components/register_node_macro.hpp"
 
-// Register the component with class_loader.
-// This acts as a sort of entry point, allowing the component to be discoverable when its library
-// is being loaded into a running process.
+
+
+
 RCLCPP_COMPONENTS_REGISTER_NODE(nav2_waypoint_follower::WaypointFollower)

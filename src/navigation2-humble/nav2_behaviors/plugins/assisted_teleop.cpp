@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Joshua Wallace
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <utility>
 
@@ -31,7 +31,7 @@ void AssistedTeleop::onConfigure()
     throw std::runtime_error{"Failed to lock node"};
   }
 
-  // set up parameters
+
   nav2_util::declare_parameter_if_not_declared(
     node,
     "projection_time", rclcpp::ParameterValue(1.0));
@@ -92,7 +92,7 @@ Status AssistedTeleop::onCycleUpdate()
     return Status::FAILED;
   }
 
-  // user states that teleop was successful
+
   if (preempt_teleop_) {
     stopRobot();
     return Status::SUCCEEDED;
@@ -180,7 +180,7 @@ void AssistedTeleop::preemptTeleopCallback(const std_msgs::msg::Empty::SharedPtr
   preempt_teleop_ = true;
 }
 
-}  // namespace nav2_behaviors
+}
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(nav2_behaviors::AssistedTeleop, nav2_core::Behavior)

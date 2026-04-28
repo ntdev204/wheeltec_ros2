@@ -1,16 +1,16 @@
-// Copyright (c) 2022 Samsung R&D Institute Russia
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include "nav2_collision_monitor/scan.hpp"
 
@@ -51,10 +51,10 @@ void Scan::configure()
 
   std::string source_topic;
 
-  // Laser scanner has no own parameters
+
   getCommonParameters(source_topic);
 
-  rclcpp::QoS scan_qos = rclcpp::SensorDataQoS();  // set to default
+  rclcpp::QoS scan_qos = rclcpp::SensorDataQoS();
   data_sub_ = node->create_subscription<sensor_msgs::msg::LaserScan>(
     source_topic, scan_qos,
     std::bind(&Scan::dataCallback, this, std::placeholders::_1));
@@ -64,8 +64,8 @@ void Scan::getData(
   const rclcpp::Time & curr_time,
   std::vector<Point> & data) const
 {
-  // Ignore data from the source if it is not being published yet or
-  // not being published for a long time
+
+
   if (data_ == nullptr) {
     return;
   }
@@ -73,25 +73,25 @@ void Scan::getData(
     return;
   }
 
-  // Obtaining the transform to get data from source frame and time where it was received
-  // to the base frame and current time
+
+
   tf2::Transform tf_transform;
   if (!getTransform(data_->header.frame_id, data_->header.stamp, curr_time, tf_transform)) {
     return;
   }
 
-  // Calculate poses and refill data array
+
   float angle = data_->angle_min;
   for (size_t i = 0; i < data_->ranges.size(); i++) {
     if (data_->ranges[i] >= data_->range_min && data_->ranges[i] <= data_->range_max) {
-      // Transform point coordinates from source frame -> to base frame
+
       tf2::Vector3 p_v3_s(
         data_->ranges[i] * std::cos(angle),
         data_->ranges[i] * std::sin(angle),
         0.0);
       tf2::Vector3 p_v3_b = tf_transform * p_v3_s;
 
-      // Refill data array
+
       data.push_back({p_v3_b.x(), p_v3_b.y()});
     }
     angle += data_->angle_increment;
@@ -103,4 +103,4 @@ void Scan::dataCallback(sensor_msgs::msg::LaserScan::ConstSharedPtr msg)
   data_ = msg;
 }
 
-}  // namespace nav2_collision_monitor
+}

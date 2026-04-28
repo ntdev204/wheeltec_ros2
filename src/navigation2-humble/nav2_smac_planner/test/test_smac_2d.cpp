@@ -1,16 +1,16 @@
-// Copyright (c) 2020, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <math.h>
 
@@ -38,9 +38,9 @@ public:
 };
 RclCppFixture g_rclcppfixture;
 
-// SMAC smoke tests for plugin-level issues rather than algorithms
-// (covered by more extensively testing in other files)
-// System tests in nav2_system_tests will actually plan with this work
+
+
+
 
 TEST(SmacTest, test_smac_2d) {
   rclcpp_lifecycle::LifecycleNode::SharedPtr node2D =
@@ -61,7 +61,7 @@ TEST(SmacTest, test_smac_2d) {
   start.pose.position.x = 0.0;
   start.pose.position.y = 0.0;
   start.pose.orientation.w = 1.0;
-  // goal = start;
+
   goal.pose.position.x = 7.0;
   goal.pose.position.y = 0.0;
   goal.pose.orientation.w = 1.0;

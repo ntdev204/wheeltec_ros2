@@ -1,16 +1,16 @@
-// Copyright (c) 2021, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef NAV2_SMAC_PLANNER__UTILS_HPP_
 #define NAV2_SMAC_PLANNER__UTILS_HPP_
@@ -28,13 +28,8 @@
 namespace nav2_smac_planner
 {
 
-/**
-* @brief Create an Eigen Vector2D of world poses from continuous map coords
-* @param mx float of map X coordinate
-* @param my float of map Y coordinate
-* @param costmap Costmap pointer
-* @return Eigen::Vector2d eigen vector of the generated path
-*/
+
+
 inline geometry_msgs::msg::Pose getWorldCoords(
   const float & mx, const float & my, const nav2_costmap_2d::Costmap2D * costmap)
 {
@@ -46,34 +41,26 @@ inline geometry_msgs::msg::Pose getWorldCoords(
   return msg;
 }
 
-/**
-* @brief Create quaternion from radians
-* @param theta continuous bin coordinates angle
-* @return quaternion orientation in map frame
-*/
+
+
 inline geometry_msgs::msg::Quaternion getWorldOrientation(
   const float & theta)
 {
-  // theta is in radians already
+
   tf2::Quaternion q;
   q.setEuler(0.0, 0.0, theta);
   return tf2::toMsg(q);
 }
 
-/**
-* @brief Find the min cost of the inflation decay function for which the robot MAY be
-* in collision in any orientation
-* @param costmap Costmap2DROS to get minimum inscribed cost (e.g. 128 in inflation layer documentation)
-* @return double circumscribed cost, any higher than this and need to do full footprint collision checking
-* since some element of the robot could be in collision
-*/
+
+
 inline double findCircumscribedCost(std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap)
 {
   double result = -1.0;
   bool inflation_layer_found = false;
   std::vector<std::shared_ptr<nav2_costmap_2d::Layer>>::iterator layer;
 
-  // check if the costmap has an inflation layer
+
   for (layer = costmap->getLayeredCostmap()->getPlugins()->begin();
     layer != costmap->getLayeredCostmap()->getPlugins()->end();
     ++layer)
@@ -103,11 +90,8 @@ inline double findCircumscribedCost(std::shared_ptr<nav2_costmap_2d::Costmap2DRO
   return result;
 }
 
-/**
- * @brief convert json to lattice metadata
- * @param[in] json json object
- * @param[out] lattice meta data
- */
+
+
 inline void fromJsonToMetaData(const nlohmann::json & json, LatticeMetadata & lattice_metadata)
 {
   json.at("turning_radius").get_to(lattice_metadata.min_turning_radius);
@@ -118,11 +102,8 @@ inline void fromJsonToMetaData(const nlohmann::json & json, LatticeMetadata & la
   json.at("motion_model").get_to(lattice_metadata.motion_model);
 }
 
-/**
- * @brief convert json to pose
- * @param[in] json json object
- * @param[out] pose
- */
+
+
 inline void fromJsonToPose(const nlohmann::json & json, MotionPose & pose)
 {
   pose._x = json[0];
@@ -130,11 +111,8 @@ inline void fromJsonToPose(const nlohmann::json & json, MotionPose & pose)
   pose._theta = json[2];
 }
 
-/**
- * @brief convert json to motion primitive
- * @param[in] json json object
- * @param[out] motion primitive
- */
+
+
 inline void fromJsonToMotionPrimitive(
   const nlohmann::json & json, MotionPrimitive & motion_primitive)
 {
@@ -154,6 +132,6 @@ inline void fromJsonToMotionPrimitive(
   }
 }
 
-}  // namespace nav2_smac_planner
+}
 
-#endif  // NAV2_SMAC_PLANNER__UTILS_HPP_
+#endif

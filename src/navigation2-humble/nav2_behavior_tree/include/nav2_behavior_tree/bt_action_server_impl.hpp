@@ -1,16 +1,16 @@
-// Copyright (c) 2020 Sarthak Mittal
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef NAV2_BEHAVIOR_TREE__BT_ACTION_SERVER_IMPL_HPP_
 #define NAV2_BEHAVIOR_TREE__BT_ACTION_SERVER_IMPL_HPP_
@@ -52,7 +52,7 @@ BtActionServer<ActionT>::BtActionServer(
   logger_ = node->get_logger();
   clock_ = node->get_clock();
 
-  // Declare this node's parameters
+
   if (!node->has_parameter("bt_loop_duration")) {
     node->declare_parameter("bt_loop_duration", 10);
   }
@@ -73,10 +73,10 @@ bool BtActionServer<ActionT>::on_configure()
     throw std::runtime_error{"Failed to lock node"};
   }
 
-  // Name client node after action name
+
   std::string client_node_name = action_name_;
   std::replace(client_node_name.begin(), client_node_name.end(), '/', '_');
-  // Use suffix '_rclcpp_node' to keep parameter file consistency #1773
+
   auto options = rclcpp::NodeOptions().arguments(
     {"--ros-args",
       "-r",
@@ -84,7 +84,7 @@ bool BtActionServer<ActionT>::on_configure()
       std::string(node->get_name()) + "_" + client_node_name + "_rclcpp_node",
       "--"});
 
-  // Support for handling the topic-based goal pose from rviz
+
   client_node_ = std::make_shared<rclcpp::Node>("_", options);
 
   action_server_ = std::make_shared<ActionServer>(
@@ -94,23 +94,23 @@ bool BtActionServer<ActionT>::on_configure()
     node->get_node_waitables_interface(),
     action_name_, std::bind(&BtActionServer<ActionT>::executeCallback, this));
 
-  // Get parameters for BT timeouts
+
   int timeout;
   node->get_parameter("bt_loop_duration", timeout);
   bt_loop_duration_ = std::chrono::milliseconds(timeout);
   node->get_parameter("default_server_timeout", timeout);
   default_server_timeout_ = std::chrono::milliseconds(timeout);
 
-  // Create the class that registers our custom nodes and executes the BT
+
   bt_ = std::make_unique<nav2_behavior_tree::BehaviorTreeEngine>(plugin_lib_names_);
 
-  // Create the blackboard that will be shared by all of the nodes in the tree
+
   blackboard_ = BT::Blackboard::create();
 
-  // Put items on the blackboard
-  blackboard_->set<rclcpp::Node::SharedPtr>("node", client_node_);  // NOLINT
-  blackboard_->set<std::chrono::milliseconds>("server_timeout", default_server_timeout_);  // NOLINT
-  blackboard_->set<std::chrono::milliseconds>("bt_loop_duration", bt_loop_duration_);  // NOLINT
+
+  blackboard_->set<rclcpp::Node::SharedPtr>("node", client_node_);
+  blackboard_->set<std::chrono::milliseconds>("server_timeout", default_server_timeout_);
+  blackboard_->set<std::chrono::milliseconds>("bt_loop_duration", bt_loop_duration_);
 
   return true;
 }
@@ -150,16 +150,16 @@ bool BtActionServer<ActionT>::on_cleanup()
 template<class ActionT>
 bool BtActionServer<ActionT>::loadBehaviorTree(const std::string & bt_xml_filename)
 {
-  // Empty filename is default for backward compatibility
+
   auto filename = bt_xml_filename.empty() ? default_bt_xml_filename_ : bt_xml_filename;
 
-  // Use previous BT if it is the existing one
+
   if (current_bt_xml_filename_ == filename) {
     RCLCPP_DEBUG(logger_, "BT will not be reloaded as the given xml is already loaded");
     return true;
   }
 
-  // Read the input BT XML from the specified file into a string
+
   std::ifstream xml_file(filename);
 
   if (!xml_file.good()) {
@@ -171,7 +171,7 @@ bool BtActionServer<ActionT>::loadBehaviorTree(const std::string & bt_xml_filena
     std::istreambuf_iterator<char>(xml_file),
     std::istreambuf_iterator<char>());
 
-  // Create the Behavior Tree from the XML input
+
   try {
     tree_ = bt_->createTreeFromText(xml_string, blackboard_);
   } catch (const std::exception & e) {
@@ -213,15 +213,15 @@ void BtActionServer<ActionT>::executeCallback()
       on_loop_callback_();
     };
 
-  // Execute the BT that was previously created in the configure step
+
   nav2_behavior_tree::BtStatus rc = bt_->run(&tree_, on_loop, is_canceling, bt_loop_duration_);
 
-  // Make sure that the Bt is not in a running state from a previous execution
-  // note: if all the ControlNodes are implemented correctly, this is not needed.
+
+
   bt_->haltAllActions(tree_.rootNode());
 
-  // Give server an opportunity to populate the result message or simple give
-  // an indication that the action is complete.
+
+
   auto result = std::make_shared<typename ActionT::Result>();
   on_completion_callback_(result, rc);
 
@@ -243,6 +243,6 @@ void BtActionServer<ActionT>::executeCallback()
   }
 }
 
-}  // namespace nav2_behavior_tree
+}
 
-#endif  // NAV2_BEHAVIOR_TREE__BT_ACTION_SERVER_IMPL_HPP_
+#endif

@@ -1,8 +1,5 @@
-/*
- *  RoboPeak Project
- *  HAL Layer - Socket Interface
- *  Copyright 2009 - 2013 RoboPeak Project
- */
+
+
 
 #pragma once
 
@@ -26,7 +23,7 @@ public:
 
     SocketAddress();
     SocketAddress(const char * addrString, int port, address_type_t = ADDRESS_TYPE_INET);
-    // do not use this function, internal usage
+
     SocketAddress(void * platform_data);
     SocketAddress(const SocketAddress &);
     
@@ -78,7 +75,7 @@ public:
     };
 
     enum {
-        DEFAULT_SOCKET_TIMEOUT = 10000, //10sec
+        DEFAULT_SOCKET_TIMEOUT = 10000,
     };
 
     virtual ~SocketBase() {}
@@ -124,7 +121,7 @@ public:
     virtual u_result enableNoDelay(bool enable = true) = 0;
 
 protected:
-    virtual ~StreamSocket() {} // use dispose();
+    virtual ~StreamSocket() {}
     StreamSocket() {}
 };
 
@@ -141,7 +138,7 @@ public:
     virtual u_result clearRxCache() = 0;
     
 protected:
-    virtual ~DGramSocket() {} // use dispose();
+    virtual ~DGramSocket() {}
 
     DGramSocket() {}
 };

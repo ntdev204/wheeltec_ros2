@@ -1,17 +1,3 @@
-#! /usr/bin/env python3
-# Copyright 2022 Joshua Wallace
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator
@@ -100,12 +86,10 @@ def main():
 
     navigator = BasicNavigator()
 
-    # Set map to use, other options: 100by100_15, 100by100_10
     map_path = os.getcwd() + '/' + glob.glob('**/100by100_20.yaml', recursive=True)[0]
     navigator.changeMap(map_path)
     time.sleep(2)
 
-    # Get the costmap for start/goal validation
     costmap_msg = navigator.getGlobalCostmap()
     costmap = np.asarray(costmap_msg.data)
     costmap.resize(costmap_msg.metadata.size_y, costmap_msg.metadata.size_x)

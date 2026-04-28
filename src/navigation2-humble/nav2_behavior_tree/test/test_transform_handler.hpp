@@ -1,17 +1,17 @@
-// Copyright (c) 2018 Intel Corporation
-// Copyright (c) 2020 Sarthak Mittal
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef TEST_TRANSFORM_HANDLER_HPP_
 #define TEST_TRANSFORM_HANDLER_HPP_
@@ -32,8 +32,8 @@
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/buffer.h"
 
-using namespace std::chrono_literals; // NOLINT
-using namespace std::chrono;  // NOLINT
+using namespace std::chrono_literals;
+using namespace std::chrono;
 
 namespace nav2_behavior_tree
 {
@@ -57,7 +57,7 @@ public:
     }
   }
 
-  // Activate the tester before running tests
+
   void activate()
   {
     if (is_active_) {
@@ -65,7 +65,7 @@ public:
     }
     is_active_ = true;
 
-    // Launch a thread to process the messages for this node
+
     spin_thread_ = std::make_unique<nav2_util::NodeThread>(node_->get_node_base_interface());
 
     startRobotTransform();
@@ -102,7 +102,7 @@ public:
 
   void updateRobotPose(const geometry_msgs::msg::Pose & pose)
   {
-    // Update base transform to publish
+
     base_transform_->transform.translation.x = pose.position.x;
     base_transform_->transform.translation.y = pose.position.y;
     base_transform_->transform.translation.z = pose.position.z;
@@ -122,7 +122,7 @@ private:
 
   void startRobotTransform()
   {
-    // Provide the robot pose transform
+
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node_);
 
     if (!base_transform_) {
@@ -131,14 +131,14 @@ private:
       base_transform_->child_frame_id = "base_link";
     }
 
-    // Set an initial pose
+
     geometry_msgs::msg::Pose robot_pose;
     robot_pose.position.x = 0;
     robot_pose.position.y = 0;
     robot_pose.orientation.w = 1;
     updateRobotPose(robot_pose);
 
-    // Publish the transform periodically
+
     transform_timer_ = node_->create_wall_timer(
       100ms, std::bind(&TransformHandler::publishRobotTransform, this));
   }
@@ -147,12 +147,12 @@ private:
 
   bool is_active_;
 
-  // A thread for spinning the ROS node
+
   std::unique_ptr<nav2_util::NodeThread> spin_thread_;
 
-  // Subscriber
 
-  // The tester must provide the robot pose through a transform
+
+
   std::unique_ptr<geometry_msgs::msg::TransformStamped> base_transform_;
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
@@ -160,6 +160,6 @@ private:
   rclcpp::TimerBase::SharedPtr transform_timer_;
 };
 
-}  // namespace nav2_behavior_tree
+}
 
-#endif  // TEST_TRANSFORM_HANDLER_HPP_
+#endif

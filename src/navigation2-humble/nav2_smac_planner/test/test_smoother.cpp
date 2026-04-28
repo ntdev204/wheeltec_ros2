@@ -1,16 +1,16 @@
-// Copyright (c) 2020, Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License. Reserved.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <math.h>
 #include <memory>
@@ -29,7 +29,7 @@
 #include "nav2_smac_planner/smoother.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
-using namespace nav2_smac_planner;  // NOLINT
+using namespace nav2_smac_planner;
 
 class RclCppFixture
 {
@@ -60,20 +60,20 @@ TEST(SmootherTest, test_full_smoother)
   params.get(node, "test");
   double maxtime = 1.0;
 
-  // Make smoother and costmap to smooth in
+
   auto smoother = std::make_unique<SmootherWrapper>(params);
-  smoother->initialize(0.4 /*turning radius*/);
+  smoother->initialize(0.4 );
 
   nav2_costmap_2d::Costmap2D * costmap =
     new nav2_costmap_2d::Costmap2D(100, 100, 0.05, 0.0, 0.0, 0);
-  // island in the middle of lethal cost to cross
+
   for (unsigned int i = 20; i <= 30; ++i) {
     for (unsigned int j = 20; j <= 30; ++j) {
       costmap->setCost(i, j, 254);
     }
   }
 
-  // Setup A* search to get path to smooth
+
   nav2_smac_planner::SearchInfo info;
   info.change_penalty = 0.05;
   info.non_straight_penalty = 1.05;
@@ -81,8 +81,8 @@ TEST(SmootherTest, test_full_smoother)
   info.cost_penalty = 2.0;
   info.retrospective_penalty = 0.0;
   info.analytic_expansion_ratio = 3.5;
-  info.minimum_turning_radius = 8;  // in grid coordinates 0.4/0.05
-  info.analytic_expansion_max_length = 20.0;  // in grid coordinates
+  info.minimum_turning_radius = 8;
+  info.analytic_expansion_max_length = 20.0;
   unsigned int size_theta = 72;
   nav2_smac_planner::AStarAlgorithm<nav2_smac_planner::NodeHybrid> a_star(
     nav2_smac_planner::MotionModel::REEDS_SHEPP, info);
@@ -98,14 +98,14 @@ TEST(SmootherTest, test_full_smoother)
     std::make_unique<nav2_smac_planner::GridCollisionChecker>(costmap, size_theta);
   checker->setFootprint(nav2_costmap_2d::Footprint(), true, 0.0);
 
-  // Create A* search to smooth
+
   a_star.setCollisionChecker(checker.get());
   a_star.setStart(5u, 5u, 0u);
   a_star.setGoal(45u, 45u, 36u);
   nav2_smac_planner::NodeHybrid::CoordinateVector path;
   EXPECT_TRUE(a_star.createPath(path, num_it, tolerance));
 
-  // Convert to world coordinates and get length to compare to smoothed length
+
   nav_msgs::msg::Path plan;
   plan.header.stamp = node->now();
   plan.header.frame_id = "map";
@@ -128,29 +128,29 @@ TEST(SmootherTest, test_full_smoother)
     y_m = path[i].y;
   }
 
-  // Check that we accurately detect that this path has a reversing segment
+
   EXPECT_EQ(smoother->findDirectionalPathSegmentsWrapper(plan).size(), 2u);
 
-  // Test smoother, should succeed with same number of points
-  // and shorter overall length, while still being collision free.
+
+
   auto path_size_in = plan.poses.size();
   EXPECT_TRUE(smoother->smooth(plan, costmap, maxtime));
-  EXPECT_EQ(plan.poses.size(), path_size_in);  // Should have same number of poses
+  EXPECT_EQ(plan.poses.size(), path_size_in);
   double length = 0.0;
   x_m = plan.poses[0].pose.position.x;
   y_m = plan.poses[0].pose.position.y;
   for (unsigned int i = 0; i != plan.poses.size(); i++) {
-    // Should be collision free
+
     EXPECT_EQ(costmap->getCost(plan.poses[i].pose.position.x, plan.poses[i].pose.position.y), 0);
     length += hypot(plan.poses[i].pose.position.x - x_m, plan.poses[i].pose.position.y - y_m);
     x_m = plan.poses[i].pose.position.x;
     y_m = plan.poses[i].pose.position.y;
   }
-  EXPECT_LT(length, initial_length);  // Should be shorter
+  EXPECT_LT(length, initial_length);
 
-  // Try again but with failure modes
 
-  // Failure mode: not enough iterations to complete
+
+
   params.max_its_ = 0;
   auto smoother_bypass = std::make_unique<SmootherWrapper>(params);
   EXPECT_FALSE(smoother_bypass->smooth(plan, costmap, maxtime));
@@ -158,12 +158,12 @@ TEST(SmootherTest, test_full_smoother)
   auto smoother_failure = std::make_unique<SmootherWrapper>(params);
   EXPECT_FALSE(smoother_failure->smooth(plan, costmap, maxtime));
 
-  // Failure mode: Not enough time
+
   double max_no_time = 0.0;
   EXPECT_FALSE(smoother->smooth(plan, costmap, max_no_time));
 
-  // Failure mode: Path is in collision, do 2x to exercise overlapping point
-  // attempts to update orientation should also fail
+
+
   pose.pose.position.x = 1.25;
   pose.pose.position.y = 1.25;
   plan.poses.push_back(pose);

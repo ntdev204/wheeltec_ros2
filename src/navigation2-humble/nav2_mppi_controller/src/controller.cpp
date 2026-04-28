@@ -1,23 +1,23 @@
-// Copyright (c) 2022 Samsung Research America, @artofnothingness Alexey Budyakov
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #include <stdint.h>
 #include <chrono>
 #include "nav2_mppi_controller/controller.hpp"
 #include "nav2_mppi_controller/tools/utils.hpp"
 
-// #define BENCHMARK_TESTING
+
 
 namespace nav2_mppi_controller
 {
@@ -36,12 +36,12 @@ void MPPIController::configure(
   auto node = parent_.lock();
   clock_ = node->get_clock();
   last_time_called_ = clock_->now();
-  // Get high-level controller parameters
+
   auto getParam = parameters_handler_->getParamGetter(name_);
   getParam(visualize_, "visualize", false);
   getParam(reset_period_, "reset_period", 1.0);
 
-  // Configure composed objects
+
   optimizer_.initialize(parent_, name_, costmap_ros_, parameters_handler_.get());
   path_handler_.initialize(parent_, name_, costmap_ros_, tf_buffer_, parameters_handler_.get());
   trajectory_visualizer_.on_configure(
@@ -127,7 +127,7 @@ void MPPIController::setSpeedLimit(const double & speed_limit, const bool & perc
   optimizer_.setSpeedLimit(speed_limit, percentage);
 }
 
-}  // namespace nav2_mppi_controller
+}
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(nav2_mppi_controller::MPPIController, nav2_core::Controller)

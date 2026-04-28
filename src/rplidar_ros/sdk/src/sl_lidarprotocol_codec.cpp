@@ -1,34 +1,7 @@
-/*
- *  Slamtec LIDAR SDK
- *
- *  Copyright (c) 2014 - 2023 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- *
- */
- /*
-  * Redistribution and use in source and binary forms, with or without
-  * modification, are permitted provided that the following conditions are met:
-  *
-  * 1. Redistributions of source code must retain the above copyright notice,
-  *    this list of conditions and the following disclaimer.
-  *
-  * 2. Redistributions in binary form must reproduce the above copyright notice,
-  *    this list of conditions and the following disclaimer in the documentation
-  *    and/or other materials provided with the distribution.
-  *
-  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-  * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
-  * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-  * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-  * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
-  */
+
+
+ 
+
 
 
 
@@ -77,11 +50,11 @@ void RPLidarProtocolCodec::setMessageListener(IProtocolMessageListener* listener
 
 size_t RPLidarProtocolCodec::estimateLength(message_autoptr_t& message)
 {
-    size_t actualSize = 2; //1-byte's sync byte, 1-byte's cmd byte
+    size_t actualSize = 2;
 
     if (message->cmd & RPLIDAR_CMDFLAG_HAS_PAYLOAD) {
         actualSize += (message->getPayloadSize() & 0xFF);
-        actualSize += 2; //1-byte for size field, 1-byte for checksum
+        actualSize += 2;
     }
 
     return actualSize;
@@ -97,25 +70,25 @@ void RPLidarProtocolCodec::onEncodeData(message_autoptr_t& message, _u8* buffer,
     while (currentPos < writeSize) {
         _u8 currentTxByte;
         switch (currentPos) {
-        case 0: // sync byte
+        case 0:
             currentTxByte = RPLIDAR_CMD_SYNC_BYTE;
             break;
-        case 1: // cmd byte
+        case 1:
             currentTxByte = message->cmd;
             break;
-        case 2: // size byte
+        case 2:
             currentTxByte = (_u8)message->getPayloadSize();
             break;
         default:
         {
             size_t payloadPos = currentPos - 3;
             if (payloadPos == message->getPayloadSize()) {
-                // checksum byte
+
                 currentTxByte = checksum;
                 assert(currentPos + 1 == writeSize);
             }
             else {
-                // payload
+
                 currentTxByte = message->getDataBuf()[payloadPos];
             }
         }
@@ -131,9 +104,9 @@ void RPLidarProtocolCodec::onEncodeData(message_autoptr_t& message, _u8* buffer,
 
 void   RPLidarProtocolCodec::onDecodeReset() {
     rp::hal::AutoLocker autolock(_op_locker);
-    // flush the pending data
+
     _decodingMessage.cleanData();
-    // reset to initial state
+
     _rx_pos = 0;
     _working_states = STATUS_WAIT_SYNC1;
 }
@@ -160,10 +133,10 @@ void RPLidarProtocolCodec::onDecodeData(const void* buffer, size_t size)
         case STATUS_WAIT_SYNC2:
             if (currentByte == RPLIDAR_ANS_SYNC_BYTE2) {
                 _working_states = STATUS_WAIT_SIZE_FLAG;
-                _rx_pos = 0; // init rx pos for recv size and flag
+                _rx_pos = 0;
             }
             else {
-                // reset to the initial state
+
                 _working_states = STATUS_WAIT_SYNC1;
             }
             break;
@@ -177,28 +150,28 @@ void RPLidarProtocolCodec::onDecodeData(const void* buffer, size_t size)
                 _working_states = STATUS_WAIT_TYPE;
                 _decodingMessage.len = le32_to_cpu(_decodingMessage.len);
 
-                // 30bit size + 2bit flag has been received
+
                 _u32 flagbits = (_u32)(_decodingMessage.len >> RPLIDAR_ANS_HEADER_SUBTYPE_SHIFT);
                 if (flagbits & RPLIDAR_ANS_PKTFLAG_LOOP) {
                     _working_states |= STATUS_LOOP_MODE_FLAG;
                 }
                 _decodingMessage.len = (_decodingMessage.len & RPLIDAR_ANS_HEADER_SIZE_MASK);
-                // alloc buffer
+
                 _decodingMessage.fillData(NULL, _decodingMessage.getPayloadSize());
                 _rx_pos = 0;
             }
         }
         break;
         case STATUS_WAIT_TYPE:
-            // save the type field as a cmd 
+
             _decodingMessage.cmd = currentByte;
 
-            // recv payload...
+
             _working_states = (_working_states & STATUS_LOOP_MODE_FLAG)
                 | STATUS_RECV_PAYLOAD;
 
             if (!_decodingMessage.getPayloadSize()) {
-                // zero payload packet? 
+
                 _working_states = STATUS_WAIT_SYNC1;
             }
             break;
@@ -207,24 +180,24 @@ void RPLidarProtocolCodec::onDecodeData(const void* buffer, size_t size)
 
             if ((size_t)_rx_pos == _decodingMessage.getPayloadSize()) {
                 if (_working_states & STATUS_LOOP_MODE_FLAG) {
-                    // rewind to the payload recv status in loop mode
+
                     _rx_pos = 0;
                 }
                 else {
-                    // reset the decoder
+
                     _working_states = STATUS_WAIT_SYNC1;
                 }
 
                 IProtocolMessageListener* cachedLister = _listener;
 
-                autolock.forceUnlock(); //unlock the oplock to prevent deadlock
+                autolock.forceUnlock();
 
 
                 if (cachedLister) {
                     cachedLister->onProtocolMessageDecoded(_decodingMessage);
                 }
 
-                _op_locker.lock(); // relock it
+                _op_locker.lock();
             }
             break;
         }

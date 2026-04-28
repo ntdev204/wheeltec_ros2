@@ -12,11 +12,9 @@ from nav2_common.launch import RewrittenYaml
 
 
 def generate_launch_description():
-    # Get the launch directory
     bringup_dir = get_package_share_directory('nav2_bringup')
     launch_dir = os.path.join(bringup_dir, 'launch')
 
-    # Create the launch configuration variables
     namespace = LaunchConfiguration('namespace')
     use_namespace = LaunchConfiguration('use_namespace')
     slam = LaunchConfiguration('slam')
@@ -53,7 +51,6 @@ def generate_launch_description():
     wheeltec_localization = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(rtabmap_nav_dir, 'launch', 'rtabmap_localization.launch.py')),
     )    
-    # Create our own temporary YAML files that include substitutions
     param_substitutions = {
         'use_sim_time': use_sim_time,
         'yaml_filename': map_yaml_file}
@@ -113,7 +110,6 @@ def generate_launch_description():
         'log_level', default_value='info',
         description='log level')
 
-    # Specify the actions
     bringup_cmd_group = GroupAction([
         PushRosNamespace(
             condition=IfCondition(use_namespace),
@@ -162,18 +158,12 @@ def generate_launch_description():
                               'container_name': 'nav2_container'}.items()),
     ])
 
-    # Create the launch description and populate
     ld = LaunchDescription()
 
-    # Set environment variables
     ld.add_action(stdout_linebuf_envvar)
-    #wheeltec sensors
     ld.add_action(wheeltec_robot)
     ld.add_action(wheeltec_lidar)
     ld.add_action(wheeltec_camera)
-    #wheeltec_localization
-    #ld.add_action(wheeltec_localization)
-    # Declare the launch options
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_use_namespace_cmd)
     ld.add_action(declare_slam_cmd)
@@ -185,7 +175,6 @@ def generate_launch_description():
     ld.add_action(declare_use_respawn_cmd)
     ld.add_action(declare_log_level_cmd)
 
-    # Add the actions to launch all of the navigation nodes
     ld.add_action(bringup_cmd_group)
 
     return ld

@@ -11,10 +11,8 @@ class PathService:
 
     @staticmethod
     async def create_path(session_id: int, goal_x: float, goal_y: float, global_plan: list) -> int | None:
-        """Create a new nav_path record when a nav_goal is sent."""
         try:
             async with aiosqlite.connect(settings.db_path) as db:
-                # Mark any previous active path as completed
                 await db.execute(
                     "UPDATE nav_paths SET status = 'completed' WHERE session_id = ? AND status = 'active'",
                     (session_id,)
@@ -110,7 +108,6 @@ class PathService:
 
     @staticmethod
     async def export_csv(session_id: int = None) -> str:
-        """Export all paths as CSV with columns: path_id, timestamp, type, point_index, x, y"""
         try:
             async with aiosqlite.connect(settings.db_path) as db:
                 db.row_factory = aiosqlite.Row

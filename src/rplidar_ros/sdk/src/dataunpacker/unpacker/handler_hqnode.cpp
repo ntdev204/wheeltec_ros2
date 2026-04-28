@@ -1,40 +1,11 @@
-/*
- *  Slamtec LIDAR SDK
- *
- *  Copyright (c) 2014 - 2023 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- *
- */
 
- /*
-  *  Sample Data Unpacker System
-  *  HQNode Sample Node Handler
-  */
 
-  /*
-	* Redistribution and use in source and binary forms, with or without
-	* modification, are permitted provided that the following conditions are met:
-	*
-	* 1. Redistributions of source code must retain the above copyright notice,
-	*    this list of conditions and the following disclaimer.
-	*
-	* 2. Redistributions in binary form must reproduce the above copyright notice,
-	*    this list of conditions and the following disclaimer in the documentation
-	*    and/or other materials provided with the distribution.
-	*
-	* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-	* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-	* THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-	* PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
-	* CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-	* EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-	* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-	* OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-	* WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-	* OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	*/
+
+ 
+
+
+  
+
 
 #include "../dataunnpacker_commondef.h"
 #include "../dataunpacker.h"
@@ -53,19 +24,19 @@ namespace unpacker{
 
 static _u64 _getSampleDelayOffsetInHQMode(const SlamtecLidarTimingDesc& timing)
 {
-    // FIXME: to eval
-    // 
-    // guess channel baudrate by LIDAR model ....
+
+
+
     const _u64 channelBaudRate = timing.native_baudrate? timing.native_baudrate:1000000;
 
     _u64 tranmissionDelay = 1000000ULL * sizeof(rplidar_response_measurement_node_hq_t) * 10 / channelBaudRate;
 
     if (timing.native_interface_type == LIDARInterfaceType::LIDAR_INTERFACE_ETHERNET)
     {
-        tranmissionDelay = 100; //dummy value
+        tranmissionDelay = 100;
     }
 
-    // center of the sample duration
+
     const _u64 sampleDelay = (timing.sample_duration_uS >> 1);
     const _u64 sampleFilterDelay = timing.sample_duration_uS;
 
@@ -98,10 +69,10 @@ void UnpackerHandler_HQNode::onData(LIDARSampleDataUnpackerInner* engine, const 
 
         switch (_cached_scan_node_buf_pos)
         {
-        case 0: // expect the sync byte
+        case 0:
         {
             if (current_data == RPLIDAR_RESP_MEASUREMENT_HQ_SYNC) {
-                // pass
+
             }
             else {
                 continue;
@@ -109,13 +80,13 @@ void UnpackerHandler_HQNode::onData(LIDARSampleDataUnpackerInner* engine, const 
         }
         break;
 
-        case sizeof(rplidar_response_hq_capsule_measurement_nodes_t) - 1 - 4:    // get bytes to calculate crc ready
+        case sizeof(rplidar_response_hq_capsule_measurement_nodes_t) - 1 - 4:
         {
            
         }
         break;
 
-        case sizeof(rplidar_response_hq_capsule_measurement_nodes_t) - 1: // new data ready
+        case sizeof(rplidar_response_hq_capsule_measurement_nodes_t) - 1:
         {
             _cached_scan_node_buf[sizeof(rplidar_response_hq_capsule_measurement_nodes_t) - 1] = current_data;
             _cached_scan_node_buf_pos = 0;
@@ -126,12 +97,12 @@ void UnpackerHandler_HQNode::onData(LIDARSampleDataUnpackerInner* engine, const 
 
 
 #else
-            // calculate crc with boost crc method
+
             boost::crc_optimal<32, 0x04C11DB7, 0xFFFFFFFF, 0xFFFFFFFF, true, true> mycrc;
             std::vector<_u8> crcInputData;
             crcInputData.resize(sizeof(rplidar_response_hq_capsule_measurement_nodes_t) - 4);
             memcpy(&crcInputData[0], nodesData, sizeof(rplidar_response_hq_capsule_measurement_nodes_t) - 4);
-            //supplement crcInputData to mutiples of 4
+
             int leftBytes = 4 - (crcInputData.size() & 3);
             for (int i = 0; i < leftBytes; i++)
                 crcInputData.push_back(0);
@@ -157,7 +128,7 @@ void UnpackerHandler_HQNode::onData(LIDARSampleDataUnpackerInner* engine, const 
                     engine->publishHQNode(engine->getCurrentTimestamp_uS() - _getSampleDelayOffsetInHQMode(_cachedTimingDesc), &hqNode);
                 }
             }
-            else  //crc check not passed 
+            else
             {
                 engine->publishDecodingErrorMsg(LIDARSampleDataUnpacker::ERR_EVENT_ON_EXP_CHECKSUM_ERR
                     , RPLIDAR_ANS_TYPE_MEASUREMENT_HQ, nodesData, sizeof(*nodesData));
