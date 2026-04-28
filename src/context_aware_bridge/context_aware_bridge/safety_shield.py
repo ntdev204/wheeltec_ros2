@@ -19,13 +19,17 @@ class SafetyShieldNode(Node):
         super().__init__('context_safety_shield')
         
         # Đọc tham số an toàn (bất đối xứng do vị trí đặt Lidar)
-        self.declare_parameter('stop_dist_front', 0.35)
+        self.declare_parameter('stop_dist_front', 0.4)
         self.declare_parameter('stop_dist_rear', 0.80)   # Lidar ở đầu xe → đuôi xe thò ra xa hơn
         self.declare_parameter('stop_dist_side', 0.40)   # tăng từ 0.35 lên 0.40 để tránh và bên
+        # Lọc self-detection: bỏ qua mọi điểm Lidar gần hơn bán kính thân robot
+        # (chân giá đỡ, dây cáp, khung xe thường nằm trong ~0.25m kể từ tâm Lidar)
+        self.declare_parameter('min_obstacle_range', 0.35)
         
         self.stop_front = self.get_parameter('stop_dist_front').value
         self.stop_rear = self.get_parameter('stop_dist_rear').value
         self.stop_side = self.get_parameter('stop_dist_side').value
+        self.min_range = self.get_parameter('min_obstacle_range').value
         
         # Sub/Pub
         self.sub_cmd = self.create_subscription(Twist, '/cmd_vel_muxed', self.cmd_cb, 10)
@@ -54,26 +58,31 @@ class SafetyShieldNode(Node):
         
         angle = msg.angle_min
         for r in msg.ranges:
-            if not math.isinf(r) and not math.isnan(r) and r > msg.range_min:
-                x = r * math.cos(angle)
-                y = r * math.sin(angle)
-                
-                # 1. Trục X (Tiến/Lùi) - chỉ xét vật cản NẰM TRONG làn đường di chuyển của xe
-                if abs(y) <= y_limit_for_x:
-                    if x > 0:
-                        min_x_front = min(min_x_front, x)
-                    elif x < 0:
-                        min_x_rear = min(min_x_rear, abs(x))
-                        
-                # 2. Trục Y (Trượt ngang) - chỉ xét vật cản NẰM TRONG làn trượt của xe
-                if abs(x) <= x_limit_for_y:
-                    if y > 0:
-                        min_y_left = min(min_y_left, y)
-                    elif y < 0:
-                        min_y_right = min(min_y_right, abs(y))
-                        
+            # Lọc self-detection (thân robot) và các điểm không hợp lệ → skip
+            if math.isinf(r) or math.isnan(r) or r <= msg.range_min or r < self.min_range:
+                angle += msg.angle_increment
+                continue
+
+            x = r * math.cos(angle)
+            y = r * math.sin(angle)
+
+            # 1. Trục X (Tiến/Lùi) - chỉ xét vật cản NẰM TRONG làn đường di chuyển của xe
+            if abs(y) <= y_limit_for_x:
+                if x > 0:
+                    min_x_front = min(min_x_front, x)
+                elif x < 0:
+                    min_x_rear = min(min_x_rear, abs(x))
+
+            # 2. Trục Y (Trượt ngang) - chỉ xét vật cản NẰM TRONG làn trượt của xe
+            if abs(x) <= x_limit_for_y:
+                if y > 0:
+                    min_y_left = min(min_y_left, y)
+                elif y < 0:
+                    min_y_right = min(min_y_right, abs(y))
+
             angle += msg.angle_increment
-            
+
+
         self.min_dist_front = min_x_front
         self.min_dist_rear = min_x_rear
         self.min_dist_left = min_y_left
