@@ -1,3 +1,11 @@
+"""ROS2/ZMQ bridge for the website SCADA backend.
+
+Shared protocol:
+    Commands:  REQ/REP JSON on port 5555
+    Telemetry: PUB/SUB JSON on port 5556
+    Camera:    PUB raw JPEG/PNG bytes on port 5557
+"""
+
 import math
 from datetime import datetime, timezone
 from threading import RLock, Thread
@@ -24,7 +32,6 @@ class WheeltecControlNode(Node):
     def __init__(self, zmq_ports, camera_topic='/camera/color/image_raw'):
         super().__init__('scada_control_node')
 
-        # Declare ROS2 parameters for runtime configurability
         self.declare_parameter('zmq_cmd_port', zmq_ports.get('cmd', 5555))
         self.declare_parameter('zmq_telemetry_port', zmq_ports.get('telemetry', 5556))
         self.declare_parameter('zmq_camera_port', zmq_ports.get('camera', 5557))
@@ -35,21 +42,17 @@ class WheeltecControlNode(Node):
         camera_port = self.get_parameter('zmq_camera_port').value
         cam_topic = self.get_parameter('camera_topic').value
 
-        # Publishers
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel_keyboard', 10)
         self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
 
-        # Subscribers
         self.create_subscription(Odometry, 'odom', self.odom_cb, 10)
         self.create_subscription(Imu, 'imu/data_raw', self.imu_cb, 10)
         self.create_subscription(Float32, '/PowerVoltage', self.voltage_cb, 10)
         self.create_subscription(Bool, '/robot_charging_flag', self.charging_cb, 10)
 
-        # TF2 for robot localization in map frame
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
-        # /map topic uses TRANSIENT_LOCAL + RELIABLE (latched in Nav2)
         map_qos = QoSProfile(
             reliability=QoSReliabilityPolicy.RELIABLE,
             durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
@@ -58,7 +61,6 @@ class WheeltecControlNode(Node):
         )
         self.create_subscription(OccupancyGrid, '/map', self.map_cb, map_qos)
 
-        # Subscribe to Nav2 planned path and local path
         self.create_subscription(Path, '/plan', self.plan_cb, 10)
         self.create_subscription(Path, '/local_plan', self.local_plan_cb, 10)
 
@@ -69,19 +71,22 @@ class WheeltecControlNode(Node):
         )
         self.create_subscription(Image, cam_topic, self.camera_cb, cam_qos)
 
-        # ZMQ Context setup
         self.zmq_context = zmq.Context()
 
-        # Telemetry PUB socket (bind)
         self.telemetry_pub = self.zmq_context.socket(zmq.PUB)
+        self.telemetry_pub.setsockopt(zmq.SNDHWM, 2)
+        self.telemetry_pub.setsockopt(zmq.LINGER, 0)
         self.telemetry_pub.bind(f"tcp://0.0.0.0:{telemetry_port}")
 
-        # Camera PUB socket (bind)
         self.camera_pub = self.zmq_context.socket(zmq.PUB)
+        self.camera_pub.setsockopt(zmq.SNDHWM, 2)
+        self.camera_pub.setsockopt(zmq.LINGER, 0)
         self.camera_pub.bind(f"tcp://0.0.0.0:{camera_port}")
 
-        # Command REP socket (run in separate thread)
         self.cmd_rep = self.zmq_context.socket(zmq.REP)
+        self.cmd_rep.setsockopt(zmq.RCVHWM, 2)
+        self.cmd_rep.setsockopt(zmq.SNDHWM, 2)
+        self.cmd_rep.setsockopt(zmq.LINGER, 0)
         self.cmd_rep.bind(f"tcp://0.0.0.0:{cmd_port}")
 
         self.telemetry_data = {
@@ -111,9 +116,8 @@ class WheeltecControlNode(Node):
         self.map_dirty = False
         self._last_map_msg = None
 
-        # Patrol runtime state
         self._patrol_status = "idle"
-        self._patrol_phase = "idle"  # idle|go_home_start|patrol|return_home_end
+        self._patrol_phase = "idle"
         self._patrol_run_id = None
         self._patrol_schedule_id = None
         self._patrol_route_id = None
@@ -129,11 +133,9 @@ class WheeltecControlNode(Node):
         self._patrol_message = None
         self._patrol_lock = RLock()
 
-        # Start command listener thread
         self.cmd_thread = Thread(target=self.cmd_loop, daemon=True)
         self.cmd_thread.start()
 
-        # Timers
         self.create_timer(0.1, self.publish_telemetry)
         self.create_timer(2.0, self.publish_map)
         self.create_timer(0.1, self.update_map_pose)
@@ -521,33 +523,6 @@ class WheeltecControlNode(Node):
                     with self._patrol_lock:
                         run_id = self._patrol_run_id
                     self.cmd_rep.send_json({"status": "stopped", "run_id": run_id})
-
-                elif action == "generate_coverage":
-                    from wheeltec_scada_bridge.coverage_planner import CoveragePlanner
-
-                    robot_width = float(payload.get("robot_width", 0.5))
-                    overlap = float(payload.get("overlap", 0.1))
-                    pattern = str(payload.get("pattern", "boustrophedon"))
-
-                    if self._last_map_msg is None:
-                        self.cmd_rep.send_json({"status": "error", "message": "No map available"})
-                    else:
-                        try:
-                            planner = CoveragePlanner(robot_width=robot_width, overlap=overlap)
-                            waypoints = planner.generate_coverage_waypoints(self._last_map_msg, pattern=pattern)
-                            is_valid, error_msg = planner.validate_waypoints(waypoints, self._last_map_msg)
-
-                            if not is_valid:
-                                self.cmd_rep.send_json({"status": "error", "message": error_msg})
-                            else:
-                                self.cmd_rep.send_json({
-                                    "status": "ok",
-                                    "waypoints": waypoints,
-                                    "count": len(waypoints)
-                                })
-                        except Exception as e:
-                            self.get_logger().error(f"Coverage generation error: {e}")
-                            self.cmd_rep.send_json({"status": "error", "message": str(e)})
 
                 elif action == "generate_coverage":
                     from wheeltec_scada_bridge.coverage_planner import CoveragePlanner
