@@ -7,7 +7,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     jetson_ip_arg = DeclareLaunchArgument(
         'jetson_ip',
-        default_value='192.168.1.100',
+        default_value='25.12.4.100',
         description='IP address of the Jetson AI server',
     )
     nav_cmd_port_arg = DeclareLaunchArgument(
