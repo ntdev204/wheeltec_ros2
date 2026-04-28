@@ -27,7 +27,7 @@ def generate_launch_description():
         output='screen',
         parameters=[twist_mux_cfg],
         remappings=[
-            ('cmd_vel_out', '/cmd_vel_muxed'),
+            ('cmd_vel_out', '/cmd_vel'),  # direct to robot base, no safety relay
         ],
     )
 
@@ -44,21 +44,8 @@ def generate_launch_description():
         }],
     )
 
-    safety_shield_node = Node(
-        package='context_aware_bridge',
-        executable='safety_shield',
-        name='safety_shield',
-        output='screen',
-        parameters=[{
-            'stop_dist_front': 0.35,
-            'stop_dist_rear':  0.20,
-            'stop_dist_side':  0.40,
-        }],
-    )
-
     return LaunchDescription([
         jetson_ip_arg,
         twist_mux_node,
         context_bridge_node,
-        safety_shield_node,
     ])

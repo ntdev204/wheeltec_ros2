@@ -23,7 +23,6 @@ setup(
     entry_points={
         'console_scripts': [
             'context_aware_bridge = context_aware_bridge.main:main',
-            'safety_shield = context_aware_bridge.safety_shield:main',
         ],
     },
 )
