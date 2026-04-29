@@ -19,7 +19,7 @@ from context_aware_bridge.obstacle_guard import ObstacleGuard
 NAV_CRUISE   = 0
 NAV_CAUTIOUS = 1
 NAV_AVOID    = 2
-NAV_FOLLOW   = 3
+NAV_RESERVED = 3
 NAV_STOP     = 4
 
 _NAV_CMD_FMT  = '!ifffiffB'
@@ -191,7 +191,7 @@ class ContextAwareBridgeNode(Node):
     def _to_twist(mode: int, vel_x: float, vel_y: float, heading_offset: float,
                   safety_override: bool) -> Twist:
         twist = Twist()
-        if mode == NAV_STOP:
+        if mode in (NAV_STOP, NAV_RESERVED):
             return twist
 
         if mode == NAV_AVOID:
