@@ -451,6 +451,17 @@ class WheeltecControlNode(Node):
 
         raise ValueError("mode must be slam or nav2")
 
+    def _control_nav2(self, payload: dict):
+        nav2_action = str(payload.get("action", "")).lower()
+        if nav2_action == "start":
+            map_path = payload.get("map_path") or payload.get("source")
+            return self._switch_navigation_mode("nav2", map_path)
+        if nav2_action == "stop":
+            result = self._stop_managed_process("nav2")
+            self.telemetry_data["navigation_mode"] = "idle"
+            return {"status": "ok", "mode": "idle", "nav2": result}
+        return {"status": "error", "message": "Unknown nav2_control action"}
+
     def _occupancy_grid_to_png(self, msg):
         w = msg.info.width
         h = msg.info.height
@@ -911,6 +922,9 @@ class WheeltecControlNode(Node):
                         self.cmd_rep.send_json(self._switch_navigation_mode("slam"))
                     else:
                         self.cmd_rep.send_json({"status": "error", "message": "Unknown slam_control action"})
+
+                elif action == "nav2_control":
+                    self.cmd_rep.send_json(self._control_nav2(payload))
                 else:
                     self.cmd_rep.send_json({"status": "unknown_action"})
             except Exception as e:
