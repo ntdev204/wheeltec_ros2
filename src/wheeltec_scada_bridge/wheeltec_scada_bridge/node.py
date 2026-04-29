@@ -7,7 +7,14 @@ Shared protocol:
 """
 
 import math
+import os
+import re
+import signal
+import subprocess
+import time
+import base64
 from datetime import datetime, timezone
+from pathlib import Path
 from threading import RLock, Thread
 
 import cv2
@@ -36,11 +43,19 @@ class WheeltecControlNode(Node):
         self.declare_parameter('zmq_telemetry_port', zmq_ports.get('telemetry', 5556))
         self.declare_parameter('zmq_camera_port', zmq_ports.get('camera', 5557))
         self.declare_parameter('camera_topic', camera_topic)
+        self.declare_parameter('slam_start_cmd', '')
+        self.declare_parameter('nav2_start_cmd', '')
+        self.declare_parameter('map_saver_cmd', 'ros2 run nav2_map_server map_saver_cli -f {map_prefix}')
+        self.declare_parameter('map_save_dir', '/home/rai/wheeltec_ros2/data/map')
 
         cmd_port = self.get_parameter('zmq_cmd_port').value
         telemetry_port = self.get_parameter('zmq_telemetry_port').value
         camera_port = self.get_parameter('zmq_camera_port').value
         cam_topic = self.get_parameter('camera_topic').value
+        self._slam_start_cmd = str(self.get_parameter('slam_start_cmd').value or '')
+        self._nav2_start_cmd = str(self.get_parameter('nav2_start_cmd').value or '')
+        self._map_saver_cmd = str(self.get_parameter('map_saver_cmd').value or '')
+        self._map_save_dir = Path(str(self.get_parameter('map_save_dir').value or '/tmp/wheeltec_maps')).expanduser()
 
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel_keyboard', 10)
         self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
@@ -97,6 +112,7 @@ class WheeltecControlNode(Node):
             "charging": False,
             "plan": [],
             "local_plan": [],
+            "navigation_mode": "idle",
             "patrol": {
                 "status": "idle",
                 "run_id": None,
@@ -115,6 +131,8 @@ class WheeltecControlNode(Node):
         self.map_data = None
         self.map_dirty = False
         self._last_map_msg = None
+        self._managed_processes = {}
+        self._current_map_path = None
 
         self._patrol_status = "idle"
         self._patrol_phase = "idle"
@@ -175,6 +193,138 @@ class WheeltecControlNode(Node):
     @staticmethod
     def _clamp(value: float, min_value: float, max_value: float) -> float:
         return max(min_value, min(max_value, value))
+
+    @staticmethod
+    def _safe_slug(value: str) -> str:
+        slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", value.strip()).strip("_")
+        return slug or datetime.now(timezone.utc).strftime("map_%Y%m%d_%H%M%S")
+
+    def _format_command(self, template: str, **kwargs) -> str:
+        try:
+            return template.format(**kwargs)
+        except Exception:
+            return template
+
+    def _start_managed_process(self, name: str, command: str):
+        command = str(command or "").strip()
+        if not command:
+            return {"status": "ok", "message": f"{name} command not configured"}
+
+        existing = self._managed_processes.get(name)
+        if existing is not None and existing.poll() is None:
+            return {"status": "running", "pid": existing.pid}
+
+        self.get_logger().info(f"Starting {name}: {command}")
+        kwargs = {}
+        if hasattr(os, "setsid"):
+            kwargs["preexec_fn"] = os.setsid
+        process = subprocess.Popen(command, shell=True, **kwargs)
+        self._managed_processes[name] = process
+        return {"status": "started", "pid": process.pid}
+
+    def _stop_managed_process(self, name: str):
+        process = self._managed_processes.get(name)
+        if process is None or process.poll() is not None:
+            self._managed_processes.pop(name, None)
+            return {"status": "stopped", "message": f"{name} was not running"}
+
+        self.get_logger().info(f"Stopping {name} pid={process.pid}")
+        try:
+            if hasattr(os, "killpg"):
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            else:
+                process.terminate()
+            process.wait(timeout=5.0)
+        except subprocess.TimeoutExpired:
+            if hasattr(os, "killpg"):
+                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+            else:
+                process.kill()
+            process.wait(timeout=2.0)
+        finally:
+            self._managed_processes.pop(name, None)
+        return {"status": "stopped"}
+
+    def _switch_navigation_mode(self, mode: str, map_path: str | None = None):
+        mode = mode.lower()
+        if mode == "slam":
+            nav2_stop = self._stop_managed_process("nav2")
+            slam_start = self._start_managed_process("slam", self._slam_start_cmd)
+            self.telemetry_data["navigation_mode"] = "slam"
+            return {"status": "ok", "mode": "slam", "nav2": nav2_stop, "slam": slam_start}
+
+        if mode == "nav2":
+            slam_stop = self._stop_managed_process("slam")
+            nav2_stop = self._stop_managed_process("nav2")
+            self._current_map_path = map_path or self._current_map_path
+            command = self._format_command(self._nav2_start_cmd, map=self._current_map_path or "")
+            nav2_start = self._start_managed_process("nav2", command)
+            self.telemetry_data["navigation_mode"] = "nav2"
+            return {
+                "status": "ok",
+                "mode": "nav2",
+                "map_path": self._current_map_path,
+                "slam": slam_stop,
+                "nav2_stop": nav2_stop,
+                "nav2": nav2_start,
+            }
+
+        raise ValueError("mode must be slam or nav2")
+
+    def _occupancy_grid_to_png(self, msg):
+        w = msg.info.width
+        h = msg.info.height
+        data = np.asarray(msg.data, dtype=np.int16).reshape((h, w))
+        img_array = np.zeros((h, w), dtype=np.uint8)
+        img_array[data == -1] = 205
+        img_array[data == 0] = 255
+        occupied = data > 0
+        img_array[occupied] = np.maximum(0, 255 - (data[occupied] * 2.55)).astype(np.uint8)
+        img_array = np.flipud(img_array)
+        ok, png_bytes = cv2.imencode('.png', img_array)
+        if not ok:
+            raise RuntimeError("cv2.imencode('.png') failed")
+        return png_bytes.tobytes()
+
+    def _save_current_map(self, payload: dict):
+        if self._last_map_msg is None:
+            return {"status": "error", "message": "No /map data available"}
+
+        name = self._safe_slug(str(payload.get("name") or "map"))
+        self._map_save_dir.mkdir(parents=True, exist_ok=True)
+        map_prefix = self._map_save_dir / name
+        command = self._format_command(
+            self._map_saver_cmd,
+            map_prefix=str(map_prefix),
+            name=name,
+        )
+
+        if command:
+            self.get_logger().info(f"Saving map with command: {command}")
+            completed = subprocess.run(command, shell=True, text=True, capture_output=True, timeout=45.0)
+            if completed.returncode != 0:
+                message = (completed.stderr or completed.stdout or "map_saver_cli failed").strip()
+                return {"status": "error", "message": message}
+
+        yaml_path = map_prefix.with_suffix(".yaml")
+        pgm_path = map_prefix.with_suffix(".pgm")
+        yaml_text = yaml_path.read_text(encoding="utf-8") if yaml_path.exists() else ""
+        pgm_bytes = pgm_path.read_bytes() if pgm_path.exists() else b""
+        png_bytes = self._occupancy_grid_to_png(self._last_map_msg)
+        self.camera_pub.send(b'MAP:' + png_bytes)
+        self._current_map_path = str(yaml_path) if yaml_path.exists() else str(map_prefix)
+
+        return {
+            "status": "saved",
+            "name": name,
+            "source": self._current_map_path,
+            "yaml_path": str(yaml_path),
+            "pgm_path": str(pgm_path),
+            "yaml": yaml_text,
+            "pgm_base64": base64.b64encode(pgm_bytes).decode("ascii") if pgm_bytes else None,
+            "png_base64": base64.b64encode(png_bytes).decode("ascii"),
+            "map_info": self.telemetry_data.get("map_info"),
+        }
 
     def _set_patrol_state(self, status: str, message: str | None = None):
         with self._patrol_lock:
@@ -408,20 +558,8 @@ class WheeltecControlNode(Node):
         }
 
         try:
-            img_array = np.zeros((h, w), dtype=np.uint8)
-            data = msg.data
-            for i in range(len(data)):
-                val = data[i]
-                if val == -1:
-                    img_array[i // w, i % w] = 205
-                elif val == 0:
-                    img_array[i // w, i % w] = 255
-                else:
-                    img_array[i // w, i % w] = max(0, 255 - int(val * 2.55))
-
-            img_array = np.flipud(img_array)
-            _, png_bytes = cv2.imencode('.png', img_array)
-            self.camera_pub.send(b'MAP:' + png_bytes.tobytes())
+            png_bytes = self._occupancy_grid_to_png(msg)
+            self.camera_pub.send(b'MAP:' + png_bytes)
             self.get_logger().info(f'Sent map PNG: {len(png_bytes)} bytes')
         except Exception as e:
             self.get_logger().error(f'Map PNG encode error: {e}')
@@ -466,6 +604,14 @@ class WheeltecControlNode(Node):
         if self.map_data and self.map_dirty:
             self.telemetry_pub.send_json({"type": "map", "payload": self.map_data})
             self.map_dirty = False
+
+    def destroy_node(self):
+        for name in list(self._managed_processes.keys()):
+            try:
+                self._stop_managed_process(name)
+            except Exception as exc:
+                self.get_logger().warning(f"Failed to stop managed process {name}: {exc}")
+        return super().destroy_node()
 
     def cmd_loop(self):
         while rclpy.ok():
@@ -558,8 +704,27 @@ class WheeltecControlNode(Node):
                     else:
                         self.cmd_rep.send_json({"status": "no_map_available"})
 
+                elif action == "navigation_mode":
+                    mode = str(payload.get("mode", "")).lower()
+                    map_path = payload.get("map_path") or payload.get("source")
+                    self.cmd_rep.send_json(self._switch_navigation_mode(mode, map_path))
+
                 elif action == "slam_control":
-                    self.cmd_rep.send_json({"status": "pending_implementation"})
+                    slam_action = str(payload.get("action", "")).lower()
+                    if slam_action == "start":
+                        self.cmd_rep.send_json(self._switch_navigation_mode("slam"))
+                    elif slam_action == "stop":
+                        result = self._stop_managed_process("slam")
+                        self.telemetry_data["navigation_mode"] = "idle"
+                        self.cmd_rep.send_json({"status": "ok", "slam": result})
+                    elif slam_action == "save":
+                        self.cmd_rep.send_json(self._save_current_map(payload))
+                    elif slam_action == "reset":
+                        self._stop_managed_process("slam")
+                        time.sleep(0.5)
+                        self.cmd_rep.send_json(self._switch_navigation_mode("slam"))
+                    else:
+                        self.cmd_rep.send_json({"status": "error", "message": "Unknown slam_control action"})
                 else:
                     self.cmd_rep.send_json({"status": "unknown_action"})
             except Exception as e:
