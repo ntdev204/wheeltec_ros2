@@ -13,6 +13,7 @@ import signal
 import subprocess
 import time
 import base64
+from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path as FilePath
 from threading import RLock, Thread
@@ -182,6 +183,185 @@ class WheeltecControlNode(Node):
 
     def _now_iso(self) -> str:
         return datetime.now(timezone.utc).isoformat()
+
+    def _list_active_nodes(self):
+        try:
+            graph_nodes = self.get_node_names_and_namespaces()
+        except Exception as exc:
+            return {"status": "error", "message": str(exc), "nodes": []}
+
+        nodes = []
+        seen = set()
+        now = self._now_iso()
+        for name, namespace in sorted(graph_nodes, key=lambda item: (item[1], item[0])):
+            full_name = self._format_node_name(namespace, name)
+            if full_name in seen:
+                continue
+            seen.add(full_name)
+            nodes.append({
+                "node_name": full_name,
+                "package_name": self._infer_package_name(full_name),
+                "status": "active",
+                "source": "raspi_ros2",
+                "last_changed_at": now,
+                "metadata": {
+                    "namespace": namespace,
+                    "ros_name": name,
+                },
+            })
+
+        managed_processes = []
+        for name, process in sorted(self._managed_processes.items()):
+            return_code = process.poll()
+            managed_processes.append({
+                "name": name,
+                "pid": process.pid,
+                "status": "running" if return_code is None else "stopped",
+                "return_code": return_code,
+            })
+
+        return {
+            "status": "ok",
+            "source": "raspi_ros2",
+            "timestamp": now,
+            "nodes": nodes,
+            "managed_processes": managed_processes,
+        }
+
+    @staticmethod
+    def _format_node_name(namespace: str, name: str) -> str:
+        namespace = (namespace or "/").strip()
+        name = (name or "").strip("/")
+        if namespace in {"", "/"}:
+            return f"/{name}" if name else "/"
+        return f"/{namespace.strip('/')}/{name}".replace("//", "/")
+
+    @staticmethod
+    def _infer_package_name(node_name: str) -> str | None:
+        clean = node_name.strip("/")
+        package_hints = (
+            ("scada_control_node", "wheeltec_scada_bridge"),
+            ("rplidar", "rplidar_ros"),
+            ("ldlidar", "wheeltec_lidar_ros2"),
+            ("slam_toolbox", "slam_toolbox"),
+            ("map_server", "nav2_map_server"),
+            ("amcl", "nav2_amcl"),
+            ("bt_navigator", "nav2_bt_navigator"),
+            ("controller_server", "nav2_controller"),
+            ("planner_server", "nav2_planner"),
+            ("behavior_server", "nav2_behaviors"),
+            ("waypoint_follower", "nav2_waypoint_follower"),
+            ("lifecycle_manager", "nav2_lifecycle_manager"),
+            ("robot_state_publisher", "robot_state_publisher"),
+            ("joint_state_publisher", "joint_state_publisher"),
+            ("twist_mux", "wheeltec_twist_mux"),
+            ("context_aware", "context-aware"),
+        )
+        for needle, package in package_hints:
+            if needle in clean:
+                return package
+        return None
+
+    def _collect_log_entries(self, payload: dict):
+        limit = int(payload.get("limit") or 200)
+        limit = max(1, min(limit, 500))
+        per_file = max(20, min(limit, 200))
+        files = self._log_file_candidates(payload.get("paths"))
+
+        entries = []
+        for path in files:
+            for line in self._tail_lines(path, per_file):
+                line = line.strip()
+                if not line:
+                    continue
+                timestamp, severity, message = self._parse_log_line(line)
+                entries.append({
+                    "timestamp": timestamp or self._now_iso(),
+                    "severity": severity,
+                    "source": f"wheeltec_ros2:{path.name}",
+                    "message": message[:2000],
+                    "metadata": {"path": str(path)},
+                })
+
+        entries.sort(key=lambda item: item.get("timestamp") or "", reverse=True)
+        return {
+            "status": "ok",
+            "source": "wheeltec_ros2",
+            "logs": entries[:limit],
+            "files": [str(path) for path in files],
+            "timestamp": self._now_iso(),
+        }
+
+    def _log_file_candidates(self, requested_paths=None):
+        roots = []
+        if isinstance(requested_paths, list):
+            roots.extend(str(item) for item in requested_paths if item)
+
+        env_paths = os.environ.get("WHEELTEC_LOG_PATHS", "")
+        if env_paths:
+            roots.extend(path for path in env_paths.split(os.pathsep) if path)
+
+        roots.extend([
+            str(FilePath.home() / ".ros" / "log" / "latest"),
+            str(FilePath.home() / ".ros" / "log"),
+            "/home/rai/wheeltec_ros2/logs",
+            "/tmp/wheeltec_ros2/logs",
+        ])
+
+        files = []
+        seen = set()
+        for root in roots:
+            path = FilePath(root).expanduser()
+            candidates = []
+            if path.is_file():
+                candidates = [path]
+            elif path.is_dir():
+                candidates = [
+                    *path.glob("*.log"),
+                    *path.glob("*.txt"),
+                    *path.glob("**/*.log"),
+                ]
+            for candidate in candidates:
+                try:
+                    resolved = candidate.resolve()
+                    if resolved in seen or not resolved.is_file():
+                        continue
+                    seen.add(resolved)
+                    files.append(resolved)
+                except OSError:
+                    continue
+
+        files.sort(key=lambda item: item.stat().st_mtime if item.exists() else 0, reverse=True)
+        return files[:20]
+
+    @staticmethod
+    def _tail_lines(path: FilePath, max_lines: int):
+        try:
+            with path.open("r", encoding="utf-8", errors="replace") as handle:
+                return list(deque(handle, maxlen=max_lines))
+        except OSError:
+            return []
+
+    @staticmethod
+    def _parse_log_line(line: str):
+        timestamp = None
+        message = line
+
+        iso_match = re.match(r"^(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?)", line)
+        if iso_match:
+            timestamp = iso_match.group(1).replace(",", ".")
+            message = line[iso_match.end():].strip(" -")
+
+        severity = "INFO"
+        sev_match = re.search(r"\b(DEBUG|INFO|WARN|WARNING|ERROR|FATAL|CRITICAL)\b", line, re.IGNORECASE)
+        if sev_match:
+            severity = sev_match.group(1).upper()
+            if severity == "WARN":
+                severity = "WARNING"
+            if severity == "FATAL":
+                severity = "CRITICAL"
+
+        return timestamp, severity, message
 
     @staticmethod
     def _safe_float(value, field_name: str) -> float:
@@ -703,6 +883,12 @@ class WheeltecControlNode(Node):
                         self.cmd_rep.send_json({"status": "map_resent"})
                     else:
                         self.cmd_rep.send_json({"status": "no_map_available"})
+
+                elif action == "list_nodes":
+                    self.cmd_rep.send_json(self._list_active_nodes())
+
+                elif action == "get_logs":
+                    self.cmd_rep.send_json(self._collect_log_entries(payload))
 
                 elif action == "navigation_mode":
                     mode = str(payload.get("mode", "")).lower()
