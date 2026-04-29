@@ -14,7 +14,7 @@ import subprocess
 import time
 import base64
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path as FilePath
 from threading import RLock, Thread
 
 import cv2
@@ -55,7 +55,7 @@ class WheeltecControlNode(Node):
         self._slam_start_cmd = str(self.get_parameter('slam_start_cmd').value or '')
         self._nav2_start_cmd = str(self.get_parameter('nav2_start_cmd').value or '')
         self._map_saver_cmd = str(self.get_parameter('map_saver_cmd').value or '')
-        self._map_save_dir = Path(str(self.get_parameter('map_save_dir').value or '/tmp/wheeltec_maps')).expanduser()
+        self._map_save_dir = FilePath(str(self.get_parameter('map_save_dir').value or '/tmp/wheeltec_maps')).expanduser()
 
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel_keyboard', 10)
         self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
