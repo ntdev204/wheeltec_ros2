@@ -1,4 +1,5 @@
 
+import json
 import math
 import struct
 import time
@@ -24,13 +25,12 @@ NAV_STOP     = 4
 _NAV_CMD_FMT  = '!ifffiffB'
 _NAV_CMD_SIZE = struct.calcsize(_NAV_CMD_FMT)
 
-_ROBOT_STATE_FMT  = '!11fd'
-_ROBOT_STATE_SIZE = struct.calcsize(_ROBOT_STATE_FMT)
-
 MAX_LINEAR_VEL  = 0.8
 MAX_ANGULAR_VEL = 1.5
 
 WATCHDOG_TIMEOUT_SEC = 1.5
+LIDAR_MAX_DISTANCE = 9.9
+LIDAR_SCAN_BINS = 360
 
 
 class ContextAwareBridgeNode(Node):
@@ -70,22 +70,13 @@ class ContextAwareBridgeNode(Node):
         self._state_pub.setsockopt(zmq.LINGER, 0)
         self._state_pub.bind(f'tcp://0.0.0.0:{robot_state_port}')
 
-        self._pb = None
-        try:
-            from src.communication.proto import messages_pb2 as pb
-            self._pb = pb
-            self.get_logger().info('Protobuf stubs loaded — RobotState will use Protobuf encoding.')
-        except ImportError:
-            self.get_logger().debug(
-                'Protobuf stubs not found — using struct fallback for RobotState (expected).'
-            )
-
         self._last_cmd_time = time.monotonic()
         self._yielding_to_nav2 = False
         self._watchdog_stop_sent = False
         self._odom: dict = {}
         self._battery_percent = 0.0
         self._lidar_sectors = [9.9, 9.9, 9.9, 9.9]
+        self._lidar_scan360 = [LIDAR_MAX_DISTANCE] * LIDAR_SCAN_BINS
         self._lidar_valid = False
         self._last_scan_time = 0.0
         self._obstacle_guard = ObstacleGuard(
@@ -131,10 +122,13 @@ class ContextAwareBridgeNode(Node):
 
     def _scan_cb(self, msg: LaserScan) -> None:
         f, r, l, ri = [], [], [], []
+        scan360 = [LIDAR_MAX_DISTANCE] * LIDAR_SCAN_BINS
         angle = msg.angle_min
         for dist in msg.ranges:
             if msg.range_min < dist < msg.range_max:
                 deg = math.degrees(angle)
+                idx = int(round(deg)) % LIDAR_SCAN_BINS
+                scan360[idx] = min(scan360[idx], min(float(dist), LIDAR_MAX_DISTANCE))
                 if -45 <= deg <= 45: f.append(dist)
                 elif deg >= 135 or deg <= -135: r.append(dist)
                 elif 45 < deg < 135: l.append(dist)
@@ -148,6 +142,7 @@ class ContextAwareBridgeNode(Node):
             min(l) if l else 9.9,
             min(ri) if ri else 9.9
         ]
+        self._lidar_scan360 = scan360
         self._last_scan_time = time.monotonic()
 
     def _recv_loop(self) -> None:
@@ -212,35 +207,32 @@ class ContextAwareBridgeNode(Node):
         return twist
 
     def _encode_robot_state(self, odom: dict) -> bytes:
-        if self._pb:
-            try:
-                msg = self._pb.RobotState()
-                msg.vx     = odom.get('vx', 0.0)
-                msg.vy     = odom.get('vy', 0.0)
-                msg.vtheta = odom.get('vtheta', 0.0)
-                msg.pos_x  = odom.get('pos_x', 0.0)
-                msg.pos_y  = odom.get('pos_y', 0.0)
-                msg.pos_theta = odom.get('pos_theta', 0.0)
-                msg.battery_percent = self._battery_percent
-                msg.nav2_status = 'idle'
-                msg.timestamp = time.time()
-                return msg.SerializeToString()
-            except Exception as exc:
-                self.get_logger().debug(f'Proto encode failed, using struct: {exc}')
-
-        return struct.pack(
-            _ROBOT_STATE_FMT,
-            odom.get('vx', 0.0),
-            odom.get('vy', 0.0),
-            odom.get('vtheta', 0.0),
-            odom.get('pos_x', 0.0),
-            odom.get('pos_y', 0.0),
-            odom.get('pos_theta', 0.0),
-            self._battery_percent,
-            self._lidar_sectors[0], self._lidar_sectors[1], 
-            self._lidar_sectors[2], self._lidar_sectors[3],
-            time.time(),
-        )
+        return json.dumps(
+            {
+                'odom': {
+                    'vx': odom.get('vx', 0.0),
+                    'vy': odom.get('vy', 0.0),
+                    'vtheta': odom.get('vtheta', 0.0),
+                    'pos_x': odom.get('pos_x', 0.0),
+                    'pos_y': odom.get('pos_y', 0.0),
+                    'pos_theta': odom.get('pos_theta', 0.0),
+                },
+                'battery_percent': self._battery_percent,
+                'nav2_status': 'idle',
+                'lidar': {
+                    'sectors': {
+                        'front': self._lidar_sectors[0],
+                        'rear': self._lidar_sectors[1],
+                        'left': self._lidar_sectors[2],
+                        'right': self._lidar_sectors[3],
+                    },
+                    # 360 bins in robot frame: 0=front, 90=left, 180=rear, 270=right.
+                    'scan360': [round(v, 3) for v in self._lidar_scan360],
+                },
+                'timestamp': time.time(),
+            },
+            separators=(',', ':'),
+        ).encode('utf-8')
 
     @staticmethod
     def _yaw_from_quat(q) -> float:
