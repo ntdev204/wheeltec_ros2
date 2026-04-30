@@ -54,7 +54,8 @@ def generate_launch_description():
     # TODO(orduno) Substitute with `PushNodeRemapping`
     #              https://github.com/ros2/launch_ros/issues/56
     remappings = [('/tf', 'tf'),
-                  ('/tf_static', 'tf_static')]
+                  ('/tf_static', 'tf_static'),
+                  ('/cmd_vel', '/cmd_vel_nav')]
 
     # Create our own temporary YAML files that include substitutions
     # Resolve stable BT XML path: only replan when path becomes invalid
