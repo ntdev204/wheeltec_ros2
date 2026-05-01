@@ -1,0 +1,16 @@
+[Unit]
+Description=Wheeltec ROS2 Production Bringup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rai
+Environment=WORKSPACE_DIR=/home/rai/wheeltec_ros2
+WorkingDirectory=/home/rai/wheeltec_ros2
+ExecStart=/bin/bash /home/rai/wheeltec_ros2/scripts/start_prod_bringup.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
