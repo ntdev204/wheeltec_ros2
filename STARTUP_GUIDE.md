@@ -79,3 +79,31 @@ Khi cả hệ thống hoạt động, mạch phân luồng `twist_mux` trên Ras
 1. **Mức 10 (Cao nhất):** Bàn phím máy tính hoặc Joypad trên Web (`/cmd_vel_keyboard`). Khi bạn bấm phím, AI sẽ lập tức bị ghi đè.
 2. **Mức 5:** Lệnh của Jetson AI (`/cmd_vel_context`). Nếu bạn thả tay khỏi bàn phím, AI sẽ chiếm quyền điều khiển.
 3. **Mức 1 (Thấp nhất):** Điều hướng tự động Nav2 (`/cmd_vel_nav`).
+
+---
+
+## 4. Tự động chạy khi Raspberry Pi khởi động (systemd)
+Để tự động chạy lệnh:
+```bash
+ros2 launch turn_on_wheeltec_robot prod_bringup.launch.py
+```
+
+Trong repo đã có sẵn:
+- `scripts/start_prod_bringup.sh`
+- `systemd/wheeltec-prod-bringup.service`
+
+Chạy các lệnh sau trên Raspberry Pi:
+```bash
+cd ~/wheeltec_ros2
+chmod +x scripts/start_prod_bringup.sh
+sudo cp systemd/wheeltec-prod-bringup.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable wheeltec-prod-bringup.service
+sudo systemctl start wheeltec-prod-bringup.service
+```
+
+Kiểm tra trạng thái:
+```bash
+systemctl status wheeltec-prod-bringup.service
+journalctl -u wheeltec-prod-bringup.service -f
+```
