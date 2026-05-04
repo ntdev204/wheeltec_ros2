@@ -379,6 +379,23 @@ class WheeltecControlNode(Node):
         slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", value.strip()).strip("_")
         return slug or datetime.now(timezone.utc).strftime("map_%Y%m%d_%H%M%S")
 
+    @staticmethod
+    def _map_files_exist(map_prefix: FilePath) -> bool:
+        return map_prefix.with_suffix(".yaml").exists() or map_prefix.with_suffix(".pgm").exists()
+
+    def _unique_map_prefix(self, name: str) -> FilePath:
+        map_prefix = self._map_save_dir / name
+        if not self._map_files_exist(map_prefix):
+            return map_prefix
+
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        candidate = self._map_save_dir / f"{name}_{timestamp}"
+        index = 2
+        while self._map_files_exist(candidate):
+            candidate = self._map_save_dir / f"{name}_{timestamp}_{index}"
+            index += 1
+        return candidate
+
     def _format_command(self, template: str, **kwargs) -> str:
         try:
             return template.format(**kwargs)
@@ -481,13 +498,17 @@ class WheeltecControlNode(Node):
         if self._last_map_msg is None:
             return {"status": "error", "message": "No /map data available"}
 
-        name = self._safe_slug(str(payload.get("name") or "map"))
+        raw_name = str(payload.get("name") or "").strip()
+        if raw_name:
+            name = self._safe_slug(raw_name)
+        else:
+            name = datetime.now(timezone.utc).strftime("map_%Y%m%d_%H%M%S")
         self._map_save_dir.mkdir(parents=True, exist_ok=True)
-        map_prefix = self._map_save_dir / name
+        map_prefix = self._unique_map_prefix(name)
         command = self._format_command(
             self._map_saver_cmd,
             map_prefix=str(map_prefix),
-            name=name,
+            name=map_prefix.name,
         )
 
         if command:
@@ -507,7 +528,7 @@ class WheeltecControlNode(Node):
 
         return {
             "status": "saved",
-            "name": name,
+            "name": map_prefix.name,
             "source": self._current_map_path,
             "yaml_path": str(yaml_path),
             "pgm_path": str(pgm_path),
