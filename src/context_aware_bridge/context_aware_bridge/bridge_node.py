@@ -37,13 +37,18 @@ class ContextAwareBridgeNode(Node):
     def __init__(self):
         super().__init__('context_aware_bridge')
 
-        self.declare_parameter('jetson_ip',        '25.12.4.100')
-        self.declare_parameter('raspi_ip',         '25.12.4.101')
-        self.declare_parameter('nav_cmd_port',     5555)
-        self.declare_parameter('robot_state_port', 5560)
-        self.declare_parameter('lidar_stop_distance', 0.30)
-        self.declare_parameter('lidar_slow_distance', 0.60)
-        self.declare_parameter('scan_stale_timeout', 0.75)
+        self.declare_parameter('jetson_ip',             '25.12.4.100')
+        self.declare_parameter('raspi_ip',              '25.12.4.101')
+        self.declare_parameter('nav_cmd_port',          5555)
+        self.declare_parameter('robot_state_port',      5560)
+        # Radial safety guard params
+        self.declare_parameter('stop_radius',           0.50)  # m — normal corridor
+        self.declare_parameter('slow_radius',           0.70)  # m — normal corridor
+        self.declare_parameter('narrow_stop_radius',    0.30)  # m — narrow corridor
+        self.declare_parameter('narrow_slow_radius',    0.50)  # m — narrow corridor
+        self.declare_parameter('narrow_mode',           False) # toggle at runtime
+        self.declare_parameter('lidar_offset_m',        0.10)  # m — lidar offset from robot center
+        self.declare_parameter('scan_stale_timeout',    0.75)
 
         jetson_ip        = self.get_parameter('jetson_ip').value
         robot_state_port = self.get_parameter('robot_state_port').value
@@ -80,9 +85,15 @@ class ContextAwareBridgeNode(Node):
         self._lidar_valid = False
         self._last_scan_time = 0.0
         self._obstacle_guard = ObstacleGuard(
-            stop_distance=self.get_parameter('lidar_stop_distance').value,
-            slow_distance=self.get_parameter('lidar_slow_distance').value,
+            stop_radius=self.get_parameter('stop_radius').value,
+            slow_radius=self.get_parameter('slow_radius').value,
+            narrow_stop_radius=self.get_parameter('narrow_stop_radius').value,
+            narrow_slow_radius=self.get_parameter('narrow_slow_radius').value,
             scan_stale_timeout=self.get_parameter('scan_stale_timeout').value,
+            lidar_offset_m=self.get_parameter('lidar_offset_m').value,
+        )
+        self._obstacle_guard.set_narrow_mode(
+            self.get_parameter('narrow_mode').value
         )
 
         self._recv_thread = Thread(target=self._recv_loop, daemon=True, name='zmq-nav-sub')
@@ -169,8 +180,8 @@ class ContextAwareBridgeNode(Node):
                 self._yielding_to_nav2 = False
                 twist = self._to_twist(mode, vel_x, vel_y, heading_offset, bool(safety_override))
                 scan_age_s = time.monotonic() - self._last_scan_time
-                lidar_sectors = self._lidar_sectors if self._lidar_valid else None
-                twist = self._obstacle_guard.guard(twist, lidar_sectors, scan_age_s)
+                scan360 = self._lidar_scan360 if self._lidar_valid else None
+                twist = self._obstacle_guard.guard(twist, scan360, scan_age_s)
                 self.cmd_vel_pub.publish(twist)
             except zmq.Again:
                 pass
