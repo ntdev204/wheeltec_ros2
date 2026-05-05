@@ -145,7 +145,9 @@ class ContextAwareBridgeNode(Node):
                 elif 45 < deg < 135: l.append(dist)
                 elif -135 < deg < -45: ri.append(dist)
             angle += msg.angle_increment
-        
+
+        # Pre-compute không lưu map — scan360 là real-time snapshot
+        # Guard sẽ xử lý inline khi có lệnh điều khiển
         self._lidar_valid = bool(f or r or l or ri)
         self._lidar_sectors = [
             min(f) if f else 9.9,
