@@ -93,8 +93,6 @@ class ContextAwareBridgeNode(Node):
             narrow_stop_radius=self.get_parameter('narrow_stop_radius').value,
             narrow_slow_radius=self.get_parameter('narrow_slow_radius').value,
             influence_radius=self.get_parameter('influence_radius').value,
-            angular_gain=self.get_parameter('angular_gain').value,
-            max_angular_corr=self.get_parameter('max_angular_corr').value,
             scan_stale_timeout=self.get_parameter('scan_stale_timeout').value,
             lidar_offset_m=self.get_parameter('lidar_offset_m').value,
         )
