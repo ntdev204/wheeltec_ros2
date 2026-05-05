@@ -41,13 +41,16 @@ class ContextAwareBridgeNode(Node):
         self.declare_parameter('raspi_ip',              '25.12.4.101')
         self.declare_parameter('nav_cmd_port',          5555)
         self.declare_parameter('robot_state_port',      5560)
-        # Radial safety guard params
-        self.declare_parameter('stop_radius',           0.50)  # m — normal corridor
-        self.declare_parameter('slow_radius',           0.70)  # m — normal corridor
+        # Radial VFF safety guard params
+        self.declare_parameter('stop_radius',           0.50)  # m — hard stop
+        self.declare_parameter('slow_radius',           0.70)  # m — start slowing
+        self.declare_parameter('influence_radius',      1.00)  # m — VFF influence range
+        self.declare_parameter('angular_gain',          1.20)  # VFF steering gain
+        self.declare_parameter('max_angular_corr',      1.50)  # rad/s max correction
         self.declare_parameter('narrow_stop_radius',    0.30)  # m — narrow corridor
         self.declare_parameter('narrow_slow_radius',    0.50)  # m — narrow corridor
-        self.declare_parameter('narrow_mode',           False) # toggle at runtime
-        self.declare_parameter('lidar_offset_m',        0.10)  # m — lidar offset from robot center
+        self.declare_parameter('narrow_mode',           False)
+        self.declare_parameter('lidar_offset_m',        0.10)  # m — lidar forward offset
         self.declare_parameter('scan_stale_timeout',    0.75)
 
         jetson_ip        = self.get_parameter('jetson_ip').value
@@ -89,6 +92,9 @@ class ContextAwareBridgeNode(Node):
             slow_radius=self.get_parameter('slow_radius').value,
             narrow_stop_radius=self.get_parameter('narrow_stop_radius').value,
             narrow_slow_radius=self.get_parameter('narrow_slow_radius').value,
+            influence_radius=self.get_parameter('influence_radius').value,
+            angular_gain=self.get_parameter('angular_gain').value,
+            max_angular_corr=self.get_parameter('max_angular_corr').value,
             scan_stale_timeout=self.get_parameter('scan_stale_timeout').value,
             lidar_offset_m=self.get_parameter('lidar_offset_m').value,
         )
