@@ -30,20 +30,20 @@ class TestMagneticGuard:
         t = self.g.guard(twist(x=0.5), wall_at(0, 0.8), 0.1)
         assert t.linear.x < 0.5, "Repulsion should reduce forward speed"
 
-    def test_wall_right_pushes_left(self):
-        """Tường phải (270°), 0.8m → lực đẩy sang trái → vy_final > vy_commanded=0."""
+    def test_wall_right_does_not_create_side_motion_without_cmd(self):
+        """Không có lệnh vy thì guard không tự sinh trượt ngang."""
         t = self.g.guard(twist(x=0.3), wall_at(270, 0.8), 0.1)
-        assert t.linear.y > 0.0, "Wall on right should push robot left (vy > 0)"
+        assert t.linear.y == 0.0, "No commanded vy -> no lateral motion"
 
-    def test_wall_left_pushes_right(self):
-        """Tường trái (90°), 0.8m → lực đẩy sang phải → vy < 0."""
+    def test_wall_left_does_not_create_side_motion_without_cmd(self):
+        """Không có lệnh vy thì guard không tự sinh trượt ngang."""
         t = self.g.guard(twist(x=0.3), wall_at(90, 0.8), 0.1)
-        assert t.linear.y < 0.0, "Wall on left should push robot right (vy < 0)"
+        assert t.linear.y == 0.0, "No commanded vy -> no lateral motion"
 
-    def test_robot_idle_pushed_away(self):
-        """Robot đứng yên, tường trước 0.8m → bị đẩy lùi tự động."""
+    def test_robot_idle_stays_stopped(self):
+        """Robot đứng yên thì phải đứng yên, không tự sinh chuyển động tránh."""
         t = self.g.guard(twist(x=0.0), wall_at(0, 0.8), 0.1)
-        assert t.linear.x < 0.0, "Stationary robot should be pushed back"
+        assert t.linear.x == 0.0, "Stationary robot should remain stopped"
 
     def test_repulsion_max_speed_capped(self):
         """Tổng lực đẩy không vượt 0.2 m/s."""

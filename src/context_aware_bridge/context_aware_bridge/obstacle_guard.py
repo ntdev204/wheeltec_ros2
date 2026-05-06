@@ -77,27 +77,37 @@ class ObstacleGuard:
             self._zero(twist)
             return twist
 
+        cmd_x = float(twist.linear.x)
+        cmd_y = float(twist.linear.y)
+
         # ── Bước 1: Tính lực đẩy nam châm từ toàn bộ 360° ───────────────────
         rep_vx, rep_vy = self._magnetic_repulsion(scan360)
 
         # ── Bước 2: Hợp lực: lệnh người dùng + lực đẩy ──────────────────────
-        vx = twist.linear.x + rep_vx
-        vy = twist.linear.y + rep_vy
+        vx = cmd_x + rep_vx
+        vy = cmd_y + rep_vy
 
         # ── Bước 3: Hard stop — kiểm tra cả hướng v_final (cmd + repulsion) ───
         # Dùng v_final direction, không phải v_commanded, để ngăn repulsion
         # đẩy robot vào vùng đã bị block ở phía đối diện.
         hard_stop = self._stop_radius + STOP_TOLERANCE_M
 
-        if abs(vx) > VEL_THRESHOLD:
-            center = 0 if vx > 0 else 180
+        if abs(cmd_x) > VEL_THRESHOLD:
+            center = 0 if cmd_x > 0 else 180
             if self._min_eff_in_cone(scan360, center) <= hard_stop:
                 vx = 0.0
 
-        if abs(vy) > VEL_THRESHOLD:
-            center = 90 if vy > 0 else 270
+        if abs(cmd_y) > VEL_THRESHOLD:
+            center = 90 if cmd_y > 0 else 270
             if self._min_eff_in_cone(scan360, center) <= hard_stop:
                 vy = 0.0
+
+        # Không tự tạo chuyển động khi không có lệnh teleop trên trục đó.
+        # Tránh hiện tượng đâm tường xong robot tự lùi/chạy ngang.
+        if abs(cmd_x) <= VEL_THRESHOLD:
+            vx = 0.0
+        if abs(cmd_y) <= VEL_THRESHOLD:
+            vy = 0.0
 
         # Bổ sung: nếu repulsion muốn đẩy robot vào hướng đã bị block → zero rep đó
         # (ví dụ: tường sau đẩy tiến nhưng phía trước đã trong stop zone)
