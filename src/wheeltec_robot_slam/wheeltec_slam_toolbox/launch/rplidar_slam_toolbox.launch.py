@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-rplidar_slam_toolbox.launch.py - filtered RPLidar SLAM (async mode)
+rplidar_slam_toolbox.launch.py - RPLidar SLAM (async mode)
 
-File nay chay laser scan filter + SLAM Toolbox (async).
-Robot base + lidar da duoc khoi dong boi wheeltec_sensors.launch.py.
+File nay chi chay SLAM Toolbox (async).
+Robot base + lidar + scan filter da duoc khoi dong boi prod_bringup.launch.py.
 
 Su dung doc lap:
   ros2 launch wheeltec_slam_toolbox rplidar_slam_toolbox.launch.py
@@ -21,15 +21,6 @@ def generate_launch_description():
     slam_dir = get_package_share_directory('wheeltec_slam_toolbox')
 
     return LaunchDescription([
-        Node(
-            package='wheeltec_slam_toolbox',
-            executable='scan_box_filter_node',
-            name='scan_box_filter_node',
-            output='screen',
-            parameters=[
-                os.path.join(slam_dir, 'config', 'laser_filter.yaml')
-            ],
-        ),
         Node(
             package='slam_toolbox',
             executable='async_slam_toolbox_node',
