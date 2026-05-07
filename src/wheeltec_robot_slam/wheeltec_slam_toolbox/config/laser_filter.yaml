@@ -1,0 +1,16 @@
+scan_to_scan_filter_chain:
+  ros__parameters:
+    filter1:
+      name: robot_body_box_filter
+      type: laser_filters/LaserScanBoxFilter
+      params:
+        # Robot axes from mini_mec_robot.urdf:
+        # +x = front, -x = rear, +y = left, -y = right.
+        box_frame: base_footprint
+        min_x: -0.50
+        max_x: 0.30
+        min_y: -0.35
+        max_y: 0.35
+        min_z: -0.20
+        max_z: 0.35
+        invert: false
