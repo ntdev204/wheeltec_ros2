@@ -22,16 +22,12 @@ def generate_launch_description():
 
     return LaunchDescription([
         Node(
-            package='laser_filters',
-            executable='scan_to_scan_filter_chain',
-            name='scan_to_scan_filter_chain',
+            package='wheeltec_slam_toolbox',
+            executable='scan_box_filter_node',
+            name='scan_box_filter_node',
             output='screen',
             parameters=[
                 os.path.join(slam_dir, 'config', 'laser_filter.yaml')
-            ],
-            remappings=[
-                ('scan', '/scan'),
-                ('scan_filtered', '/scan_filtered'),
             ],
         ),
         Node(
