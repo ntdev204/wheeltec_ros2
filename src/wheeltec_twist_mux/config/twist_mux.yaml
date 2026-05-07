@@ -2,8 +2,8 @@
 #
 # Priority order (higher number = wins):
 #   10 → /cmd_vel_keyboard  (website joystick override — always wins)
+#    6 → /cmd_vel_nav       (Nav2 autonomous navigation)
 #    5 → /cmd_vel_context   (Jetson AI context-aware navigation)
-#    1 → /cmd_vel_nav       (Nav2 autonomous navigation)
 #
 # timeout: if no message received within this period (seconds), the source
 #          is considered inactive and the next lower-priority source takes over.
@@ -22,4 +22,4 @@ twist_mux:
       navigation:
         topic:    /cmd_vel_nav
         timeout:  0.5
-        priority: 1
+        priority: 6
