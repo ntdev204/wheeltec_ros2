@@ -3,9 +3,9 @@
 This keeps the historical package/executable name so existing launch files and
 twist_mux wiring continue to work, but it speaks the new adaptive data plane:
 
-* ROS2 /scan, /imu/data_raw and Pi status -> Jetson ZMQ PUSH protobuf
-* Jetson ZMQ PUB perception results -> ROS2 diagnostics JSON
-* Jetson TCP NAV_CMD packets (9091) -> /cmd_vel_context
+* ROS2 /scan, /imu/data_raw and Pi status -> adaptive runtime ZMQ PUSH protobuf
+* Adaptive runtime ZMQ PUB perception results -> ROS2 diagnostics JSON
+* Adaptive runtime TCP NAV_CMD packets (9091) -> /cmd_vel_context
 * Optional heartbeat watchdog server (9093) -> fail-safe stop
 """
 
@@ -62,7 +62,8 @@ class ContextAwareBridgeNode(Node):
     def __init__(self):
         super().__init__("context_aware_bridge")
 
-        self.declare_parameter("jetson_ip", "25.12.4.100")
+        self.declare_parameter("adaptive_host", "")
+        self.declare_parameter("jetson_ip", "127.0.0.1")
         self.declare_parameter("raspi_ip", "25.12.4.101")
         self.declare_parameter("sensor_ingest_port", 5555)
         self.declare_parameter("result_publish_port", 5556)
@@ -84,7 +85,9 @@ class ContextAwareBridgeNode(Node):
         self.declare_parameter("lidar_offset_m", 0.10)
         self.declare_parameter("scan_stale_timeout", 0.75)
 
-        self._jetson_ip = str(self.get_parameter("jetson_ip").value)
+        adaptive_host = str(self.get_parameter("adaptive_host").value)
+        legacy_jetson_ip = str(self.get_parameter("jetson_ip").value)
+        self._adaptive_host = adaptive_host or legacy_jetson_ip or "127.0.0.1"
         self._source_id = str(self.get_parameter("source_id").value)
         self._sensor_ingest_port = int(self.get_parameter("sensor_ingest_port").value)
         self._result_publish_port = int(self.get_parameter("result_publish_port").value)
@@ -104,14 +107,14 @@ class ContextAwareBridgeNode(Node):
         self._sensor_push = self._ctx.socket(zmq.PUSH)
         self._sensor_push.setsockopt(zmq.SNDHWM, 1)
         self._sensor_push.setsockopt(zmq.LINGER, 0)
-        self._sensor_push.connect(f"tcp://{self._jetson_ip}:{self._sensor_ingest_port}")
+        self._sensor_push.connect(f"tcp://{self._adaptive_host}:{self._sensor_ingest_port}")
 
         self._result_sub = self._ctx.socket(zmq.SUB)
         self._result_sub.setsockopt(zmq.RCVHWM, 2)
         self._result_sub.setsockopt(zmq.LINGER, 0)
         self._result_sub.setsockopt(zmq.RCVTIMEO, 200)
         self._result_sub.setsockopt_string(zmq.SUBSCRIBE, "")
-        self._result_sub.connect(f"tcp://{self._jetson_ip}:{self._result_publish_port}")
+        self._result_sub.connect(f"tcp://{self._adaptive_host}:{self._result_publish_port}")
 
         self._lock = Lock()
         self._stop_event = Event()
@@ -153,8 +156,8 @@ class ContextAwareBridgeNode(Node):
 
         self.get_logger().info(
             "[adaptive-context-aware bridge] started\n"
-            f"  PUSH sensors  tcp://{self._jetson_ip}:{self._sensor_ingest_port}\n"
-            f"  SUB results   tcp://{self._jetson_ip}:{self._result_publish_port}\n"
+            f"  PUSH sensors  tcp://{self._adaptive_host}:{self._sensor_ingest_port}\n"
+            f"  SUB results   tcp://{self._adaptive_host}:{self._result_publish_port}\n"
             f"  TCP nav_cmd   0.0.0.0:{self._nav_cmd_port}\n"
             f"  TCP heartbeat 0.0.0.0:{self._heartbeat_port}"
         )

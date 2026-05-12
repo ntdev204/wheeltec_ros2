@@ -3,7 +3,7 @@
 <package format="3">
   <name>context_aware_bridge</name>
   <version>1.0.0</version>
-  <description>Adaptive-context-aware bridge between Jetson data plane and ROS2 sensors/control</description>
+  <description>Adaptive-context-aware bridge between laptop runtime data plane and ROS2 sensors/control</description>
   <maintainer email="thientn204@gmail.com">thientn</maintainer>
   <license>MIT</license>
 

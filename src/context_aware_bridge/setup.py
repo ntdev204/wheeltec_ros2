@@ -16,8 +16,8 @@ setup(
     maintainer='thientn204',
     maintainer_email='thientn204@gmail.com',
     description=(
-        'Adaptive-context-aware bridge: ROS2 sensors → Jetson ZMQ/protobuf; '
-        'Jetson NAV_CMD TCP → ROS2 /cmd_vel_context'
+        'Adaptive-context-aware bridge: ROS2 sensors to laptop runtime ZMQ/protobuf; '
+        'adaptive NAV_CMD TCP to ROS2 /cmd_vel_context'
     ),
     license='MIT',
     entry_points={
