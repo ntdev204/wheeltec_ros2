@@ -3,7 +3,7 @@
 <package format="3">
   <name>context_aware_bridge</name>
   <version>1.0.0</version>
-  <description>ZMQ bridge between Jetson AI NavigationCommand and ROS2 Nav2/Odom</description>
+  <description>Adaptive-context-aware bridge between Jetson data plane and ROS2 sensors/control</description>
   <maintainer email="thientn204@gmail.com">thientn</maintainer>
   <license>MIT</license>
 
@@ -11,6 +11,8 @@
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <exec_depend>python3-protobuf</exec_depend>
   <exec_depend>ros2launch</exec_depend>
 
   <test_depend>ament_copyright</test_depend>

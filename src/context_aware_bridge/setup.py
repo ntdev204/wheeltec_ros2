@@ -11,13 +11,13 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', ['launch/context_aware_bridge.launch.py']),
     ],
-    install_requires=['setuptools', 'pyzmq'],
+    install_requires=['setuptools', 'pyzmq', 'protobuf'],
     zip_safe=True,
     maintainer='thientn204',
     maintainer_email='thientn204@gmail.com',
     description=(
-        'ZMQ bridge: Jetson AI NavigationCommand (struct binary) → ROS2 /cmd_vel_context; '
-        '/odom → RobotState (Protobuf/struct) → Jetson'
+        'Adaptive-context-aware bridge: ROS2 sensors → Jetson ZMQ/protobuf; '
+        'Jetson NAV_CMD TCP → ROS2 /cmd_vel_context'
     ),
     license='MIT',
     entry_points={

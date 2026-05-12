@@ -39,8 +39,10 @@ def generate_launch_description():
         parameters=[{
             'jetson_ip':        LaunchConfiguration('jetson_ip'),
             'raspi_ip':         '25.12.4.101',
-            'nav_cmd_port':     5555,
-            'robot_state_port': 5560,
+            'sensor_ingest_port': 5555,
+            'result_publish_port': 5556,
+            'nav_cmd_port': 9091,
+            'heartbeat_port': 9093,
         }],
     )
 
