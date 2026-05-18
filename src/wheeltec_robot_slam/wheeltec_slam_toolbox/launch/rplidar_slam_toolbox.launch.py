@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-rplidar_slam_toolbox.launch.py - SLAM only (async mode)
+rplidar_slam_toolbox.launch.py - RPLidar SLAM (async mode)
 
 File nay chi chay SLAM Toolbox (async).
-Robot base + lidar da duoc khoi dong boi wheeltec_sensors.launch.py.
+Robot base + lidar + scan filter da duoc khoi dong boi prod_bringup.launch.py.
 
 Su dung doc lap:
   ros2 launch wheeltec_slam_toolbox rplidar_slam_toolbox.launch.py
