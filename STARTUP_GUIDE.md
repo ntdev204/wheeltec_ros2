@@ -1,6 +1,6 @@
 # Trình Tự Khởi Động Hệ Thống (Startup Sequence)
 
-Tài liệu này hướng dẫn cách bật toàn bộ hệ thống Robot tự hành Context-Aware theo đúng thứ tự để đảm bảo các thành phần (Raspberry Pi, Jetson, Laptop) kết nối và đồng bộ thành công.
+Tài liệu này hướng dẫn cách bật toàn bộ hệ thống Robot tự hành adaptive-context-aware theo đúng thứ tự để đảm bảo Raspberry Pi và laptop runtime kết nối, đồng bộ thành công.
 
 ---
 
@@ -22,9 +22,9 @@ ros2 launch turn_on_wheeltec_robot wheeltec_sensors.launch.py
 ```bash
 cd ~/wheeltec_ros2
 source install/setup.bash
-ros2 launch wheeltec_twist_mux twist_mux.launch.py jetson_ip:=25.12.4.100
+ros2 launch wheeltec_twist_mux twist_mux.launch.py adaptive_host:=<LAPTOP_IP>
 ```
-*(Lưu ý: File launch này sẽ tự động gọi luôn node `context_aware_bridge`, mở cổng ZMQ 5555 và 5560 để sẵn sàng đón tín hiệu từ Jetson)*
+*(Lưu ý: File launch này vẫn gọi node `context_aware_bridge` để giữ tương thích launch cũ, nhưng node đã nói protocol adaptive-context-aware: ZMQ sensor ingest `5555`, ZMQ result `5556`, TCP NAV_CMD `9091`, TCP heartbeat `9093`)*
 
 ### Terminal 3: Bật Cầu nối SCADA (Tùy chọn nếu dùng Web)
 ```bash
@@ -35,36 +35,32 @@ ros2 run wheeltec_scada_bridge bridge_node
 
 ---
 
-## 2. Jetson Orin Nano (AI Core)
-**Vai trò:** Xử lý ảnh từ Realsense, chạy mô hình YOLO/Intent CNN và tính toán lệnh điều hướng thông minh.
-**IP Mặc định:** `25.12.4.100`
+## 2. Laptop (AI Core + Web SCADA)
+**Vai trò:** Chạy adaptive-context-aware runtime, nhận sensor protobuf từ Raspberry Pi, publish perception result, heartbeat, và lệnh NAV_CMD.
+**IP:** dùng IP laptop mà Raspberry Pi truy cập được, ví dụ IP Tailscale hoặc IP LAN.
 
-⚠️ **Lưu ý:** Bắt buộc phải khởi động bước này **SAU KHI** Raspberry Pi đã chạy Terminal 2 (đã mở cổng ZMQ), nếu không Jetson có thể báo lỗi không tìm thấy socket.
+⚠️ **Lưu ý:** Khởi động Raspberry Pi bridge trước giúp laptop runtime có sẵn các cổng TCP nhận NAV_CMD/heartbeat và kênh sensor ingest kết nối ổn định hơn.
 
-Mở terminal SSH vào Jetson:
+Mở terminal trên laptop:
 
-### Terminal 1: Khởi chạy AI Pipeline
+### Terminal 1: Khởi chạy adaptive-context-aware runtime
 ```bash
-cd ~/context-aware  # Thay bằng đường dẫn tới repo AI trên Jetson của bạn
-make jetson-up
+cd D:/utc/deep/adaptive-context-aware
+docker compose -f docker/docker-compose.yml up -d control-api
 ```
-*(Quá trình này sẽ bật Camera Realsense, load các mô hình AI, và bắt đầu xuất lệnh tốc độ gửi qua mạng LAN tới Pi)*
+*(Quá trình này bật FastAPI control plane, ZMQ/protobuf data plane, heartbeat và các pipeline adaptive reasoning.)*
 
 Bạn có thể xem log bằng lệnh:
 ```bash
-make jetson-logs
+docker compose -f docker/docker-compose.yml logs -f control-api
 ```
-
----
-
-## 3. Laptop (Giám sát & Điều khiển - Web SCADA)
-**Vai trò:** Trạm điều khiển mặt đất (Ground Control Station), hiển thị bản đồ, telemetry, camera AI và nút dừng khẩn cấp.
+**Vai trò Web:** Trạm điều khiển mặt đất (Ground Control Station), hiển thị bản đồ, telemetry, camera AI và nút dừng khẩn cấp.
 
 Mở terminal trên máy tính Windows/Mac của bạn (tại thư mục mã nguồn project):
 
 ### Khởi chạy Web bằng Docker
 ```bash
-cd website
+cd D:/utc/deep/rai_website
 docker compose up -d
 ```
 *(Lệnh này sẽ tự động khởi tạo và chạy cả Backend (FastAPI) và Frontend (Next.js) trong container)*
@@ -77,8 +73,8 @@ Mở trình duyệt (Chrome/Edge) và truy cập: **`http://localhost:3000`**
 ## 🛑 Cơ chế an toàn (Arbitration)
 Khi cả hệ thống hoạt động, mạch phân luồng `twist_mux` trên Raspberry Pi sẽ tự động quyết định xem robot sẽ nghe lệnh của ai theo thứ tự ưu tiên:
 1. **Mức 10 (Cao nhất):** Bàn phím máy tính hoặc Joypad trên Web (`/cmd_vel_keyboard`). Khi bạn bấm phím, AI sẽ lập tức bị ghi đè.
-2. **Mức 5:** Lệnh của Jetson AI (`/cmd_vel_context`). Nếu bạn thả tay khỏi bàn phím, AI sẽ chiếm quyền điều khiển.
-3. **Mức 1 (Thấp nhất):** Điều hướng tự động Nav2 (`/cmd_vel_nav`).
+2. **Mức 6:** Điều hướng tự động Nav2 (`/cmd_vel_nav`).
+3. **Mức 5:** Lệnh của laptop adaptive-context-aware (`/cmd_vel_context`). Khi Nav2 không phát lệnh, adaptive runtime có thể điều khiển robot.
 
 ---
 

@@ -14,10 +14,15 @@ def generate_launch_description():
         'twist_mux.yaml',
     )
 
+    adaptive_host_arg = DeclareLaunchArgument(
+        'adaptive_host',
+        default_value='25.12.4.100',
+        description='IP address or hostname of the adaptive runtime on Jetson',
+    )
     jetson_ip_arg = DeclareLaunchArgument(
         'jetson_ip',
         default_value='25.12.4.100',
-        description='IP address of the Jetson AI server',
+        description='Deprecated alias for adaptive_host',
     )
 
     twist_mux_node = Node(
@@ -37,14 +42,18 @@ def generate_launch_description():
         name='context_aware_bridge',
         output='screen',
         parameters=[{
+            'adaptive_host':    LaunchConfiguration('adaptive_host'),
             'jetson_ip':        LaunchConfiguration('jetson_ip'),
             'raspi_ip':         '25.12.4.101',
-            'nav_cmd_port':     5555,
-            'robot_state_port': 5560,
+            'sensor_ingest_port': 5555,
+            'result_publish_port': 5556,
+            'nav_cmd_port': 9091,
+            'heartbeat_port': 9093,
         }],
     )
 
     return LaunchDescription([
+        adaptive_host_arg,
         jetson_ip_arg,
         twist_mux_node,
         context_bridge_node,

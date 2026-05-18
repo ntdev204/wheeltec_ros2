@@ -3,7 +3,7 @@
 # Priority order (higher number = wins):
 #   10 → /cmd_vel_keyboard  (website joystick override — always wins)
 #    6 → /cmd_vel_nav       (Nav2 autonomous navigation)
-#    5 → /cmd_vel_context   (Jetson AI context-aware navigation)
+#    5 -> /cmd_vel_context   (laptop adaptive-context-aware navigation)
 #
 # timeout: if no message received within this period (seconds), the source
 #          is considered inactive and the next lower-priority source takes over.
