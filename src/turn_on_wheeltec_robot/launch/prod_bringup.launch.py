@@ -70,7 +70,7 @@ def generate_launch_description():
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
                         os.path.join(wheeltec_twist_mux_dir, 'launch', 'twist_mux.launch.py')
-                    )
+                    ),
                 ),
             ]
         ),

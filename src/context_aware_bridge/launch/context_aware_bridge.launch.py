@@ -7,12 +7,12 @@ from launch_ros.actions import Node
 def generate_launch_description():
     adaptive_host_arg = DeclareLaunchArgument(
         'adaptive_host',
-        default_value='',
-        description='IP address or hostname of the laptop adaptive runtime',
+        default_value='25.12.4.100',
+        description='IP address or hostname of the adaptive runtime on Jetson',
     )
     jetson_ip_arg = DeclareLaunchArgument(
         'jetson_ip',
-        default_value='',
+        default_value='25.12.4.100',
         description='Deprecated alias for adaptive_host',
     )
     sensor_ingest_port_arg = DeclareLaunchArgument(
