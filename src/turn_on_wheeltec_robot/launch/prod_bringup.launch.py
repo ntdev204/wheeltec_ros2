@@ -1,8 +1,9 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, ExecuteProcess, TimerAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
@@ -11,6 +12,12 @@ def generate_launch_description():
     wheeltec_scada_bridge_dir = get_package_share_directory('wheeltec_scada_bridge')
     wheeltec_launch_dir = get_package_share_directory('turn_on_wheeltec_robot')
     wheeltec_slam_dir = get_package_share_directory('wheeltec_slam_toolbox')
+
+    adaptive_host_arg = DeclareLaunchArgument(
+        'adaptive_host',
+        default_value='25.12.4.100',
+        description='IP address or hostname of the adaptive runtime on Jetson',
+    )
 
     # DTR toggle để reset Lidar — tương đương rút cắm USB.
     # Đáng tin cậy hơn gửi lệnh protocol vì không bị ảnh hưởng bởi trạng thái device.
@@ -30,6 +37,8 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        adaptive_host_arg,
+
         # 0. DTR toggle Lidar (tương đương unplug/replug, tránh lỗi 80008002)
         lidar_serial_reset,
 
@@ -71,6 +80,10 @@ def generate_launch_description():
                     PythonLaunchDescriptionSource(
                         os.path.join(wheeltec_twist_mux_dir, 'launch', 'twist_mux.launch.py')
                     ),
+                    launch_arguments={
+                        'adaptive_host': LaunchConfiguration('adaptive_host'),
+                        'jetson_ip': LaunchConfiguration('adaptive_host'),
+                    }.items(),
                 ),
             ]
         ),
