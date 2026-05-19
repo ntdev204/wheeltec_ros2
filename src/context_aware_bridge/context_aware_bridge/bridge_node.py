@@ -266,6 +266,8 @@ class ContextAwareBridgeNode(Node):
                 self.result_pub.publish(msg)
             except zmq.Again:
                 continue
+            except zmq.ContextTerminated:
+                break
             except Exception as exc:
                 self.get_logger().warning(f"adaptive result decode failed: {exc}")
 
@@ -356,19 +358,28 @@ class ContextAwareBridgeNode(Node):
         return value
 
     def _encode_sensor_envelope(self, *, payload_field: str, payload: dict) -> bytes:
-        classes = _sensor_message_classes()
-        envelope = classes["SensorEnvelope"]()
-        envelope.source_id = self._source_id
-        envelope.sequence = self._next_seq()
-        envelope.timestamp_us = int(time.time() * 1_000_000)
-        target = getattr(envelope, payload_field)
-        for key, value in payload.items():
-            field = getattr(target, key)
-            if hasattr(field, "extend"):
-                field.extend(value)
-            else:
-                setattr(target, key, value)
-        return envelope.SerializeToString()
+        sequence = self._next_seq()
+        timestamp_us = int(time.time() * 1_000_000)
+        if payload_field == "lidar_scan":
+            payload_bytes = _encode_lidar_scan(payload)
+            payload_number = 10
+        elif payload_field == "imu_sample":
+            payload_bytes = _encode_imu_sample(payload)
+            payload_number = 11
+        elif payload_field == "pi_status":
+            payload_bytes = _encode_pi_status(payload)
+            payload_number = 12
+        else:
+            raise ValueError(f"unsupported sensor payload field: {payload_field}")
+
+        return b"".join(
+            (
+                _encode_string_field(1, self._source_id),
+                _encode_varint_field(2, sequence),
+                _encode_varint_field(3, timestamp_us),
+                _encode_message_field(payload_number, payload_bytes),
+            )
+        )
 
     def destroy_node(self) -> None:
         self._stop_event.set()
@@ -424,126 +435,203 @@ def _read_packet(stream) -> Packet:
     return Packet(msg_type=msg_type, seq=seq, timestamp_us=timestamp_us, payload=payload)
 
 
-def _sensor_message_classes():
-    global _SENSOR_CLASSES
-    if _SENSOR_CLASSES is not None:
-        return _SENSOR_CLASSES
-
-    from google.protobuf import descriptor_pb2, descriptor_pool, message_factory
-
-    file_desc = descriptor_pb2.FileDescriptorProto()
-    file_desc.name = "adaptive/context/v1/sensors.proto"
-    file_desc.package = "adaptive.context.v1"
-    lidar = file_desc.message_type.add()
-    lidar.name = "LidarScan"
-    _add_field(lidar, "angle_rad", 1, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT, repeated=True)
-    _add_field(lidar, "range_m", 2, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT, repeated=True)
-    imu = file_desc.message_type.add()
-    imu.name = "ImuSample"
-    for idx, name in enumerate(("accel_x_mps2", "accel_y_mps2", "accel_z_mps2", "quat_x", "quat_y", "quat_z", "quat_w"), 1):
-        _add_field(imu, name, idx, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT)
-    status = file_desc.message_type.add()
-    status.name = "PiStatus"
-    _add_field(status, "state", 1, descriptor_pb2.FieldDescriptorProto.TYPE_STRING)
-    _add_field(status, "cpu_temp_c", 2, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT)
-    _add_field(status, "cpu_load_pct", 3, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT)
-    env = file_desc.message_type.add()
-    env.name = "SensorEnvelope"
-    _add_field(env, "source_id", 1, descriptor_pb2.FieldDescriptorProto.TYPE_STRING)
-    _add_field(env, "sequence", 2, descriptor_pb2.FieldDescriptorProto.TYPE_UINT64)
-    _add_field(env, "timestamp_us", 3, descriptor_pb2.FieldDescriptorProto.TYPE_UINT64)
-    env.oneof_decl.add().name = "payload"
-    _add_field(env, "lidar_scan", 10, descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE, type_name=".adaptive.context.v1.LidarScan", oneof_index=0)
-    _add_field(env, "imu_sample", 11, descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE, type_name=".adaptive.context.v1.ImuSample", oneof_index=0)
-    _add_field(env, "pi_status", 12, descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE, type_name=".adaptive.context.v1.PiStatus", oneof_index=0)
-    pool = descriptor_pool.DescriptorPool()
-    pool.Add(file_desc)
-    _SENSOR_CLASSES = {
-        name: message_factory.GetMessageClass(pool.FindMessageTypeByName(f"adaptive.context.v1.{name}"))
-        for name in ("SensorEnvelope", "LidarScan", "ImuSample", "PiStatus")
-    }
-    return _SENSOR_CLASSES
-
-
 def _decode_perception_result(raw: bytes) -> dict:
-    global _PERCEPTION_ENVELOPE_CLASS
-    from google.protobuf import descriptor_pb2, descriptor_pool, message_factory
-
-    if _PERCEPTION_ENVELOPE_CLASS is None:
-        file_desc = descriptor_pb2.FileDescriptorProto()
-        file_desc.name = "adaptive/context/v1/perception.proto"
-        file_desc.package = "adaptive.context.v1"
-        entity = file_desc.message_type.add()
-        entity.name = "TrackedEntity"
-        _add_field(entity, "track_id", 1, descriptor_pb2.FieldDescriptorProto.TYPE_UINT32)
-        _add_field(entity, "bbox_xywh", 2, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT, repeated=True)
-        _add_field(entity, "position_xyz_m", 3, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT, repeated=True)
-        _add_field(entity, "velocity_xyz_mps", 4, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT, repeated=True)
-        _add_field(entity, "heading_rad", 5, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT)
-        _add_field(entity, "confidence", 6, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT)
-        _add_field(entity, "nearest_obstacle_distance_m", 7, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT, proto3_optional=True)
-        metrics = file_desc.message_type.add()
-        metrics.name = "RuntimeMetrics"
-        for idx, name in enumerate(("total_latency_ms", "camera_latency_ms", "detector_latency_ms", "fusion_latency_ms", "fps"), 1):
-            _add_field(metrics, name, idx, descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT)
-        env = file_desc.message_type.add()
-        env.name = "PerceptionResultEnvelope"
-        _add_field(env, "source_id", 1, descriptor_pb2.FieldDescriptorProto.TYPE_STRING)
-        _add_field(env, "sequence", 2, descriptor_pb2.FieldDescriptorProto.TYPE_UINT64)
-        _add_field(env, "timestamp_us", 3, descriptor_pb2.FieldDescriptorProto.TYPE_UINT64)
-        _add_field(env, "entities", 10, descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE, repeated=True, type_name=".adaptive.context.v1.TrackedEntity")
-        _add_field(env, "metrics", 11, descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE, type_name=".adaptive.context.v1.RuntimeMetrics")
-        pool = descriptor_pool.DescriptorPool()
-        pool.Add(file_desc)
-        _PERCEPTION_ENVELOPE_CLASS = message_factory.GetMessageClass(
-            pool.FindMessageTypeByName("adaptive.context.v1.PerceptionResultEnvelope")
-        )
-    envelope = _PERCEPTION_ENVELOPE_CLASS()
-    envelope.ParseFromString(raw)
+    envelope = _decode_result_envelope(raw)
     return {
-        "source_id": str(envelope.source_id),
-        "sequence": int(envelope.sequence),
-        "timestamp_us": int(envelope.timestamp_us),
-        "entities": [
-            {
-                "track_id": int(item.track_id),
-                "bbox_xywh": [float(v) for v in item.bbox_xywh],
-                "position_xyz_m": [float(v) for v in item.position_xyz_m],
-                "velocity_xyz_mps": [float(v) for v in item.velocity_xyz_mps],
-                "heading_rad": float(item.heading_rad),
-                "confidence": float(item.confidence),
-                "nearest_obstacle_distance_m": (
-                    float(item.nearest_obstacle_distance_m)
-                    if item.HasField("nearest_obstacle_distance_m")
-                    else None
-                ),
-            }
-            for item in envelope.entities
-        ],
+        "source_id": envelope["source_id"],
+        "sequence": envelope["sequence"],
+        "timestamp_us": envelope["timestamp_us"],
+        "entities": envelope["entities"],
+        "metrics": envelope["metrics"],
+    }
+
+
+def _encode_lidar_scan(payload: dict) -> bytes:
+    return b"".join(
+        (
+            _encode_packed_float_field(1, payload["angle_rad"]),
+            _encode_packed_float_field(2, payload["range_m"]),
+        )
+    )
+
+
+def _encode_imu_sample(payload: dict) -> bytes:
+    fields = (
+        "accel_x_mps2",
+        "accel_y_mps2",
+        "accel_z_mps2",
+        "quat_x",
+        "quat_y",
+        "quat_z",
+        "quat_w",
+    )
+    return b"".join(_encode_float_field(index, payload[name]) for index, name in enumerate(fields, start=1))
+
+
+def _encode_pi_status(payload: dict) -> bytes:
+    return b"".join(
+        (
+            _encode_string_field(1, payload["state"]),
+            _encode_float_field(2, payload["cpu_temp_c"]),
+            _encode_float_field(3, payload["cpu_load_pct"]),
+        )
+    )
+
+
+def _encode_key(field_number: int, wire_type: int) -> bytes:
+    return _encode_varint((field_number << 3) | wire_type)
+
+
+def _encode_varint(value: int) -> bytes:
+    value = int(value)
+    out = bytearray()
+    while value > 0x7F:
+        out.append((value & 0x7F) | 0x80)
+        value >>= 7
+    out.append(value)
+    return bytes(out)
+
+
+def _encode_varint_field(field_number: int, value: int) -> bytes:
+    return _encode_key(field_number, 0) + _encode_varint(value)
+
+
+def _encode_bytes_field(field_number: int, value: bytes) -> bytes:
+    return _encode_key(field_number, 2) + _encode_varint(len(value)) + value
+
+
+def _encode_string_field(field_number: int, value: str) -> bytes:
+    return _encode_bytes_field(field_number, str(value).encode("utf-8"))
+
+
+def _encode_message_field(field_number: int, value: bytes) -> bytes:
+    return _encode_bytes_field(field_number, value)
+
+
+def _encode_float_field(field_number: int, value: float) -> bytes:
+    return _encode_key(field_number, 5) + struct.pack("<f", float(value))
+
+
+def _encode_packed_float_field(field_number: int, values) -> bytes:
+    body = b"".join(struct.pack("<f", float(value)) for value in values)
+    return _encode_bytes_field(field_number, body)
+
+
+def _decode_result_envelope(raw: bytes) -> dict:
+    envelope = {
+        "source_id": "",
+        "sequence": 0,
+        "timestamp_us": 0,
+        "entities": [],
         "metrics": {
-            "total_latency_ms": float(envelope.metrics.total_latency_ms),
-            "camera_latency_ms": float(envelope.metrics.camera_latency_ms),
-            "detector_latency_ms": float(envelope.metrics.detector_latency_ms),
-            "fusion_latency_ms": float(envelope.metrics.fusion_latency_ms),
-            "fps": float(envelope.metrics.fps),
+            "total_latency_ms": 0.0,
+            "camera_latency_ms": 0.0,
+            "detector_latency_ms": 0.0,
+            "fusion_latency_ms": 0.0,
+            "fps": 0.0,
         },
     }
+    for field_number, wire_type, value in _iter_proto_fields(raw):
+        if field_number == 1 and wire_type == 2:
+            envelope["source_id"] = value.decode("utf-8", errors="replace")
+        elif field_number == 2 and wire_type == 0:
+            envelope["sequence"] = int(value)
+        elif field_number == 3 and wire_type == 0:
+            envelope["timestamp_us"] = int(value)
+        elif field_number == 10 and wire_type == 2:
+            envelope["entities"].append(_decode_tracked_entity(value))
+        elif field_number == 11 and wire_type == 2:
+            envelope["metrics"] = _decode_runtime_metrics(value)
+    return envelope
 
 
-def _add_field(message_desc, name, number, field_type, *, repeated=False, type_name=None, oneof_index=None, proto3_optional=False):
-    from google.protobuf import descriptor_pb2
+def _decode_tracked_entity(raw: bytes) -> dict:
+    entity = {
+        "track_id": 0,
+        "bbox_xywh": [],
+        "position_xyz_m": [],
+        "velocity_xyz_mps": [],
+        "heading_rad": 0.0,
+        "confidence": 0.0,
+        "nearest_obstacle_distance_m": None,
+    }
+    for field_number, wire_type, value in _iter_proto_fields(raw):
+        if field_number == 1 and wire_type == 0:
+            entity["track_id"] = int(value)
+        elif field_number == 2:
+            entity["bbox_xywh"].extend(_decode_float_values(wire_type, value))
+        elif field_number == 3:
+            entity["position_xyz_m"].extend(_decode_float_values(wire_type, value))
+        elif field_number == 4:
+            entity["velocity_xyz_mps"].extend(_decode_float_values(wire_type, value))
+        elif field_number == 5 and wire_type == 5:
+            entity["heading_rad"] = value
+        elif field_number == 6 and wire_type == 5:
+            entity["confidence"] = value
+        elif field_number == 7 and wire_type == 5:
+            entity["nearest_obstacle_distance_m"] = value
+    return entity
 
-    field_desc = message_desc.field.add()
-    field_desc.name = name
-    field_desc.number = number
-    field_desc.label = descriptor_pb2.FieldDescriptorProto.LABEL_REPEATED if repeated else descriptor_pb2.FieldDescriptorProto.LABEL_OPTIONAL
-    field_desc.type = field_type
-    if type_name is not None:
-        field_desc.type_name = type_name
-    if oneof_index is not None:
-        field_desc.oneof_index = oneof_index
-    if proto3_optional:
-        oneof_desc = message_desc.oneof_decl.add()
-        oneof_desc.name = f"_{name}"
-        field_desc.oneof_index = len(message_desc.oneof_decl) - 1
-        field_desc.proto3_optional = True
+
+def _decode_runtime_metrics(raw: bytes) -> dict:
+    metrics = {
+        "total_latency_ms": 0.0,
+        "camera_latency_ms": 0.0,
+        "detector_latency_ms": 0.0,
+        "fusion_latency_ms": 0.0,
+        "fps": 0.0,
+    }
+    names = {
+        1: "total_latency_ms",
+        2: "camera_latency_ms",
+        3: "detector_latency_ms",
+        4: "fusion_latency_ms",
+        5: "fps",
+    }
+    for field_number, wire_type, value in _iter_proto_fields(raw):
+        if wire_type == 5 and field_number in names:
+            metrics[names[field_number]] = value
+    return metrics
+
+
+def _iter_proto_fields(raw: bytes):
+    offset = 0
+    while offset < len(raw):
+        key, offset = _read_varint_from(raw, offset)
+        field_number = key >> 3
+        wire_type = key & 0x07
+        if wire_type == 0:
+            value, offset = _read_varint_from(raw, offset)
+        elif wire_type == 2:
+            size, offset = _read_varint_from(raw, offset)
+            value = raw[offset : offset + size]
+            offset += size
+        elif wire_type == 5:
+            value = struct.unpack_from("<f", raw, offset)[0]
+            offset += 4
+        else:
+            raise ValueError(f"unsupported protobuf wire type: {wire_type}")
+        yield field_number, wire_type, value
+
+
+def _read_varint_from(raw: bytes, offset: int) -> tuple[int, int]:
+    shift = 0
+    value = 0
+    while offset < len(raw):
+        byte = raw[offset]
+        offset += 1
+        value |= (byte & 0x7F) << shift
+        if not byte & 0x80:
+            return value, offset
+        shift += 7
+    raise ValueError("truncated protobuf varint")
+
+
+def _decode_float_values(wire_type: int, value) -> list[float]:
+    if wire_type == 5:
+        return [float(value)]
+    if wire_type != 2:
+        return []
+    if len(value) % 4 != 0:
+        raise ValueError("packed float field length must be a multiple of 4")
+    return [struct.unpack_from("<f", value, index)[0] for index in range(0, len(value), 4)]

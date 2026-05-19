@@ -11,7 +11,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', ['launch/context_aware_bridge.launch.py']),
     ],
-    install_requires=['setuptools', 'pyzmq', 'protobuf'],
+    install_requires=['setuptools', 'pyzmq'],
     zip_safe=True,
     maintainer='thientn204',
     maintainer_email='thientn204@gmail.com',
