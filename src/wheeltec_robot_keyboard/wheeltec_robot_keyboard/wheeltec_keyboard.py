@@ -59,48 +59,56 @@ ANG_VEL_STEP_SIZE = 0.1
 
 
 msg = """
-Control Your carrrrrrrrrr!
+Control Your Mecanum Robot!
 ---------------------------
 Moving around:
-   u    i    o
-   j    k    l
-   m    ,    .
+   w(↑) : forward
+   a(←) : left
+   s(↓) : backward
+   d(→) : right
+   q    : forward-left diagonal
+   e    : forward-right diagonal
+   z    : backward-left diagonal
+   c    : backward-right diagonal
 
-q/z : increase/decrease max speeds by 10%
-w/x : increase/decrease only linear speed by 10%
-e/c : increase/decrease only angular speed by 10%
-space key, k : force stop
-anything else : stop smoothly
+Rotate in place:
+   x    : rotate clockwise
+   Ctrl+x : rotate counter-clockwise
+
+Speed adjustment:
+   u/i : increase/decrease linear speed
+   o/p : increase/decrease angular speed
+
+space key : force stop
 b : switch to OmniMode/CommonMode
 CTRL-C to quit
 """
 e = """
 Communications Failed
 """
-#键值对应移动/转向方向
 moveBindings = {
-        'i':( 1, 0),
-        'o':( 1,-1),
-        'j':( 0, 1),
-        'l':( 0,-1),
-        'u':( 1, 1),
-        ',':(-1, 0),
-        '.':(-1,1),
-        'm':(-1,-1),
+        'w':( 1, 0, 0),   # forward
+        'a':( 0, 1, 0),   # left
+        's':(-1, 0, 0),   # backward
+        'd':( 0,-1, 0),   # right
+        'q':( 1, 1, 0),   # forward-left diagonal
+        'e':( 1,-1, 0),   # forward-right diagonal
+        'z':(-1, 1, 0),   # backward-left diagonal
+        'c':(-1,-1, 0),   # backward-right diagonal
+        'x':( 0, 0,-1),   # rotate clockwise
+        '\x18':( 0, 0, 1), # Ctrl+x: rotate counter-clockwise
            }
 
-#键值对应速度增量
 speedBindings={
-        'q':(1.1,1.1),
-        'z':(0.9,0.9),
-        'w':(1.1,1),
-        'x':(0.9,1),
-        'e':(1,  1.1),
-        'c':(1,  0.9),
+        'u':(1.1, 1),     # increase linear speed
+        'i':(0.9, 1),     # decrease linear speed
+        'o':(1, 1.1),     # increase angular speed
+        'p':(1, 0.9),     # decrease angular speed
           }
-#获取键值函数
-speed = 0.2 #默认移动速度 m/s
-turn  = 1   #默认转向速度 rad/
+
+speed = 0.2
+turn  = 1.0
+
 def get_key(settings):
     if os.name == 'nt':
         return msvcrt.getch().decode('utf-8')
@@ -114,7 +122,6 @@ def get_key(settings):
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
     return key
 
-#以字符串格式返回当前速度
 def print_vels(speed, turn):
     print('currently:\tspeed {0}\t turn {1} '.format(
         speed,
@@ -128,80 +135,75 @@ def main():
 
     qos = QoSProfile(depth=10)
     node = rclpy.create_node('wheeltec_keyboard')
-    pub = node.create_publisher(Twist, 'cmd_vel_keyboard', qos)
-    speed = 0.2 #默认移动速度 m/s
-    turn  = 1.0   #默认转向速度 rad/
-    x      = 0.0   #前进后退方向
-    th     = 0.0   #转向/横向移动方向
-    count  = 0.0   #键值不再范围计数
-    target_speed = 0.0 #前进后退目标速度
-    target_turn  = 0.0 #转向目标速度
-    target_HorizonMove = 0.0 #横向移动目标速度
-    control_speed = 0.0 #前进后退实际控制速度
-    control_turn  = 0.0 #转向实际控制速度
-    control_HorizonMove = 0.0 #横向移动实际控制速度
-    Omni = 0
+    pub = node.create_publisher(Twist, 'cmd_vel', qos)
+    speed = 0.2
+    turn  = 1.0
+    x      = 0.0
+    y      = 0.0
+    th     = 0.0
+    count  = 0.0
+    target_speed_x = 0.0
+    target_speed_y = 0.0
+    target_turn  = 0.0
+    control_speed_x = 0.0
+    control_speed_y = 0.0
+    control_turn  = 0.0
+    Omni = 1
     try:
         print(msg)
         print(print_vels(speed, turn))
         while(1):
             key = get_key(settings)
-            #切换是否为全向移动模式，全向轮/麦轮小车可以加入全向移动模式
-            if key=='b':               
-                Omni=~Omni
-                if Omni: 
-                    print("Switch to OmniMode")
-                    moveBindings['.']=[-1,-1]
-                    moveBindings['m']=[-1, 1]
-                else:
-                    print("Switch to CommonMode")
-                    moveBindings['.']=[-1, 1]
-                    moveBindings['m']=[-1,-1]
+            if key=='b':
+                print("Mecanum robot - always in OmniMode")
             
-            #判断键值是否在移动/转向方向键值内
             if key in moveBindings.keys():
                 x  = moveBindings[key][0]
-                th = moveBindings[key][1]
+                y  = moveBindings[key][1]
+                th = moveBindings[key][2]
                 count = 0
 
-            #判断键值是否在速度增量键值内
             elif key in speedBindings.keys():
                 speed = speed * speedBindings[key][0]
                 turn  = turn  * speedBindings[key][1]
                 count = 0
-                print(print_vels(speed,turn)) #速度发生变化，打印出来
+                print(print_vels(speed,turn))
 
-            #空键值/'k',相关变量置0
             elif key == ' ' or key == 'k' :
-                x  = 0
+                x  = 0.0
+                y  = 0.0
                 th = 0.0
-                control_speed = 0.0
+                control_speed_x = 0.0
+                control_speed_y = 0.0
                 control_turn  = 0.0
-                HorizonMove   = 0.0
 
-            #长期识别到不明键值，相关变量置0
             else:
                 count = count + 1
                 if count > 4:
-                    x  = 0
+                    x  = 0.0
+                    y  = 0.0
                     th = 0.0
                 if (key == '\x03'):
                     break
 
-           #根据速度与方向计算目标速度
-            target_speed = speed * x
+            target_speed_x = speed * x
+            target_speed_y = speed * y
             target_turn  = turn * th
-            target_HorizonMove = speed*th
 
-            #平滑控制，计算前进后退实际控制速度
-            if target_speed > control_speed:
-                control_speed = min( target_speed, control_speed + 0.1 )
-            elif target_speed < control_speed:
-                control_speed = max( target_speed, control_speed - 0.1 )
+            if target_speed_x > control_speed_x:
+                control_speed_x = min( target_speed_x, control_speed_x + 0.1 )
+            elif target_speed_x < control_speed_x:
+                control_speed_x = max( target_speed_x, control_speed_x - 0.1 )
             else:
-                control_speed = target_speed
+                control_speed_x = target_speed_x
 
-            #平滑控制，计算转向实际控制速度
+            if target_speed_y > control_speed_y:
+                control_speed_y = min( target_speed_y, control_speed_y + 0.1 )
+            elif target_speed_y < control_speed_y:
+                control_speed_y = max( target_speed_y, control_speed_y - 0.1 )
+            else:
+                control_speed_y = target_speed_y
+
             if target_turn > control_turn:
                 control_turn = min( target_turn, control_turn + 0.5 )
             elif target_turn < control_turn:
@@ -209,21 +211,13 @@ def main():
             else:
                 control_turn = target_turn
 
-            #平滑控制，计算横向移动实际控制速度
-            if target_HorizonMove > control_HorizonMove:
-                control_HorizonMove = min( target_HorizonMove, control_HorizonMove + 0.1 )
-            elif target_HorizonMove < control_HorizonMove:
-                control_HorizonMove = max( target_HorizonMove, control_HorizonMove - 0.1 )
-            else:
-                control_HorizonMove = target_HorizonMove
-         
-            twist = Twist() #创建ROS速度话题变量
-            if Omni==0:
-                twist.linear.x  = control_speed; twist.linear.y = 0.0;  twist.linear.z = 0.0
-                twist.angular.x = 0.0;             twist.angular.y = 0.0; twist.angular.z = control_turn
-            else:
-                twist.linear.x  = control_speed; twist.linear.y = control_HorizonMove; twist.linear.z = 0.0
-                twist.angular.x = 0.0;             twist.angular.y = 0.0;                  twist.angular.z = 0.0
+            twist = Twist()
+            twist.linear.x  = control_speed_x
+            twist.linear.y  = control_speed_y
+            twist.linear.z  = 0.0
+            twist.angular.x = 0.0
+            twist.angular.y = 0.0
+            twist.angular.z = control_turn
             pub.publish(twist)
 
     except Exception as e:

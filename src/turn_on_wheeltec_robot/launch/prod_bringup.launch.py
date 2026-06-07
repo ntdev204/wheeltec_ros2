@@ -8,7 +8,6 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    wheeltec_twist_mux_dir = get_package_share_directory('wheeltec_twist_mux')
     wheeltec_scada_bridge_dir = get_package_share_directory('wheeltec_scada_bridge')
     wheeltec_launch_dir = get_package_share_directory('turn_on_wheeltec_robot')
     wheeltec_slam_dir = get_package_share_directory('wheeltec_slam_toolbox')
@@ -19,31 +18,33 @@ def generate_launch_description():
         description='IP address or hostname of the adaptive runtime on Jetson',
     )
 
-    # DTR toggle để reset Lidar — tương đương rút cắm USB.
-    # Đáng tin cậy hơn gửi lệnh protocol vì không bị ảnh hưởng bởi trạng thái device.
-    lidar_serial_reset = ExecuteProcess(
+    # Cleanup: Kill all existing ROS2 processes and nodes (no service stop)
+    cleanup_all = ExecuteProcess(
         cmd=['bash', '-c',
-             'python3 -c "'
-             'import serial, time; '
-             's = serial.Serial(\'/dev/wheeltec_lidar\', 115200, timeout=1); '
-             's.setDTR(False); s.setRTS(False); '
-             'time.sleep(0.5); '
-             's.setDTR(True); s.setRTS(True); '
-             'time.sleep(0.2); '
-             's.close(); '
-             'print(chr(10) + \'[lidar_reset] DTR toggle OK — waiting for motor spin-up...\')'
-             '" || echo "[lidar_reset] Lidar reset skipped (port not ready)"'],
+             'echo "[cleanup] Killing ROS2 processes..."; '
+             'pkill -9 -f "ros2 launch" 2>/dev/null || true; '
+             'pkill -9 -f "wheeltec_" 2>/dev/null || true; '
+             'pkill -9 -f "slam_toolbox" 2>/dev/null || true; '
+             'pkill -9 -f "nav2" 2>/dev/null || true; '
+             'pkill -9 -f "amcl" 2>/dev/null || true; '
+             'pkill -9 -f "bt_navigator" 2>/dev/null || true; '
+             'pkill -9 -f "controller_server" 2>/dev/null || true; '
+             'pkill -9 -f "planner_server" 2>/dev/null || true; '
+             'pkill -9 -f "rplidar" 2>/dev/null || true; '
+             'pkill -9 -f "ldlidar" 2>/dev/null || true; '
+             'echo "[cleanup] Waiting for processes to terminate..."; '
+             'sleep 2; '
+             'echo "[cleanup] Cleanup complete."'],
         output='screen',
     )
 
     return LaunchDescription([
         adaptive_host_arg,
 
-        # 0. DTR toggle Lidar (tương đương unplug/replug, tránh lỗi 80008002)
-        lidar_serial_reset,
+        # 0. Cleanup: Kill all processes and nodes
+        cleanup_all,
 
         # 1. Base Hardware Layer (Chassis, Lidar, IMU, EKF, TF)
-        #    Delay 5s để motor đủ thời gian spin-up sau DTR reset
         TimerAction(
             period=5.0,
             actions=[
@@ -68,22 +69,6 @@ def generate_launch_description():
                     parameters=[
                         os.path.join(wheeltec_slam_dir, 'config', 'laser_filter.yaml')
                     ],
-                ),
-            ]
-        ),
-
-        # 2. Twist Mux + Safety Shield
-        TimerAction(
-            period=6.5,
-            actions=[
-                IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource(
-                        os.path.join(wheeltec_twist_mux_dir, 'launch', 'twist_mux.launch.py')
-                    ),
-                    launch_arguments={
-                        'adaptive_host': LaunchConfiguration('adaptive_host'),
-                        'jetson_ip': LaunchConfiguration('adaptive_host'),
-                    }.items(),
                 ),
             ]
         ),

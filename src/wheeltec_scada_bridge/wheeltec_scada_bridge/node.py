@@ -58,7 +58,7 @@ class WheeltecControlNode(Node):
         self._map_saver_cmd = str(self.get_parameter('map_saver_cmd').value or '')
         self._map_save_dir = FilePath(str(self.get_parameter('map_save_dir').value or '/tmp/wheeltec_maps')).expanduser()
 
-        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel_keyboard', 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
 
         self.create_subscription(Odometry, 'odom', self.odom_cb, 10)
@@ -254,7 +254,6 @@ class WheeltecControlNode(Node):
             ("lifecycle_manager", "nav2_lifecycle_manager"),
             ("robot_state_publisher", "robot_state_publisher"),
             ("joint_state_publisher", "joint_state_publisher"),
-            ("twist_mux", "wheeltec_twist_mux"),
             ("context_aware", "context-aware"),
         )
         for needle, package in package_hints:
